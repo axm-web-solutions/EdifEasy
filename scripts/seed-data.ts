@@ -1,5 +1,10 @@
 /**
- * Catalogo de usuarios de prueba.
+ * Catalogo de usuarios de prueba: 12 cuentas que cubren los 7 roles.
+ *
+ * Se mantiene deliberadamente corto. Antes eran 24 (12 propietarios y 5
+ * arrendatarios) y los apartamentos quedaban todos ocupados, asi que no habia
+ * ninguno libre para probar el autoregistro.
+ *
  * Es la unica fuente de verdad compartida entre `scripts/seed-users.ts`
  * (crea los usuarios en Supabase Auth) y `supabase/seed.sql`
  * (crea los datos de dominio y los enlaza por email).
@@ -21,7 +26,7 @@ export interface SeedUser {
     | 'SERVICE_STAFF'
 }
 
-const owners: SeedUser[] = Array.from({ length: 12 }, (_, index) => {
+const owners: SeedUser[] = Array.from({ length: 3 }, (_, index) => {
   const n = index + 1
   return {
     email: `propietario${n}@edifeasy.com`,
@@ -32,7 +37,7 @@ const owners: SeedUser[] = Array.from({ length: 12 }, (_, index) => {
   }
 })
 
-const tenants: SeedUser[] = Array.from({ length: 5 }, (_, index) => {
+const tenants: SeedUser[] = Array.from({ length: 2 }, (_, index) => {
   const n = index + 1
   return {
     email: `arrendatario${n}@edifeasy.com`,

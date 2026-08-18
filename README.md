@@ -178,6 +178,7 @@ version anterior del esquema puede quedar desalineada. `npm run check` lo detect
 | `03-invitaciones.sql` | Si falta la tabla `condominium_invitations` o las funciones de invitaciones |
 | `04-perfiles-huerfanos.sql` | Si al entrar con una cuenta que ya existia sale `23503 ... registration_requests_profile_id_fkey`: hay cuentas en `auth.users` sin fila en `tribuia.profiles` porque se crearon antes de instalar el trigger |
 | `05-promover-administrador.sql` | Para tener un administrador **sin** `npm run seed` (que exige clave secreta). Convierte una cuenta existente en SUPER_ADMIN y le crea la membresia ADMINISTRATOR |
+| `06-usuarios.sql` | Crea las 12 cuentas de prueba con contrasena conocida y elimina las sobrantes. Sustituye a `npm run seed` cuando no hay clave secreta |
 
 Cada parche termina con `notify pgrst, 'reload schema';`. Sin ese aviso, PostgREST puede seguir
 respondiendo `PGRST202` — que el frontend muestra como *«Falta una funcion en la base de datos»* —
@@ -210,17 +211,38 @@ documentos y conversaciones.
 
 ### Credenciales de prueba
 
-Contrasena para **todos** los usuarios: `EdiFeasy2024*` (o el valor de `SEED_DEFAULT_PASSWORD`).
+Son **12 cuentas** que cubren los 7 roles. Contrasena para todas: `EdiFeasy2024*`
+(o el valor de `SEED_DEFAULT_PASSWORD` si usas `npm run seed`).
 
-| Rol | Correo |
-| --- | --- |
-| SUPER_ADMIN | `superadmin@edifeasy.com` |
-| ADMINISTRATOR | `admin@edifeasy.com` |
-| SPOKESPERSON | `vocero@edifeasy.com` |
-| SECURITY | `celador1@edifeasy.com`, `celador2@edifeasy.com` |
-| SERVICE_STAFF | `servicios1@edifeasy.com`, `servicios2@edifeasy.com` |
-| OWNER | `propietario1@edifeasy.com` … `propietario12@edifeasy.com` |
-| TENANT | `arrendatario1@edifeasy.com` … `arrendatario5@edifeasy.com` |
+| Correo | Nombre | Rol |
+| ------ | ------ | --- |
+| `superadmin@edifeasy.com` | Sofia Nunez | SUPER_ADMIN |
+| `admin@edifeasy.com` | Carlos Mejia | ADMINISTRATOR |
+| `vocero@edifeasy.com` | Laura Cardenas | SPOKESPERSON |
+| `celador1@edifeasy.com` | Jose Pineda | SECURITY (turno dia) |
+| `celador2@edifeasy.com` | Marta Quintero | SECURITY (turno noche) |
+| `servicios1@edifeasy.com` | Andres Rojas | SERVICE_STAFF (mantenimiento) |
+| `servicios2@edifeasy.com` | Diana Salazar | SERVICE_STAFF (aseo) |
+| `propietario1@edifeasy.com` | Propietario 1 Restrepo | OWNER |
+| `propietario2@edifeasy.com` | Propietario 2 Restrepo | OWNER |
+| `propietario3@edifeasy.com` | Propietario 3 Restrepo | OWNER |
+| `arrendatario1@edifeasy.com` | Arrendatario 1 Gomez | TENANT |
+| `arrendatario2@edifeasy.com` | Arrendatario 2 Gomez | TENANT |
+
+Dos formas de crearlas, ambas con el mismo catalogo
+([`scripts/seed-data.ts`](scripts/seed-data.ts)):
+
+- **`supabase/patches/06-usuarios.sql`** en el SQL Editor. No necesita clave secreta y ademas
+  reescribe la contrasena de las cuentas que ya existan, para que esta tabla sea exacta.
+- **`npm run seed`**, que usa la Admin API de Auth y exige `SUPABASE_SERVICE_ROLE_KEY` valida.
+
+> **Estas credenciales son publicas** (estan en este repositorio). Sirven para un entorno de
+> pruebas. Si siembras estos usuarios en la base de una instalacion real, cambia la contrasena
+> en `06-usuarios.sql` antes de ejecutarlo.
+
+> Con 3 propietarios y 2 arrendatarios, el condominio demo deja **10 apartamentos libres**: son los
+> que permiten probar el autoregistro. Con el catalogo anterior (12 y 5) los 15 quedaban ocupados y
+> no se podia solicitar ninguno.
 
 > Los 6 documentos del seed son **metadatos**: las filas existen en `documents` pero los archivos
 > no estan en Storage. Descargarlos mostrara "El archivo solicitado no existe en el almacenamiento"

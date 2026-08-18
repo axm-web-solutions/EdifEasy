@@ -182,7 +182,10 @@ begin
   end loop;
 
   -- --------------------------------------------------------------------------
-  -- 7. Propietarios (12 propietarios, 3 de ellos con 2 apartamentos)
+  -- 7. Propietarios
+  -- Recorre los 15 apartamentos y asigna el propietarioN que exista. Con el
+  -- catalogo actual (3) quedan libres los apartamentos 4..10 y 13..15, que son
+  -- los que permiten probar el autoregistro.
   -- --------------------------------------------------------------------------
   for i in 1..15 loop
     v_idx := case when i <= 12 then i else i - 12 end;
@@ -204,7 +207,8 @@ begin
   end loop;
 
   -- --------------------------------------------------------------------------
-  -- 8. Arrendatarios (5) sobre los apartamentos 11..15
+  -- 8. Arrendatarios sobre los apartamentos 11..15
+  -- Igual que arriba: asigna los arrendatarioN que existan (ahora 2).
   -- --------------------------------------------------------------------------
   for i in 1..5 loop
     select id into v_profile from tribuia.profiles
