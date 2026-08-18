@@ -177,6 +177,7 @@ version anterior del esquema puede quedar desalineada. `npm run check` lo detect
 | `02-bootstrap-condominio.sql` | Si `npm run check` dice "No hay condominios ACTIVOS" |
 | `03-invitaciones.sql` | Si falta la tabla `condominium_invitations` o las funciones de invitaciones |
 | `04-perfiles-huerfanos.sql` | Si al entrar con una cuenta que ya existia sale `23503 ... registration_requests_profile_id_fkey`: hay cuentas en `auth.users` sin fila en `tribuia.profiles` porque se crearon antes de instalar el trigger |
+| `05-promover-administrador.sql` | Para tener un administrador **sin** `npm run seed` (que exige clave secreta). Convierte una cuenta existente en SUPER_ADMIN y le crea la membresia ADMINISTRATOR |
 
 Cada parche termina con `notify pgrst, 'reload schema';`. Sin ese aviso, PostgREST puede seguir
 respondiendo `PGRST202` — que el frontend muestra como *«Falta una funcion en la base de datos»* —
