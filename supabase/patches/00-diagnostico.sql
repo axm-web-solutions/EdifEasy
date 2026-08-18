@@ -104,7 +104,13 @@ datos as (
     (67, 'DATOS', 'perfiles registrados',
          (select count(*) from tribuia.profiles)),
     (68, 'DATOS', 'membresias ACTIVE (usuarios que pueden entrar)',
-         (select count(*) from tribuia.condominium_members where status = 'ACTIVE'))
+         (select count(*) from tribuia.condominium_members where status = 'ACTIVE')),
+    -- Si esto no es 0, esas cuentas rompen el registro con un 23503 sobre
+    -- registration_requests_profile_id_fkey: lo arregla el parche 04.
+    (69, 'DATOS', 'cuentas de auth SIN perfil (deben ser 0)',
+         (select count(*) from auth.users u
+          where u.email is not null
+            and not exists (select 1 from tribuia.profiles p where p.id = u.id)))
   ) as t(orden, bloque, objeto, cantidad)
 ),
 

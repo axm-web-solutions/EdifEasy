@@ -2717,6 +2717,31 @@ begin
     raise exception 'Debes iniciar sesion para solicitar tu inscripcion' using errcode = '42501';
   end if;
 
+  -- Reconstruir el perfil si falta.
+  --
+  -- tribuia.profiles se llena con el trigger on_auth_user_created, asi que una
+  -- cuenta creada ANTES de instalar ese trigger existe en auth.users y no aqui.
+  -- Sin esta reconstruccion, el insert de mas abajo muere con
+  -- 23503 registration_requests_profile_id_fkey y el usuario solo ve un error
+  -- de clave ajena que no puede resolver.
+  insert into tribuia.profiles (id, email, full_name, phone, document_number, document_type, metadata)
+  select u.id,
+         u.email,
+         coalesce(nullif(u.raw_user_meta_data ->> 'full_name', ''), split_part(u.email, '@', 1)),
+         u.raw_user_meta_data ->> 'phone',
+         u.raw_user_meta_data ->> 'document_number',
+         coalesce(u.raw_user_meta_data ->> 'document_type', 'CC'),
+         jsonb_build_object('requested_role', nullif(u.raw_user_meta_data ->> 'requested_role', ''))
+  from auth.users u
+  where u.id = v_user and u.email is not null
+  -- Sin objetivo: cubre tanto el id repetido como el indice unico de email.
+  on conflict do nothing;
+
+  if not exists (select 1 from tribuia.profiles p where p.id = v_user) then
+    raise exception 'Tu perfil no existe en la base de datos y no se pudo crear. Contacta a la administracion.'
+      using errcode = 'P0001';
+  end if;
+
   if p_user_type not in ('OWNER', 'TENANT', 'BOTH') then
     raise exception 'Solo puedes registrarte como propietario o arrendatario' using errcode = '22023';
   end if;
