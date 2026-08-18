@@ -377,17 +377,76 @@ registrados mediante el RPC `add_member_by_email`.
 
 ## 13. Deploy en Vercel
 
-1. Sube el repositorio a GitHub.
-2. En Vercel, **New Project → Import Git Repository**.
-3. Framework preset: **Vite** (ya viene configurado en `vercel.json`).
-4. Agrega las variables de entorno del proyecto:
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
-   - `VITE_SENTRY_DSN` (opcional)
-   - `VITE_APP_ENV=production`
-   > **No** agregues `SUPABASE_SERVICE_ROLE_KEY` en Vercel: no se usa en el frontend.
-5. Deploy.
-6. Agrega la URL resultante a las *Redirect URLs* de Supabase Auth.
+El frontend es estatico: Vercel compila el bundle y lo sirve. No hay servidor propio, y por eso
+**ninguna clave secreta interviene en el despliegue**.
+
+### 13.1 Importar el repositorio
+
+1. En Vercel: **Add New → Project → Import Git Repository** y elige el repositorio.
+2. No cambies nada en la pantalla de configuracion: [`vercel.json`](vercel.json) ya define el
+   framework (`vite`), el directorio de salida (`dist`), las cabeceras de seguridad, el reescrito
+   de SPA y los comandos de instalacion y build con **pnpm**.
+
+> El repositorio versiona `pnpm-lock.yaml`, asi que el install usa
+> `pnpm install --frozen-lockfile`: si el lockfile no coincide con `package.json`, el deploy falla
+> en lugar de instalar versiones distintas a las probadas.
+
+### 13.2 Variables de entorno
+
+**Vite las incrusta en el bundle al compilar, no las lee en tiempo de ejecucion.** Consecuencias
+practicas: hay que crearlas *antes* del primer build, y cada cambio exige un **Redeploy** para que
+surta efecto.
+
+En **Settings → Environment Variables**, para *Production* y *Preview*:
+
+| Variable | Obligatoria | Valor |
+| -------- | ----------- | ----- |
+| `VITE_SUPABASE_URL` | si | `https://<tu-proyecto>.supabase.co` |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | si | La clave publica (`sb_publishable_...`). Sirve igual `VITE_SUPABASE_ANON_KEY` con el JWT clasico: la app acepta cualquiera de las dos |
+| `VITE_APP_ENV` | recomendada | `production` (activa el modo produccion: sin logs de depuracion) |
+| `VITE_APP_NAME` | no | `EdiFeasy` |
+| `VITE_SENTRY_DSN` | no | DSN de Sentry si lo conectas |
+
+**Lo que NO se agrega en Vercel:**
+
+- `SUPABASE_SERVICE_ROLE_KEY` y `SUPABASE_URL`: solo los usa `npm run seed` desde tu maquina. La
+  clave secreta salta la Row Level Security por completo; en el despliegue no aporta nada y su
+  presencia solo agrega riesgo.
+- `SEED_DEFAULT_PASSWORD`: idem, es del seed local.
+
+Si falta una variable obligatoria, la app **no falla con un error de red opaco**:
+[`EnvGuard`](src/components/EnvGuard.tsx) muestra una pantalla que dice exactamente cual falta.
+Es la forma rapida de confirmar si el problema es de configuracion.
+
+### 13.3 Autorizar la URL en Supabase
+
+Sin este paso el acceso funciona, pero los correos de confirmacion y de recuperacion de contrasena
+llevan a un enlace rechazado: la app construye el retorno con el dominio desde el que se abrio
+(`window.location.origin`) y Supabase solo acepta destinos declarados.
+
+En Supabase → **Authentication → URL Configuration**:
+
+- **Site URL**: `https://<tu-proyecto>.vercel.app`
+- **Redirect URLs**, una por linea:
+  ```
+  https://<tu-proyecto>.vercel.app/login
+  https://<tu-proyecto>.vercel.app/reset-password
+  https://<tu-proyecto>-*.vercel.app/**
+  http://localhost:5173/**
+  ```
+
+La tercera linea cubre los despliegues *Preview*, que reciben una URL distinta en cada commit; la
+cuarta mantiene funcionando el entorno local.
+
+### 13.4 Comprobar el despliegue
+
+1. Abre la URL: debe cargar la pantalla de acceso.
+2. Entra a `/register`: si el desplegable de condominios se llena, la conexion con Supabase quedo
+   bien (esos catalogos se leen sin sesion).
+3. Prueba **Olvidaste tu contrasena?** con un correo real y abre el enlace: valida el paso 13.3.
+
+Si la pantalla de acceso carga pero el registro muestra *«Falta una funcion en la base de datos»*,
+el despliegue esta bien y lo que falta es SQL: ejecuta los parches (ver [paso 5.4](#54-parches-para-bases-ya-desplegadas)).
 
 ---
 
