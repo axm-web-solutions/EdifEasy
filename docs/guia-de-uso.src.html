@@ -1,0 +1,1045 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>EdiFeasy · Guia de uso con imagenes</title>
+    <style>
+      @page {
+        size: A4;
+        margin: 16mm 14mm 18mm;
+      }
+      :root {
+        --ink: #1a2230;
+        --ink-soft: #4a5668;
+        --ink-faint: #7c8797;
+        --line: #d8dee8;
+        --brand: #1d4ed8;
+        --brand-soft: #eff4ff;
+        --warn-bg: #fff8e6;
+        --warn-line: #e8b93a;
+        --danger-bg: #fdf0f0;
+        --danger-line: #d8544f;
+        --ok-bg: #eefaf3;
+        --ok-line: #35a06a;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      body {
+        margin: 0 auto;
+        max-width: 190mm;
+        padding: 24px;
+        font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial,
+          sans-serif;
+        font-size: 10.5pt;
+        line-height: 1.55;
+        color: var(--ink);
+        background: #fff;
+      }
+      h1,
+      h2,
+      h3,
+      h4 {
+        line-height: 1.25;
+        margin: 0 0 0.4em;
+        break-after: avoid;
+      }
+      h2 {
+        font-size: 17pt;
+        padding-bottom: 6px;
+        border-bottom: 2px solid var(--brand);
+        margin-top: 0;
+      }
+      h3 {
+        font-size: 12.5pt;
+        margin-top: 1.4em;
+        color: var(--brand);
+      }
+      h4 {
+        font-size: 10.5pt;
+        margin-top: 1.1em;
+      }
+      p {
+        margin: 0 0 0.7em;
+      }
+      ol,
+      ul {
+        margin: 0 0 0.8em;
+        padding-left: 1.3em;
+      }
+      li {
+        margin-bottom: 0.35em;
+      }
+      code {
+        font-family: 'Cascadia Mono', Consolas, monospace;
+        font-size: 0.88em;
+        background: #f2f5fa;
+        border: 1px solid var(--line);
+        border-radius: 3px;
+        padding: 0.5px 4px;
+      }
+      pre {
+        font-family: 'Cascadia Mono', Consolas, monospace;
+        font-size: 8.6pt;
+        background: #f7f9fc;
+        border: 1px solid var(--line);
+        border-left: 3px solid var(--brand);
+        border-radius: 4px;
+        padding: 10px 12px;
+        white-space: pre-wrap;
+        break-inside: avoid;
+        margin: 0 0 0.9em;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 9.2pt;
+        margin: 0 0 1em;
+        break-inside: avoid;
+      }
+      th,
+      td {
+        border: 1px solid var(--line);
+        padding: 5px 8px;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        background: #f2f5fa;
+        color: var(--ink-soft);
+        font-weight: 600;
+      }
+      .page {
+        break-before: page;
+      }
+
+      /* ---------- Capturas ---------- */
+      .shot {
+        margin: 0 0 1.1em;
+        break-inside: avoid;
+      }
+      .shot img {
+        display: block;
+        width: 100%;
+        height: auto;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+      }
+      .shot figcaption {
+        font-size: 8.8pt;
+        color: var(--ink-faint);
+        margin-top: 5px;
+      }
+      .shot-narrow img {
+        max-width: 74mm;
+        margin: 0 auto;
+      }
+      .shot-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        align-items: start;
+        break-inside: avoid;
+      }
+      .shot-row .shot img {
+        max-width: 100%;
+        max-height: 105mm;
+        width: auto;
+        margin: 0 auto;
+      }
+      .missing-box {
+        border: 1px dashed var(--warn-line);
+        background: var(--warn-bg);
+        border-radius: 6px;
+        padding: 14px 16px;
+        font-size: 9.3pt;
+        display: grid;
+        gap: 4px;
+      }
+      .missing-box strong {
+        color: #8a6100;
+      }
+
+      /* ---------- Avisos ---------- */
+      .note,
+      .warn,
+      .danger,
+      .ok {
+        border: 1px solid var(--line);
+        border-left-width: 4px;
+        border-radius: 4px;
+        padding: 9px 12px;
+        margin: 0 0 1em;
+        font-size: 9.8pt;
+        break-inside: avoid;
+      }
+      .note {
+        background: var(--brand-soft);
+        border-left-color: var(--brand);
+      }
+      .warn {
+        background: var(--warn-bg);
+        border-left-color: var(--warn-line);
+      }
+      .danger {
+        background: var(--danger-bg);
+        border-left-color: var(--danger-line);
+      }
+      .ok {
+        background: var(--ok-bg);
+        border-left-color: var(--ok-line);
+      }
+      /* Solo el titulo del aviso ocupa su propia linea. Si la regla se aplica a
+         cualquier <strong>, un enfasis a mitad de frase la parte en tres. */
+      .note > strong:first-child,
+      .warn > strong:first-child,
+      .danger > strong:first-child,
+      .ok > strong:first-child {
+        display: block;
+        margin-bottom: 2px;
+      }
+
+      /* ---------- Pasos numerados ---------- */
+      .steps {
+        counter-reset: step;
+        list-style: none;
+        padding: 0;
+        margin: 0 0 1em;
+      }
+      .steps > li {
+        counter-increment: step;
+        position: relative;
+        padding-left: 30px;
+        margin-bottom: 0.6em;
+      }
+      .steps > li::before {
+        content: counter(step);
+        position: absolute;
+        left: 0;
+        top: 1px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--brand);
+        color: #fff;
+        font-size: 8.5pt;
+        font-weight: 700;
+        display: grid;
+        place-items: center;
+      }
+
+      /* ---------- Portada ---------- */
+      .cover {
+        min-height: 236mm;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+      .cover-mark {
+        width: 52px;
+        height: 52px;
+        border-radius: 12px;
+        background: var(--brand);
+        display: grid;
+        place-items: center;
+        color: #fff;
+        font-weight: 700;
+        font-size: 22pt;
+      }
+      .cover h1 {
+        font-size: 33pt;
+        letter-spacing: -0.5px;
+        margin: 0 0 8px;
+      }
+      .cover .sub {
+        font-size: 14pt;
+        color: var(--ink-soft);
+        margin: 0 0 22px;
+      }
+
+      .map {
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        overflow: hidden;
+        break-inside: avoid;
+        margin-bottom: 1em;
+      }
+      .map svg {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+
+      .print-hint {
+        border: 1px dashed var(--brand);
+        background: var(--brand-soft);
+        border-radius: 6px;
+        padding: 12px 14px;
+        margin-bottom: 22px;
+        font-size: 10pt;
+      }
+      @media print {
+        .print-hint {
+          display: none;
+        }
+        body {
+          padding: 0;
+          max-width: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="print-hint">
+      <strong>Para obtener el PDF:</strong> pulsa <code>Ctrl</code>+<code>P</code>
+      (<code>Cmd</code>+<code>P</code> en Mac) y elige <em>Guardar como PDF</em>. Activa
+      «Graficos de fondo» para conservar colores e imagenes. Este aviso no sale en el PDF.
+    </div>
+
+    <!-- =============================== PORTADA =============================== -->
+    <section class="cover">
+      <div style="display: flex; align-items: center; gap: 14px">
+        <div class="cover-mark">E</div>
+        <div>
+          <strong style="font-size: 13pt">EdiFeasy</strong><br />
+          <span style="color: var(--ink-faint); font-size: 9.5pt">Administracion de condominios</span>
+        </div>
+      </div>
+
+      <div>
+        <h1>Guia de uso</h1>
+        <p class="sub">Recorrido por la aplicacion, pantalla por pantalla, con imagenes.</p>
+        <p style="max-width: 132mm; color: var(--ink-soft)">
+          Este documento muestra como se usa EdiFeasy en la practica: como entrar, como registrarse,
+          que hace cada modulo y como se ve todo en un telefono. Complementa la
+          <em>Guia del sistema</em>, que explica los conceptos, los roles y la seguridad.
+        </p>
+      </div>
+
+      <div style="border-top: 1px solid var(--line); padding-top: 14px; font-size: 9.5pt">
+        <table style="border: 0; margin: 0">
+          <tr>
+            <td style="border: 0; padding: 3px 0; width: 38mm; color: var(--ink-faint)">Documento</td>
+            <td style="border: 0; padding: 3px 0">Guia de uso con capturas</td>
+          </tr>
+          <tr>
+            <td style="border: 0; padding: 3px 0; color: var(--ink-faint)">Dirigido a</td>
+            <td style="border: 0; padding: 3px 0">
+              Residentes, administradores, consejo, celaduria y personal de servicios
+            </td>
+          </tr>
+          <tr>
+            <td style="border: 0; padding: 3px 0; color: var(--ink-faint)">Se regenera con</td>
+            <td style="border: 0; padding: 3px 0">
+              <code>npm run screenshots</code> y luego <code>npm run guide</code>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- =============================== ALCANCE =============================== -->
+    <section class="page">
+      <h2>Sobre las imagenes de esta guia</h2>
+
+      <p class="lead">
+        Todas las capturas de este documento son <strong>reales</strong>, tomadas de la aplicacion en
+        ejecucion con emulacion de dispositivo (1440 px escritorio, 768 px tableta, 390 px telefono).
+        Ninguna es un montaje.
+      </p>
+
+      <div class="warn">
+        <strong>Capturas que faltan y por que</strong>
+        Las pantallas internas (dashboard, apartamentos, aprobaciones, alertas, documentos...) solo
+        se pueden fotografiar con una sesion iniciada y una membresia activa. Mientras la base de
+        datos no tenga ejecutados el esquema y los parches, no existe ningun usuario con acceso, asi
+        que esas vistas <strong>no se pudieron capturar</strong>. En su lugar aparece un recuadro que
+        lo indica, y un esquema de la interfaz que describe la disposicion real.
+      </div>
+
+      <p>Para completar la guia con esas capturas, una vez la base este lista:</p>
+      <pre><code># Terminal 1
+npm run dev
+
+# Terminal 2 — inicia sesion en el navegador que abre el script,
+# o comprueba primero que hay un usuario con acceso:
+npm run check
+npm run screenshots
+npm run guide</code></pre>
+
+      <p>
+        El script de capturas comprueba la ruta resultante: si una vista protegida redirige a la
+        pantalla de acceso, <strong>no guarda la imagen</strong> y lo informa. Asi el documento nunca
+        muestra una pantalla de login haciendose pasar por un modulo.
+      </p>
+    </section>
+
+    <!-- =============================== 1. ENTRAR ============================= -->
+    <section class="page">
+      <h2>1. Entrar a la aplicacion</h2>
+
+      {{IMG:login-desktop|Pantalla de acceso en escritorio (1440 px). El panel izquierdo queda fijo; solo se desplaza la columna del formulario.}}
+
+      <ol class="steps">
+        <li>Abre la direccion de la aplicacion en el navegador.</li>
+        <li>Escribe tu correo y tu contrasena.</li>
+        <li>Pulsa <strong>Ingresar</strong>.</li>
+      </ol>
+
+      <p>
+        Segun tu rol, entraras a un tablero distinto: administrativo, de residente u operativo. Si
+        perteneces a varios condominios, arriba a la derecha apareceran todos y podras cambiar de uno
+        a otro.
+      </p>
+
+      <div class="note">
+        <strong>Si te equivocas de contrasena</strong>
+        Veras «Correo o contrasena incorrectos». El sistema no revela si el correo existe o no, para
+        no facilitar el rastreo de cuentas.
+      </div>
+
+      <h3>La misma pantalla en tableta y telefono</h3>
+      <div class="shot-row">
+        {{IMG:login-tablet|Tableta (768 px): el panel de presentacion se oculta y el formulario ocupa el ancho.}}
+        {{IMG:login-mobile|Telefono (390 px): campos a ancho completo y altura comoda para el dedo.}}
+      </div>
+
+      <h3>Si olvidaste la contrasena</h3>
+      {{IMG:forgot-desktop|Recuperacion de contrasena. Se envia un enlace que caduca en una hora.}}
+
+      <ol class="steps">
+        <li>En la pantalla de acceso, pulsa <strong>Olvidaste tu contrasena?</strong></li>
+        <li>Escribe tu correo y pulsa <strong>Enviar enlace</strong>.</li>
+        <li>Abre el enlace del correo y define la contrasena nueva.</li>
+      </ol>
+      <p style="font-size: 9.5pt; color: var(--ink-faint)">
+        La contrasena debe tener al menos 8 caracteres, con mayuscula, minuscula y numero.
+      </p>
+    </section>
+
+    <!-- =============================== 2. REGISTRO =========================== -->
+    <section class="page">
+      <h2>2. Crear una cuenta</h2>
+
+      <p>
+        Un residente puede registrarse por su cuenta. <strong>Crear la cuenta no da acceso</strong>:
+        genera una solicitud que la administracion del condominio debe aprobar.
+      </p>
+
+      {{IMG:register-desktop|Formulario de registro. Los tres primeros campos son listas encadenadas: al elegir condominio se cargan sus edificios, y al elegir edificio sus apartamentos.}}
+
+      <h3>Paso a paso</h3>
+      <ol class="steps">
+        <li>
+          <strong>Tipo de usuario.</strong> Propietario, arrendatario o ambos. Los roles
+          administrativos no se pueden elegir aqui: los asigna la administracion.
+        </li>
+        <li>
+          <strong>Condominio.</strong> Se elige de una lista de conjuntos activos. No se escribe a
+          mano.
+        </li>
+        <li><strong>Edificio o bloque.</strong> Solo aparecen los del condominio elegido.</li>
+        <li>
+          <strong>Apartamento.</strong> Solo los que existen en ese edificio. Los que ya tienen
+          propietario o arrendatario, o una solicitud en curso, salen deshabilitados con el motivo.
+        </li>
+        <li><strong>Tus datos.</strong> Nombre, correo y, opcionalmente, telefono y documento.</li>
+        <li>
+          <strong>Mensaje para la administracion</strong> (opcional). Util para aclarar tu vinculo con
+          el apartamento.
+        </li>
+        <li><strong>Vehiculos</strong> (opcional). Placa y tipo; quedan registrados al aprobarte.</li>
+        <li><strong>Contrasena</strong> y aceptacion de terminos.</li>
+      </ol>
+
+      <div class="ok">
+        <strong>Por que solo se puede elegir de listas</strong>
+        Si el apartamento se escribiera a mano, cualquiera podria reclamar el 301 sin que exista, o
+        con un formato distinto al registrado. Al elegir de la lista, el sistema trabaja con
+        identificadores reales y vuelve a verificarlos en el servidor antes de aceptar la solicitud.
+      </div>
+
+      <h3>El mismo formulario en el telefono</h3>
+      <div class="shot-narrow">
+        {{IMG:register-mobile|Registro en un telefono de 390 px: formulario completo, sin recortes y sin desplazamiento horizontal.}}
+      </div>
+
+      <div class="note">
+        <strong>Que muestra esta captura</strong>
+        Se tomo con la base de datos incompleta a proposito, para ilustrar el aviso de error real: el
+        sistema explica que falta ejecutar el SQL en lugar de dejar la lista vacia sin decir nada.
+        Con la base lista, ese recuadro no aparece y el desplegable se llena.
+      </div>
+    </section>
+
+    <!-- =============================== 3. ESPERA ============================= -->
+    <section class="page">
+      <h2>3. Que pasa despues de registrarte</h2>
+
+      <p>
+        Al pulsar <strong>Crear cuenta y solicitar inscripcion</strong> se hacen las dos cosas de una
+        vez: se crea la cuenta y se envia la solicitud. No hay un segundo formulario que vuelva a
+        pedir el condominio, el edificio y el apartamento. Si entras antes de que te aprueben, veras
+        el estado de tu solicitud, no el tablero.
+      </p>
+
+      <div class="note">
+        <strong>Si el conjunto exige confirmar el correo</strong>
+        En ese caso la solicitud no puede enviarse todavia (hace falta la sesion). Lo que elegiste
+        queda guardado y se envia solo la primera vez que inicies sesion: tampoco tendras que
+        elegirlo de nuevo.
+      </div>
+
+      <div class="map">
+        <svg viewBox="0 0 700 250" role="img" aria-label="Estados de una solicitud de inscripcion">
+          <g font-family="Segoe UI, sans-serif" font-size="11">
+            <defs>
+              <marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                <path d="M0,0 L8,4 L0,8 z" fill="#7c8797" />
+              </marker>
+            </defs>
+
+            <rect x="14" y="100" width="140" height="50" rx="6" fill="#f7f9fc" stroke="#d8dee8" />
+            <text x="84" y="121" text-anchor="middle" fill="#1a2230">Envias el registro</text>
+            <text x="84" y="136" text-anchor="middle" font-size="9" fill="#7c8797">cuenta creada</text>
+
+            <rect x="196" y="100" width="140" height="50" rx="6" fill="#fff8e6" stroke="#e8b93a" />
+            <text x="266" y="121" text-anchor="middle" font-weight="600" fill="#8a6100">PENDIENTE</text>
+            <text x="266" y="136" text-anchor="middle" font-size="9" fill="#7c8797">sin acceso todavia</text>
+
+            <rect x="378" y="34" width="150" height="50" rx="6" fill="#eefaf3" stroke="#35a06a" />
+            <text x="453" y="55" text-anchor="middle" font-weight="600" fill="#1f7a4d">APROBADA</text>
+            <text x="453" y="70" text-anchor="middle" font-size="9" fill="#7c8797">entras al tablero</text>
+
+            <rect x="378" y="166" width="150" height="50" rx="6" fill="#fdf0f0" stroke="#d8544f" />
+            <text x="453" y="187" text-anchor="middle" font-weight="600" fill="#a5322e">RECHAZADA</text>
+            <text x="453" y="202" text-anchor="middle" font-size="9" fill="#7c8797">con motivo indicado</text>
+
+            <rect x="560" y="166" width="126" height="50" rx="6" fill="#f7f9fc" stroke="#d8dee8" />
+            <text x="623" y="187" text-anchor="middle" font-size="10" fill="#1a2230">Corriges y</text>
+            <text x="623" y="201" text-anchor="middle" font-size="10" fill="#1a2230">reenvias</text>
+
+            <line x1="154" y1="125" x2="192" y2="125" stroke="#7c8797" marker-end="url(#ar)" />
+            <line x1="336" y1="115" x2="374" y2="66" stroke="#7c8797" marker-end="url(#ar)" />
+            <line x1="336" y1="135" x2="374" y2="186" stroke="#7c8797" marker-end="url(#ar)" />
+            <line x1="528" y1="191" x2="556" y2="191" stroke="#7c8797" marker-end="url(#ar)" />
+            <path d="M623,166 L623,140 L266,140 L266,152" fill="none" stroke="#7c8797" stroke-dasharray="3 3" marker-end="url(#ar)" />
+          </g>
+        </svg>
+      </div>
+
+      <p>
+        Mientras esperas puedes pulsar <strong>Comprobar de nuevo</strong> o
+        <strong>Corregir mi solicitud</strong> si te equivocaste de apartamento. La pantalla tambien
+        se refresca sola cada medio minuto, y en cuanto te aprueban entra directo al tablero.
+      </p>
+
+      <h3>La otra via: que te inviten</h3>
+      <p>
+        Si la administracion te invita, no pasas por esta espera. Te registras con el correo que te
+        invitaron y entras ya con tu rol asignado. Es la via que se usa para dar de alta
+        administradores, voceros, celaduria y personal de servicios.
+      </p>
+
+      <div class="warn">
+        <strong>Debe ser el mismo correo</strong>
+        La invitacion reserva un correo concreto. Si te registras con otro, el sistema no puede
+        relacionarte con ella y quedaras en espera de aprobacion.
+      </div>
+
+      <h3>Si escribes una direccion que no existe</h3>
+      {{IMG:notfound-desktop|Pagina no encontrada. Nunca se queda una pantalla en blanco.}}
+    </section>
+
+    <!-- =============================== 4. MODULOS ============================ -->
+    <section class="page">
+      <h2>4. Recorrido por los modulos</h2>
+
+      <p>
+        Todas las pantallas internas comparten la misma estructura. Conocerla una vez sirve para
+        todas.
+      </p>
+
+      <div class="warn">
+        <strong>Capturas de este apartado</strong>
+        Las imagenes de los modulos internos estan pendientes: hacen falta una sesion iniciada y una
+        membresia activa, y hoy no existe ningun usuario con acceso. El texto describe cada modulo tal
+        como funciona; en cuanto la base este poblada, <code>npm run screenshots</code> y
+        <code>npm run guide</code> insertan las imagenes en su sitio sin tocar el documento.
+      </div>
+
+      <div class="map">
+        <svg viewBox="0 0 700 330" role="img" aria-label="Estructura de una pantalla interna">
+          <g font-family="Segoe UI, sans-serif" font-size="10">
+            <rect x="6" y="6" width="688" height="318" rx="6" fill="#fbfcfe" stroke="#d8dee8" />
+
+            <!-- Sidebar -->
+            <rect x="14" y="14" width="132" height="302" rx="4" fill="#0f172a" />
+            <text x="80" y="36" text-anchor="middle" fill="#fff" font-size="10" font-weight="600">EdiFeasy</text>
+            <g fill="#cbd5e1" font-size="8.5">
+              <text x="26" y="62">Dashboard</text>
+              <text x="26" y="82">Estructura</text>
+              <text x="26" y="102">Residentes</text>
+              <text x="26" y="122">Comunicacion</text>
+              <text x="26" y="142">Gestion</text>
+              <text x="26" y="162">Finanzas</text>
+              <text x="26" y="182">Documentos</text>
+              <text x="26" y="202">Reportes</text>
+              <text x="26" y="222">Auditoria</text>
+              <text x="26" y="242">Configuracion</text>
+            </g>
+            <text x="80" y="286" text-anchor="middle" fill="#7c8797" font-size="7.5">1 · Menu por rol</text>
+
+            <!-- Topbar -->
+            <rect x="154" y="14" width="532" height="40" rx="4" fill="#fff" stroke="#d8dee8" />
+            <rect x="166" y="26" width="190" height="17" rx="8" fill="#f2f5fa" stroke="#e2e8f0" />
+            <text x="176" y="38" fill="#7c8797" font-size="8">Buscar...</text>
+            <rect x="470" y="25" width="96" height="19" rx="4" fill="#f2f5fa" stroke="#e2e8f0" />
+            <text x="518" y="38" text-anchor="middle" fill="#4a5668" font-size="8">Condominio</text>
+            <circle cx="596" cy="34" r="8" fill="#f2f5fa" stroke="#e2e8f0" />
+            <text x="596" y="37" text-anchor="middle" font-size="8" fill="#4a5668">!</text>
+            <circle cx="640" cy="34" r="10" fill="#2559eb" />
+            <text x="640" y="38" text-anchor="middle" font-size="8" fill="#fff">CM</text>
+
+            <!-- Page header -->
+            <text x="166" y="78" font-size="12" font-weight="600" fill="#1a2230">Titulo del modulo</text>
+            <text x="166" y="92" font-size="8.5" fill="#7c8797">Descripcion breve de que hace</text>
+            <rect x="580" y="66" width="104" height="24" rx="4" fill="#2559eb" />
+            <text x="632" y="82" text-anchor="middle" fill="#fff" font-size="9">+ Nuevo</text>
+
+            <!-- Toolbar -->
+            <rect x="154" y="104" width="532" height="34" rx="4" fill="#fff" stroke="#d8dee8" />
+            <rect x="164" y="113" width="120" height="17" rx="4" fill="#f7f9fc" stroke="#e2e8f0" />
+            <text x="172" y="125" font-size="7.5" fill="#7c8797">Buscar</text>
+            <rect x="292" y="113" width="84" height="17" rx="4" fill="#f7f9fc" stroke="#e2e8f0" />
+            <text x="300" y="125" font-size="7.5" fill="#7c8797">Filtro</text>
+            <rect x="384" y="113" width="84" height="17" rx="4" fill="#f7f9fc" stroke="#e2e8f0" />
+            <text x="392" y="125" font-size="7.5" fill="#7c8797">Fechas</text>
+            <rect x="576" y="113" width="100" height="17" rx="4" fill="#f7f9fc" stroke="#e2e8f0" />
+            <text x="626" y="125" text-anchor="middle" font-size="7.5" fill="#4a5668">Exportar CSV</text>
+
+            <!-- Table -->
+            <rect x="154" y="146" width="532" height="140" rx="4" fill="#fff" stroke="#d8dee8" />
+            <rect x="154" y="146" width="532" height="20" fill="#f2f5fa" />
+            <g stroke="#e8edf4">
+              <line x1="154" y1="166" x2="686" y2="166" />
+              <line x1="154" y1="190" x2="686" y2="190" />
+              <line x1="154" y1="214" x2="686" y2="214" />
+              <line x1="154" y1="238" x2="686" y2="238" />
+              <line x1="154" y1="262" x2="686" y2="262" />
+            </g>
+            <g font-size="7.5" fill="#7c8797">
+              <text x="164" y="160">Columna</text>
+              <text x="300" y="160">Columna</text>
+              <text x="430" y="160">Estado</text>
+              <text x="620" y="160">Acciones</text>
+            </g>
+            <text x="420" y="300" text-anchor="middle" font-size="7.5" fill="#7c8797">
+              4 · Tabla con paginacion  ·  en telefono se convierte en tarjetas
+            </text>
+
+            <text x="166" y="300" font-size="7.5" fill="#7c8797">2 · Cabecera</text>
+            <text x="166" y="311" font-size="7.5" fill="#7c8797">3 · Filtros y exportacion</text>
+          </g>
+        </svg>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 8mm">#</th>
+            <th style="width: 34mm">Zona</th>
+            <th>Que encuentras</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td>Menu lateral</td>
+            <td>
+              Solo las secciones que tu rol puede abrir. En Aprobaciones aparece un contador cuando
+              hay solicitudes esperando. En telefono se abre como panel deslizante.
+            </td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td>Barra superior</td>
+            <td>
+              Buscador global (apartamentos, residentes, solicitudes, incidentes, multas, documentos,
+              alertas y bloques), selector de condominio, campana de notificaciones y tu perfil.
+            </td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td>Barra de herramientas</td>
+            <td>
+              Busqueda, filtros por estado o categoria, rango de fechas, recarga y exportacion a CSV
+              del conjunto completo (no solo de la pagina visible).
+            </td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td>Listado</td>
+            <td>
+              Tabla ordenable y paginada en escritorio; tarjetas apiladas en telefono. Las acciones de
+              cada fila estan a la derecha (o al pie de la tarjeta).
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Tablero principal</h3>
+      <p>
+        Es la primera pantalla al entrar y cambia segun el rol. El administrador ve indicadores del
+        conjunto (apartamentos ocupados, solicitudes abiertas, incidentes del mes, gasto acumulado),
+        graficas de evolucion y la actividad reciente. El residente ve lo suyo: su apartamento, sus
+        solicitudes, sus multas y los comunicados vigentes. Celaduria y personal de servicios ven la
+        version operativa, centrada en incidentes y alertas activas.
+      </p>
+      {{IMG:dashboard-desktop|Tablero administrativo: indicadores, graficas y actividad reciente.}}
+
+      <h3>Estructura: condominios, bloques y apartamentos</h3>
+      <p>
+        Es el orden en que se construye un conjunto, y hay que respetarlo: un bloque pertenece a un
+        condominio y un apartamento pertenece a un bloque.
+      </p>
+      <ol class="steps">
+        <li><strong>Condominios.</strong> Nombre, direccion, ciudad, telefono, NIT y estado.</li>
+        <li><strong>Bloques.</strong> Nombre o numero, y cuantos pisos tiene.</li>
+        <li>
+          <strong>Apartamentos.</strong> Numero, piso, area, coeficiente de copropiedad y estado
+          (ocupado, desocupado, en mantenimiento).
+        </li>
+      </ol>
+      {{IMG:apartments-desktop|Listado de apartamentos con filtros por bloque y estado.}}
+
+      <h4>La ficha del apartamento</h4>
+      <p>
+        Al pulsar un apartamento se abre su ficha completa, con diez pestanas. Es el sitio donde se
+        resuelve casi todo lo del dia a dia de una unidad:
+      </p>
+      <table>
+        <thead>
+          <tr><th style="width: 34mm">Pestana</th><th>Que contiene</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Resumen</td><td>Datos del apartamento y sus totales.</td></tr>
+          <tr><td>Residentes</td><td>Quien vive alli, con su tipo de vinculo y si es el contacto principal.</td></tr>
+          <tr><td>Propietarios</td><td>Titulares, con su porcentaje y desde cuando.</td></tr>
+          <tr><td>Arrendatarios</td><td>Contratos con fecha de inicio y fin.</td></tr>
+          <tr><td>Vehiculos</td><td>Placa, tipo, marca, color y parqueadero asignado.</td></tr>
+          <tr><td>Mascotas</td><td>Nombre, especie, raza y vacunas.</td></tr>
+          <tr><td>Solicitudes</td><td>Peticiones abiertas y cerradas de esa unidad.</td></tr>
+          <tr><td>Incidentes</td><td>Novedades reportadas que la afectan.</td></tr>
+          <tr><td>Multas</td><td>Sanciones, su importe y si estan pagadas.</td></tr>
+          <tr><td>Actividad</td><td>Linea de tiempo con todo lo anterior en orden cronologico.</td></tr>
+        </tbody>
+      </table>
+      {{IMG:apartment-detail-desktop|Ficha del apartamento con sus diez pestanas.}}
+
+      <h3>Aprobaciones de inscripcion</h3>
+      <p>
+        Aqui llegan las solicitudes de quienes se registraron solos. Cada tarjeta muestra quien pide
+        acceso, a que apartamento, con que rol y el mensaje que escribio.
+      </p>
+      <ul>
+        <li>
+          <strong>Aprobar</strong> crea la membresia, lo vincula como residente del apartamento y
+          registra los vehiculos que declaro. El usuario entra al tablero en su siguiente intento.
+        </li>
+        <li>
+          <strong>Rechazar</strong> exige un motivo, que la persona vera para poder corregir y volver
+          a enviar.
+        </li>
+      </ul>
+      <p>
+        Mientras haya solicitudes esperando, el menu lateral muestra un contador junto a
+        <strong>Aprobaciones</strong>.
+      </p>
+      {{IMG:approvals-desktop|Bandeja de aprobaciones con los datos del solicitante y el apartamento pedido.}}
+
+      <h3>Usuarios e invitaciones</h3>
+      <p>
+        Dos pestanas. En <strong>Usuarios</strong> se ven los miembros del condominio con su rol y su
+        estado, y se puede cambiar el rol o desactivar a alguien. En <strong>Invitaciones</strong> se
+        da de alta a cualquier persona por correo, indicando de antemano su rol.
+      </p>
+      <div class="note">
+        <strong>Es la unica via para los roles administrativos</strong>
+        Administrador, vocero, celaduria y personal de servicios no pueden registrarse solos: hay que
+        invitarlos. Quien se registra por su cuenta solo puede pedir propietario o arrendatario.
+      </div>
+      {{IMG:users-desktop|Usuarios del condominio, con la pestana de invitaciones.}}
+
+      <h3>Comunicacion: alertas, comunicados y mensajes</h3>
+      <table>
+        <thead>
+          <tr><th style="width: 30mm">Modulo</th><th>Para que sirve</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Alertas</strong></td>
+            <td>
+              Avisos urgentes: corte de agua, falla electrica, emergencia. Se elige tipo, prioridad, a
+              quien llega (todo el conjunto, un bloque, un apartamento o un rol) y hasta cuando vale.
+              Llegan al instante, sin recargar la pagina, y aparecen en la campana de la barra
+              superior.
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Comunicados</strong></td>
+            <td>
+              Informacion que no es urgente: actas, convocatorias, recordatorios. Se guardan como
+              borrador y se publican cuando estan listos; admiten fijarlos arriba.
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Mensajes</strong></td>
+            <td>
+              Conversaciones privadas entre un residente y la administracion. Cada conversacion tiene
+              su hilo y marca los mensajes sin leer.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      {{IMG:alerts-desktop|Alertas con tipo, prioridad, destinatarios y vigencia.}}
+      {{IMG:messages-desktop|Bandeja de mensajes entre residentes y administracion.}}
+
+      <h3>Gestion: solicitudes, incidentes y multas</h3>
+      <p>Es el circuito de trabajo del dia a dia.</p>
+      <ul>
+        <li>
+          <strong>Solicitudes.</strong> Las abre un residente (una reparacion, el uso de un salon
+          comunal, un permiso). Cada una recibe un codigo, se le asigna un responsable y avanza por
+          estados hasta cerrarse. Los comentarios quedan en el hilo.
+        </li>
+        <li>
+          <strong>Incidentes.</strong> Novedades que alguien reporta: un dano, un ruido, algo
+          sospechoso. Admiten fotos como evidencia y se pueden vincular al apartamento afectado.
+          Celaduria puede reportarlos desde el telefono, en el sitio.
+        </li>
+        <li>
+          <strong>Multas.</strong> Sanciones con motivo, importe, fecha limite y estado de pago. El
+          residente ve las suyas; la administracion, todas.
+        </li>
+      </ul>
+      {{IMG:requests-desktop|Solicitudes con codigo, estado, responsable y comentarios.}}
+
+      <h3>Finanzas: gastos y compras</h3>
+      <p>
+        <strong>Gastos</strong> registra lo que se paga (servicios, mantenimiento, nomina, seguros)
+        con proveedor, categoria, importe y comprobante adjunto. Arriba hay tarjetas de resumen y dos
+        graficas: la evolucion mes a mes y el reparto por categoria. <strong>Compras</strong> lleva
+        las adquisiciones con su proveedor y su estado.
+      </p>
+      <div class="warn">
+        <strong>Solo para quien puede ver dinero</strong>
+        Estos dos modulos ni aparecen en el menu si tu rol no tiene el permiso financiero. Y si
+        alguien entra por la direccion directa, la base de datos rechaza la consulta: la restriccion
+        no depende de que el menu este oculto.
+      </div>
+      {{IMG:expenses-desktop|Gastos con tarjetas de resumen y graficas de evolucion y reparto por categoria.}}
+
+      <h3>Documentos</h3>
+      <p>
+        Reglamento, actas, contratos, estados financieros. Al subir un archivo se elige su categoria y
+        <strong>quien puede verlo</strong>: todo el conjunto, solo la administracion, un bloque o un
+        apartamento.
+      </p>
+      <ul>
+        <li>Se admiten PDF, imagenes y documentos de oficina, hasta 25 MB por archivo.</li>
+        <li>
+          La descarga usa un enlace temporal que caduca: el archivo nunca queda accesible por una
+          direccion publica y permanente.
+        </li>
+        <li>Desde el telefono se puede subir con la camara, util para actas firmadas o facturas.</li>
+      </ul>
+      {{IMG:documents-desktop|Documentos con categoria, visibilidad y descarga mediante enlace firmado.}}
+
+      <h3>Los demas modulos</h3>
+      <p>Estos siguen la misma estructura descrita arriba, asi que no se repiten con imagen propia:</p>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 32mm">Modulo</th>
+            <th>Que hace</th>
+            <th style="width: 40mm">Quien lo ve</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Mi apartamento</td>
+            <td>Atajo del residente a la ficha de su propia unidad.</td>
+            <td>Propietario, arrendatario</td>
+          </tr>
+          <tr>
+            <td>Residentes</td>
+            <td>Directorio de quienes viven en el conjunto, con su apartamento y su vinculo.</td>
+            <td>Administracion, consejo, celaduria</td>
+          </tr>
+          <tr>
+            <td>Reportes</td>
+            <td>Resumenes por periodo con graficas, exportables a CSV.</td>
+            <td>Administracion, consejo</td>
+          </tr>
+          <tr>
+            <td>Auditoria</td>
+            <td>Registro de quien hizo cada cambio, cuando y sobre que. No se puede editar ni borrar.</td>
+            <td>Administracion</td>
+          </tr>
+          <tr>
+            <td>Configuracion</td>
+            <td>Tu perfil, tu contrasena y los ajustes del condominio.</td>
+            <td>Todos (los ajustes del conjunto, solo la administracion)</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- =============================== 5. MOVIL ============================== -->
+    <section class="page">
+      <h2>5. Uso desde el telefono</h2>
+
+      <p>
+        La aplicacion funciona en el navegador de cualquier telefono, y se puede instalar en la
+        pantalla de inicio.
+      </p>
+
+      <div class="shot-row">
+        {{IMG:dashboard-mobile|Tablero en telefono: los indicadores se apilan en una columna.}}
+        {{IMG:apartments-mobile|Listado en telefono: cada apartamento es una tarjeta, no una fila de tabla.}}
+      </div>
+
+      <h3>Instalarla</h3>
+      <table>
+        <thead>
+          <tr><th style="width: 34mm">Sistema</th><th>Como</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>iPhone</strong></td>
+            <td>
+              Abre la direccion <strong>en Safari</strong>, toca Compartir y elige «Anadir a pantalla
+              de inicio». Desde otros navegadores la opcion no aparece.
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Android</strong></td>
+            <td>
+              Abre la direccion en Chrome y acepta «Instalar aplicacion», o usa el menu de tres puntos
+              y «Anadir a pantalla de inicio».
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Que cambia respecto al escritorio</h3>
+      <ul>
+        <li><strong>Tablas a tarjetas.</strong> Cada registro se apila con sus campos rotulados.</li>
+        <li><strong>Formularios a ancho completo</strong>, con campos altos y letra que evita el zoom automatico de iOS.</li>
+        <li><strong>Menu deslizante</strong> desde el boton de la barra superior.</li>
+        <li><strong>Mensajes</strong>: alterna lista y conversacion, con boton para volver.</li>
+        <li><strong>Archivos</strong>: al tocar «Seleccionar archivos» el telefono ofrece camara, galeria o gestor de archivos. Sirve para subir evidencias en el sitio.</li>
+      </ul>
+
+      <div class="note">
+        <strong>Necesita conexion</strong>
+        Se instala y arranca rapido porque guarda sus archivos en el dispositivo, pero consultar y
+        guardar datos requiere internet. No hay edicion sin conexion.
+      </div>
+    </section>
+
+    <!-- =============================== 6. ERRORES ============================ -->
+    <section class="page">
+      <h2>6. Mensajes que puedes encontrar</h2>
+
+      <p>
+        El sistema traduce los errores tecnicos a frases que dicen que hacer. Nunca muestra codigos
+        internos de la base de datos.
+      </p>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 62mm">Mensaje</th>
+            <th>Que significa y que hacer</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Correo o contrasena incorrectos.</td>
+            <td>Credenciales erroneas. Usa «Olvidaste tu contrasena?» si no la recuerdas.</td>
+          </tr>
+          <tr>
+            <td>Tu cuenta aun no tiene condominio asignado.</td>
+            <td>
+              La cuenta existe pero no hay membresia activa. Completa la inscripcion o pide que te
+              inviten.
+            </td>
+          </tr>
+          <tr>
+            <td>Tu solicitud esta en revision.</td>
+            <td>Todo correcto: falta que la administracion apruebe. No hay que hacer nada mas.</td>
+          </tr>
+          <tr>
+            <td>Ese apartamento ya tiene un propietario registrado.</td>
+            <td>
+              Alguien lo reclamo antes. Verifica el numero; si es tuyo, escribe a la administracion
+              para que lo revise.
+            </td>
+          </tr>
+          <tr>
+            <td>No tienes permisos para realizar esta accion.</td>
+            <td>
+              Tu rol no alcanza. Lo rechaza la base de datos, no la pantalla: es la proteccion
+              funcionando.
+            </td>
+          </tr>
+          <tr>
+            <td>Todavia no hay condominios habilitados.</td>
+            <td>No existe ningun conjunto activo. La administracion debe crearlo primero.</td>
+          </tr>
+          <tr>
+            <td>Falta una funcion en la base de datos.</td>
+            <td>
+              Instalacion incompleta. Ejecutar el esquema y los parches en el SQL Editor.
+              <code>npm run check</code> dice exactamente que falta. (Es el aviso que aparece en la
+              captura del registro.)
+            </td>
+          </tr>
+          <tr>
+            <td>El archivo solicitado no existe en el almacenamiento.</td>
+            <td>Hay una ficha de documento cuyo archivo nunca se subio. Vuelve a subirlo.</td>
+          </tr>
+          <tr>
+            <td>El archivo supera el limite de 25 MB.</td>
+            <td>Reduce el tamano o divide el documento.</td>
+          </tr>
+          <tr>
+            <td>No se pudo conectar con el servidor.</td>
+            <td>Problema de red o de configuracion. Revisa la conexion y vuelve a intentar.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="ok">
+        <strong>Una lista vacia no es un error</strong>
+        Si abres un modulo y no ves registros, lo mas probable es que la seguridad este funcionando:
+        existen datos, pero no para tu rol o tu apartamento. Un error, en cambio, siempre viene con
+        un mensaje.
+      </div>
+
+      <p style="margin-top: 26px; font-size: 9pt; color: var(--ink-faint); border-top: 1px solid var(--line); padding-top: 12px">
+        Guia generada desde el proyecto. Plantilla en <code>docs/guia-de-uso.src.html</code>;
+        se reconstruye con <code>npm run guide</code> tras actualizar las capturas con
+        <code>npm run screenshots</code>. Para los conceptos, los roles y el modelo de seguridad,
+        ver <code>docs/guia-del-sistema.html</code>.
+      </p>
+    </section>
+  </body>
+</html>

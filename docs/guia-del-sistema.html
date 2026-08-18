@@ -1,0 +1,1655 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>EdiFeasy · Guia del sistema</title>
+    <style>
+      /* ===================================================================
+         Documento pensado para imprimirse a PDF (A4). Sin recursos externos:
+         funciona sin conexion y no depende de CDN ni de fuentes remotas.
+         =================================================================== */
+      @page {
+        size: A4;
+        margin: 18mm 16mm 20mm;
+      }
+
+      :root {
+        --ink: #1a2230;
+        --ink-soft: #4a5668;
+        --ink-faint: #7c8797;
+        --line: #d8dee8;
+        --brand: #1d4ed8;
+        --brand-soft: #eff4ff;
+        --warn-bg: #fff8e6;
+        --warn-line: #e8b93a;
+        --danger-bg: #fdf0f0;
+        --danger-line: #d8544f;
+        --ok-bg: #eefaf3;
+        --ok-line: #35a06a;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      body {
+        margin: 0 auto;
+        max-width: 190mm;
+        padding: 24px;
+        font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial,
+          sans-serif;
+        font-size: 10.5pt;
+        line-height: 1.55;
+        color: var(--ink);
+        background: #fff;
+      }
+
+      h1,
+      h2,
+      h3,
+      h4 {
+        line-height: 1.25;
+        margin: 0 0 0.4em;
+        break-after: avoid;
+      }
+      h2 {
+        font-size: 17pt;
+        padding-bottom: 6px;
+        border-bottom: 2px solid var(--brand);
+        margin-top: 0;
+      }
+      h3 {
+        font-size: 12.5pt;
+        margin-top: 1.5em;
+        color: var(--brand);
+      }
+      h4 {
+        font-size: 10.5pt;
+        margin-top: 1.2em;
+      }
+      p {
+        margin: 0 0 0.7em;
+      }
+      ul,
+      ol {
+        margin: 0 0 0.8em;
+        padding-left: 1.3em;
+      }
+      li {
+        margin-bottom: 0.3em;
+      }
+      code {
+        font-family: 'Cascadia Mono', Consolas, 'SF Mono', Menlo, monospace;
+        font-size: 0.88em;
+        background: #f2f5fa;
+        border: 1px solid var(--line);
+        border-radius: 3px;
+        padding: 0.5px 4px;
+      }
+      pre {
+        font-family: 'Cascadia Mono', Consolas, 'SF Mono', Menlo, monospace;
+        font-size: 8.6pt;
+        line-height: 1.5;
+        background: #f7f9fc;
+        border: 1px solid var(--line);
+        border-left: 3px solid var(--brand);
+        border-radius: 4px;
+        padding: 10px 12px;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        break-inside: avoid;
+        margin: 0 0 0.9em;
+      }
+      pre code {
+        background: none;
+        border: 0;
+        padding: 0;
+        font-size: inherit;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 9.2pt;
+        margin: 0 0 1em;
+        break-inside: avoid;
+      }
+      th,
+      td {
+        border: 1px solid var(--line);
+        padding: 5px 8px;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        background: #f2f5fa;
+        font-weight: 600;
+        color: var(--ink-soft);
+      }
+      td code {
+        white-space: nowrap;
+      }
+
+      .page {
+        break-before: page;
+      }
+
+      /* ---------- Portada ---------- */
+      .cover {
+        min-height: 240mm;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+      .cover-top {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .cover-mark {
+        width: 52px;
+        height: 52px;
+        border-radius: 12px;
+        background: var(--brand);
+        display: grid;
+        place-items: center;
+        color: #fff;
+        font-weight: 700;
+        font-size: 22pt;
+      }
+      .cover-title {
+        font-size: 34pt;
+        letter-spacing: -0.5px;
+        margin: 0 0 8px;
+      }
+      .cover-sub {
+        font-size: 14pt;
+        color: var(--ink-soft);
+        font-weight: 400;
+        margin: 0 0 28px;
+      }
+      .cover-meta {
+        border-top: 1px solid var(--line);
+        padding-top: 14px;
+        font-size: 9.5pt;
+        color: var(--ink-faint);
+      }
+      .cover-meta dl {
+        display: grid;
+        grid-template-columns: 34mm 1fr;
+        gap: 4px 12px;
+        margin: 0;
+      }
+      .cover-meta dt {
+        color: var(--ink-faint);
+      }
+      .cover-meta dd {
+        margin: 0;
+        color: var(--ink);
+      }
+
+      /* ---------- Avisos ---------- */
+      .note,
+      .warn,
+      .danger,
+      .ok {
+        border: 1px solid var(--line);
+        border-left-width: 4px;
+        border-radius: 4px;
+        padding: 9px 12px;
+        margin: 0 0 1em;
+        font-size: 9.8pt;
+        break-inside: avoid;
+      }
+      .note {
+        background: var(--brand-soft);
+        border-left-color: var(--brand);
+      }
+      .warn {
+        background: var(--warn-bg);
+        border-left-color: var(--warn-line);
+      }
+      .danger {
+        background: var(--danger-bg);
+        border-left-color: var(--danger-line);
+      }
+      .ok {
+        background: var(--ok-bg);
+        border-left-color: var(--ok-line);
+      }
+      .note strong,
+      .warn strong,
+      .danger strong,
+      .ok strong {
+        display: block;
+        margin-bottom: 2px;
+      }
+
+      /* ---------- Indice ---------- */
+      .toc {
+        font-size: 10pt;
+      }
+      .toc ol {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        counter-reset: toc;
+      }
+      .toc > ol > li {
+        counter-increment: toc;
+        border-bottom: 1px dotted var(--line);
+        padding: 5px 0;
+      }
+      .toc > ol > li::before {
+        content: counter(toc) '. ';
+        color: var(--brand);
+        font-weight: 600;
+      }
+      .toc small {
+        color: var(--ink-faint);
+        display: block;
+        padding-left: 1.3em;
+      }
+
+      /* ---------- Utilidades ---------- */
+      .lead {
+        font-size: 11.5pt;
+        color: var(--ink-soft);
+      }
+      .grid2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        padding: 10px 12px;
+        break-inside: avoid;
+      }
+      .card h4 {
+        margin-top: 0;
+        color: var(--brand);
+      }
+      .card p {
+        margin: 0;
+        font-size: 9.5pt;
+        color: var(--ink-soft);
+      }
+      figure {
+        margin: 0 0 1.1em;
+        break-inside: avoid;
+      }
+      figcaption {
+        font-size: 8.8pt;
+        color: var(--ink-faint);
+        margin-top: 5px;
+        text-align: center;
+      }
+      svg {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+      .tag {
+        display: inline-block;
+        font-size: 8pt;
+        font-weight: 600;
+        padding: 1px 6px;
+        border-radius: 9px;
+        border: 1px solid currentColor;
+        white-space: nowrap;
+      }
+      .t-admin {
+        color: #4338ca;
+      }
+      .t-res {
+        color: #0e7490;
+      }
+      .t-ops {
+        color: #b45309;
+      }
+      .t-all {
+        color: #15803d;
+      }
+
+      .print-hint {
+        border: 1px dashed var(--brand);
+        background: var(--brand-soft);
+        border-radius: 6px;
+        padding: 12px 14px;
+        margin-bottom: 22px;
+        font-size: 10pt;
+      }
+      @media print {
+        .print-hint {
+          display: none;
+        }
+        body {
+          padding: 0;
+          max-width: none;
+        }
+        a {
+          color: var(--ink);
+          text-decoration: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="print-hint">
+      <strong>Para obtener el PDF:</strong> pulsa <code>Ctrl</code>+<code>P</code>
+      (<code>Cmd</code>+<code>P</code> en Mac) y elige <em>Guardar como PDF</em>. Activa
+      «Graficos de fondo» en las opciones de impresion para conservar los colores. Este aviso no
+      aparece en el PDF.
+    </div>
+
+    <!-- ================================================================ -->
+    <!-- PORTADA                                                          -->
+    <!-- ================================================================ -->
+    <section class="cover">
+      <div class="cover-top">
+        <div class="cover-mark">E</div>
+        <div>
+          <strong style="font-size: 13pt">EdiFeasy</strong><br />
+          <span style="color: var(--ink-faint); font-size: 9.5pt"
+            >Administracion de condominios</span
+          >
+        </div>
+      </div>
+
+      <div>
+        <h1 class="cover-title">Guia del sistema</h1>
+        <p class="cover-sub">
+          Como funciona la plataforma, quien puede hacer que, y como operarla en el dia a dia.
+        </p>
+        <p style="max-width: 130mm; color: var(--ink-soft)">
+          Plataforma SaaS multi-condominio para administrar edificios y conjuntos residenciales:
+          estructura fisica, residentes, comunicacion, solicitudes, incidentes, finanzas, multas y
+          documentos. El aislamiento entre condominios se aplica dentro de PostgreSQL, no en la
+          interfaz.
+        </p>
+      </div>
+
+      <div class="cover-meta">
+        <dl>
+          <dt>Documento</dt>
+          <dd>Guia funcional y operativa</dd>
+          <dt>Dirigido a</dt>
+          <dd>Administradores, consejo, celaduria, personal de servicios y equipo tecnico</dd>
+          <dt>Base de datos</dt>
+          <dd>PostgreSQL, esquema <code>tribuia</code></dd>
+          <dt>Stack</dt>
+          <dd>React + TypeScript + Vite + Ant Design · Supabase</dd>
+        </dl>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <!-- INDICE                                                           -->
+    <!-- ================================================================ -->
+    <section class="page">
+      <h2>Indice</h2>
+      <div class="toc">
+        <ol>
+          <li>
+            Que resuelve EdiFeasy
+            <small>El problema, el modelo multi-condominio y los conceptos base.</small>
+          </li>
+          <li>
+            Arquitectura en una pagina
+            <small>Como viajan los datos del navegador a la base y donde vive la seguridad.</small>
+          </li>
+          <li>
+            Roles y permisos
+            <small>Los siete roles, que ve cada uno y como se combinan.</small>
+          </li>
+          <li>
+            Como se obtiene acceso
+            <small>Autoregistro con aprobacion e invitacion del administrador.</small>
+          </li>
+          <li>
+            Los modulos, uno por uno
+            <small>Que hace cada pantalla y quien puede entrar.</small>
+          </li>
+          <li>
+            Seguridad: por que no basta la interfaz
+            <small>Row Level Security, funciones auxiliares y auditoria.</small>
+          </li>
+          <li>
+            Uso desde el telefono
+            <small>Que cambia en movil y por que.</small>
+          </li>
+          <li>
+            Puesta en marcha
+            <small>De cero a un sistema funcionando.</small>
+          </li>
+          <li>
+            Recetas de operacion
+            <small>Las tareas frecuentes, paso a paso.</small>
+          </li>
+          <li>
+            Solucion de problemas
+            <small>Sintoma, causa real y que hacer.</small>
+          </li>
+          <li>
+            Glosario
+            <small>Terminos que aparecen en la interfaz y en este documento.</small>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <!-- 1. QUE RESUELVE                                                  -->
+    <!-- ================================================================ -->
+    <section class="page">
+      <h2>1. Que resuelve EdiFeasy</h2>
+
+      <p class="lead">
+        La administracion de un conjunto residencial se reparte hoy entre grupos de WhatsApp, hojas
+        de calculo, carteleras fisicas y carpetas de correo. La informacion existe, pero nadie tiene
+        una vista unica ni un registro de quien hizo que.
+      </p>
+
+      <p>
+        EdiFeasy reune esa operacion en un solo lugar y le pone reglas: cada dato pertenece a un
+        condominio, cada persona tiene un rol, y cada accion sensible queda registrada.
+      </p>
+
+      <h3>El modelo multi-condominio</h3>
+      <p>
+        Una sola instalacion atiende a varios conjuntos a la vez. La pieza central es la
+        <strong>membresia</strong>: la fila que vincula a una persona con un condominio y le asigna
+        un rol dentro de el.
+      </p>
+
+      <ul>
+        <li>Una persona puede pertenecer a varios condominios.</li>
+        <li>
+          Puede tener <em>roles distintos</em> en cada uno: propietaria en el conjunto A y
+          arrendataria en el B.
+        </li>
+        <li>
+          El selector del encabezado cambia el condominio activo; toda la aplicacion se recalcula
+          para ese contexto.
+        </li>
+        <li>
+          Sin una membresia <strong>activa</strong>, la base de datos no devuelve ni un registro de
+          ese condominio.
+        </li>
+      </ul>
+
+      <h3>Jerarquia de la informacion</h3>
+      <figure>
+        <svg viewBox="0 0 700 190" role="img" aria-label="Jerarquia: condominio, bloque, apartamento, personas">
+          <defs>
+            <marker id="a1" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 z" fill="#7c8797" />
+            </marker>
+          </defs>
+          <g font-family="Segoe UI, sans-serif" font-size="12">
+            <rect x="8" y="70" width="120" height="46" rx="6" fill="#eff4ff" stroke="#1d4ed8" />
+            <text x="68" y="90" text-anchor="middle" font-weight="600" fill="#1a2230">Condominio</text>
+            <text x="68" y="105" text-anchor="middle" font-size="9.5" fill="#4a5668">1 conjunto</text>
+
+            <rect x="180" y="70" width="120" height="46" rx="6" fill="#f7f9fc" stroke="#d8dee8" />
+            <text x="240" y="90" text-anchor="middle" font-weight="600" fill="#1a2230">Bloque</text>
+            <text x="240" y="105" text-anchor="middle" font-size="9.5" fill="#4a5668">torre o etapa</text>
+
+            <rect x="352" y="70" width="120" height="46" rx="6" fill="#f7f9fc" stroke="#d8dee8" />
+            <text x="412" y="90" text-anchor="middle" font-weight="600" fill="#1a2230">Apartamento</text>
+            <text x="412" y="105" text-anchor="middle" font-size="9.5" fill="#4a5668">unidad</text>
+
+            <rect x="524" y="18" width="168" height="40" rx="6" fill="#f7f9fc" stroke="#d8dee8" />
+            <text x="608" y="43" text-anchor="middle" fill="#1a2230">Propietarios</text>
+
+            <rect x="524" y="66" width="168" height="40" rx="6" fill="#f7f9fc" stroke="#d8dee8" />
+            <text x="608" y="91" text-anchor="middle" fill="#1a2230">Arrendatarios</text>
+
+            <rect x="524" y="114" width="168" height="40" rx="6" fill="#f7f9fc" stroke="#d8dee8" />
+            <text x="608" y="139" text-anchor="middle" fill="#1a2230">Residentes</text>
+
+            <line x1="128" y1="93" x2="176" y2="93" stroke="#7c8797" marker-end="url(#a1)" />
+            <line x1="300" y1="93" x2="348" y2="93" stroke="#7c8797" marker-end="url(#a1)" />
+            <line x1="472" y1="93" x2="520" y2="38" stroke="#7c8797" marker-end="url(#a1)" />
+            <line x1="472" y1="93" x2="520" y2="86" stroke="#7c8797" marker-end="url(#a1)" />
+            <line x1="472" y1="93" x2="520" y2="134" stroke="#7c8797" marker-end="url(#a1)" />
+
+            <text x="8" y="176" font-size="9.5" fill="#7c8797">
+              Vehiculos y mascotas cuelgan tambien del apartamento. Alertas, comunicados, gastos y
+              compras cuelgan del condominio.
+            </text>
+          </g>
+        </svg>
+        <figcaption>De lo general a lo particular: todo dato tiene un condominio dueno.</figcaption>
+      </figure>
+
+      <h3>Conceptos que conviene fijar</h3>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 32mm">Concepto</th>
+            <th>Que significa aqui</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Membresia</strong></td>
+            <td>
+              Vinculo persona-condominio con un rol y un estado. Es la llave del acceso: si no esta
+              <code>ACTIVE</code>, no hay datos.
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Propietario</strong></td>
+            <td>Dueno de un apartamento. Puede tener varios.</td>
+          </tr>
+          <tr>
+            <td><strong>Arrendatario</strong></td>
+            <td>Ocupa un apartamento bajo contrato. No accede a informacion financiera privada.</td>
+          </tr>
+          <tr>
+            <td><strong>Residente</strong></td>
+            <td>
+              Quien habita el apartamento, tenga cuenta o no (por ejemplo, familiares). Sirve para
+              directorio, porteria y circulares.
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Solicitud</strong></td>
+            <td>Peticion de un residente a la administracion, con estado y comentarios.</td>
+          </tr>
+          <tr>
+            <td><strong>Incidente</strong></td>
+            <td>Evento de seguridad o convivencia, normalmente reportado por celaduria.</td>
+          </tr>
+          <tr>
+            <td><strong>Alerta</strong></td>
+            <td>
+              Aviso urgente que llega en tiempo real. Se puede dirigir al condominio, a un bloque, a
+              un apartamento o a un rol.
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Comunicado</strong></td>
+            <td>Informacion no urgente, con fecha de publicacion y de expiracion.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ================================================================ -->
+    <!-- 2. ARQUITECTURA                                                  -->
+    <!-- ================================================================ -->
+    <section class="page">
+      <h2>2. Arquitectura en una pagina</h2>
+
+      <p>
+        La aplicacion es un frontend que habla directamente con Supabase. No hay servidor propio en
+        medio, y eso obliga a una decision importante: <strong>la seguridad no puede vivir en el
+        navegador</strong>. Vive en la base de datos.
+      </p>
+
+      <figure>
+        <svg viewBox="0 0 700 300" role="img" aria-label="Arquitectura de la aplicacion">
+          <g font-family="Segoe UI, sans-serif" font-size="11">
+            <!-- Navegador -->
+            <rect x="6" y="10" width="200" height="280" rx="8" fill="#f7f9fc" stroke="#d8dee8" />
+            <text x="106" y="30" text-anchor="middle" font-weight="600" fill="#1d4ed8">Navegador</text>
+
+            <rect x="20" y="42" width="172" height="34" rx="5" fill="#fff" stroke="#d8dee8" />
+            <text x="106" y="63" text-anchor="middle" fill="#1a2230">Paginas y componentes</text>
+
+            <rect x="20" y="84" width="172" height="34" rx="5" fill="#fff" stroke="#d8dee8" />
+            <text x="106" y="99" text-anchor="middle" fill="#1a2230">Hooks</text>
+            <text x="106" y="112" text-anchor="middle" font-size="8.5" fill="#7c8797">TanStack Query: cache</text>
+
+            <rect x="20" y="126" width="172" height="34" rx="5" fill="#fff" stroke="#d8dee8" />
+            <text x="106" y="141" text-anchor="middle" fill="#1a2230">Servicios</text>
+            <text x="106" y="154" text-anchor="middle" font-size="8.5" fill="#7c8797">unico acceso a datos</text>
+
+            <rect x="20" y="168" width="172" height="30" rx="5" fill="#eff4ff" stroke="#1d4ed8" />
+            <text x="106" y="187" text-anchor="middle" fill="#1a2230">Cliente Supabase</text>
+
+            <rect x="20" y="208" width="172" height="30" rx="5" fill="#fdf0f0" stroke="#d8544f" />
+            <text x="106" y="222" text-anchor="middle" font-size="9.5" fill="#1a2230">Clave PUBLICA</text>
+            <text x="106" y="233" text-anchor="middle" font-size="8.5" fill="#7c8797">nunca la secreta</text>
+
+            <rect x="20" y="248" width="172" height="30" rx="5" fill="#fff" stroke="#d8dee8" />
+            <text x="106" y="267" text-anchor="middle" font-size="9.5" fill="#4a5668">Permisos de UI (cosmeticos)</text>
+
+            <!-- Flecha -->
+            <line x1="208" y1="150" x2="248" y2="150" stroke="#1d4ed8" stroke-width="2" />
+            <polygon points="248,145 258,150 248,155" fill="#1d4ed8" />
+            <text x="233" y="142" text-anchor="middle" font-size="8.5" fill="#7c8797">HTTPS</text>
+
+            <!-- Supabase -->
+            <rect x="262" y="10" width="432" height="280" rx="8" fill="#f7f9fc" stroke="#d8dee8" />
+            <text x="478" y="30" text-anchor="middle" font-weight="600" fill="#1d4ed8">Supabase</text>
+
+            <rect x="276" y="42" width="196" height="40" rx="5" fill="#fff" stroke="#d8dee8" />
+            <text x="374" y="60" text-anchor="middle" fill="#1a2230">Auth</text>
+            <text x="374" y="73" text-anchor="middle" font-size="8.5" fill="#7c8797">cuentas y sesiones</text>
+
+            <rect x="484" y="42" width="196" height="40" rx="5" fill="#fff" stroke="#d8dee8" />
+            <text x="582" y="60" text-anchor="middle" fill="#1a2230">Storage</text>
+            <text x="582" y="73" text-anchor="middle" font-size="8.5" fill="#7c8797">archivos privados</text>
+
+            <rect x="276" y="92" width="404" height="40" rx="5" fill="#fff" stroke="#d8dee8" />
+            <text x="478" y="110" text-anchor="middle" fill="#1a2230">API REST (PostgREST) + Realtime</text>
+            <text x="478" y="123" text-anchor="middle" font-size="8.5" fill="#7c8797">
+              solo publica el esquema tribuia
+            </text>
+
+            <rect x="276" y="142" width="404" height="136" rx="6" fill="#eff4ff" stroke="#1d4ed8" stroke-width="2" />
+            <text x="478" y="162" text-anchor="middle" font-weight="600" fill="#1d4ed8">
+              PostgreSQL · esquema tribuia
+            </text>
+
+            <rect x="290" y="172" width="180" height="30" rx="4" fill="#fff" stroke="#1d4ed8" />
+            <text x="380" y="191" text-anchor="middle" font-size="10" fill="#1a2230">
+              Row Level Security
+            </text>
+
+            <rect x="486" y="172" width="180" height="30" rx="4" fill="#fff" stroke="#d8dee8" />
+            <text x="576" y="191" text-anchor="middle" font-size="10" fill="#1a2230">Funciones SQL</text>
+
+            <rect x="290" y="210" width="180" height="30" rx="4" fill="#fff" stroke="#d8dee8" />
+            <text x="380" y="229" text-anchor="middle" font-size="10" fill="#1a2230">Triggers</text>
+
+            <rect x="486" y="210" width="180" height="30" rx="4" fill="#fff" stroke="#d8dee8" />
+            <text x="576" y="229" text-anchor="middle" font-size="10" fill="#1a2230">Auditoria</text>
+
+            <text x="478" y="262" text-anchor="middle" font-size="9" fill="#4a5668">
+              Aqui se decide que puede ver y hacer cada usuario.
+            </text>
+            <text x="478" y="274" text-anchor="middle" font-size="9" fill="#4a5668">
+              Aunque alguien llame la API a mano, estas reglas se aplican igual.
+            </text>
+          </g>
+        </svg>
+        <figcaption>
+          El navegador pide; PostgreSQL decide. Los permisos de la interfaz solo evitan mostrar
+          botones que la base rechazaria.
+        </figcaption>
+      </figure>
+
+      <h3>Tres reglas de la implementacion</h3>
+      <ol>
+        <li>
+          <strong>Ningun componente consulta la base directamente.</strong> Todo pasa por la capa de
+          servicios, y los hooks son la unica puerta desde la interfaz. Eso mantiene la cache
+          coherente y los errores en un solo sitio.
+        </li>
+        <li>
+          <strong>Los errores tecnicos nunca llegan al usuario.</strong> Un traductor central
+          convierte los codigos de PostgreSQL en frases accionables en espanol, y guarda el detalle
+          tecnico solo en el registro.
+        </li>
+        <li>
+          <strong>La clave secreta no existe en el frontend.</strong> Lo que requiere privilegios
+          (crear cuentas, por ejemplo) se resuelve con funciones de base de datos controladas o
+          fuera del navegador.
+        </li>
+      </ol>
+
+      <div class="note">
+        <strong>Por que el esquema se llama <code>tribuia</code> y no <code>public</code></strong>
+        Para que la aplicacion pueda convivir con otros proyectos en la misma base de datos sin
+        mezclar tablas. Tiene una consecuencia practica: el esquema debe estar
+        <em>expuesto</em> en la configuracion de la API de Supabase, o ninguna consulta funcionara.
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <!-- 3. ROLES                                                         -->
+    <!-- ================================================================ -->
+    <section class="page">
+      <h2>3. Roles y permisos</h2>
+
+      <p>
+        Hay siete roles. Seis pertenecen a un condominio concreto; uno es global. Los roles se
+        consultan desde la base de datos, no estan escritos en la interfaz.
+      </p>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 34mm">Rol</th>
+            <th>Alcance</th>
+            <th style="width: 30mm">Finanzas</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Super Administrador</strong><br /><span class="tag t-admin">global</span></td>
+            <td>
+              Todos los condominios de la plataforma. Es quien crea condominios nuevos y da de alta
+              a sus administradores.
+            </td>
+            <td>Total</td>
+          </tr>
+          <tr>
+            <td><strong>Administrador</strong><br /><span class="tag t-admin">condominio</span></td>
+            <td>
+              Administracion completa de su condominio: estructura, usuarios, aprobaciones,
+              comunicacion, gestion, finanzas y documentos.
+            </td>
+            <td>Total</td>
+          </tr>
+          <tr>
+            <td><strong>Vocero</strong><br /><span class="tag t-admin">condominio</span></td>
+            <td>
+              Consulta la informacion del condominio y publica alertas y comunicados. No modifica la
+              estructura ni las multas.
+            </td>
+            <td>Solo lectura</td>
+          </tr>
+          <tr>
+            <td><strong>Propietario</strong><br /><span class="tag t-res">residente</span></td>
+            <td>
+              Su apartamento (residentes, vehiculos, mascotas, solicitudes, multas) y la informacion
+              general del condominio.
+            </td>
+            <td>Solo lectura</td>
+          </tr>
+          <tr>
+            <td><strong>Arrendatario</strong><br /><span class="tag t-res">residente</span></td>
+            <td>Igual que Propietario en su apartamento.</td>
+            <td><strong>Sin acceso</strong></td>
+          </tr>
+          <tr>
+            <td><strong>Celaduria</strong><br /><span class="tag t-ops">operativo</span></td>
+            <td>
+              Directorio de residentes, vehiculos y mascotas; registra incidentes y publica alertas
+              de seguridad.
+            </td>
+            <td><strong>Sin acceso</strong></td>
+          </tr>
+          <tr>
+            <td><strong>Personal de Servicios</strong><br /><span class="tag t-ops">operativo</span></td>
+            <td>Solicitudes asignadas, mantenimientos e incidentes.</td>
+            <td><strong>Sin acceso</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="warn">
+        <strong>Diferencia clave entre Propietario y Arrendatario</strong>
+        Ambos ven su apartamento igual. La diferencia es el dinero: el propietario puede consultar
+        los gastos y compras del condominio (es su patrimonio); el arrendatario no. Esa restriccion
+        se aplica en la base de datos, no ocultando un menu.
+      </div>
+
+      <h3>Que ve cada rol en el menu</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Seccion</th>
+            <th>Super Admin</th>
+            <th>Admin</th>
+            <th>Vocero</th>
+            <th>Propietario</th>
+            <th>Arrendatario</th>
+            <th>Celaduria</th>
+            <th>Servicios</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Dashboard</td><td>Si</td><td>Si</td><td>Si</td><td>Si</td><td>Si</td><td>Si</td><td>Si</td></tr>
+          <tr><td>Mi apartamento</td><td>Si</td><td>Si</td><td>—</td><td>Si</td><td>Si</td><td>—</td><td>—</td></tr>
+          <tr><td>Condominios / Bloques</td><td>Si</td><td>Si</td><td>Si</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+          <tr><td>Apartamentos</td><td>Si</td><td>Si</td><td>Si</td><td>—</td><td>—</td><td>Si</td><td>—</td></tr>
+          <tr><td>Usuarios / Aprobaciones</td><td>Si</td><td>Si</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+          <tr><td>Residentes</td><td>Si</td><td>Si</td><td>Si</td><td>—</td><td>—</td><td>Si</td><td>—</td></tr>
+          <tr><td>Alertas / Comunicados</td><td>Si</td><td>Si</td><td>Si</td><td>Si</td><td>Si</td><td>Si</td><td>Si</td></tr>
+          <tr><td>Mensajes</td><td>Si</td><td>Si</td><td>Si</td><td>Si</td><td>Si</td><td>Si</td><td>Si</td></tr>
+          <tr><td>Solicitudes / Incidentes</td><td>Si</td><td>Si</td><td>Si</td><td>Si</td><td>Si</td><td>Si</td><td>Si</td></tr>
+          <tr><td>Multas</td><td>Si</td><td>Si</td><td>Si</td><td>Si</td><td>Si</td><td>—</td><td>—</td></tr>
+          <tr><td>Gastos / Compras</td><td>Si</td><td>Si</td><td>Si</td><td>Si</td><td>—</td><td>—</td><td>—</td></tr>
+          <tr><td>Documentos</td><td>Si</td><td>Si</td><td>Si</td><td>Si</td><td>Si</td><td>Si</td><td>Si</td></tr>
+          <tr><td>Reportes</td><td>Si</td><td>Si</td><td>Si</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+          <tr><td>Auditoria</td><td>Si</td><td>Si</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size: 9pt; color: var(--ink-faint)">
+        «Si» significa que la seccion aparece; dentro de ella cada rol ve solo los registros que le
+        corresponden. Un propietario abre Solicitudes y ve las suyas, no las del vecino.
+      </p>
+    </section>
+
+    <!-- ================================================================ -->
+    <!-- 4. ACCESO                                                        -->
+    <!-- ================================================================ -->
+    <section class="page">
+      <h2>4. Como se obtiene acceso</h2>
+
+      <p>
+        Crear una cuenta y <em>tener acceso</em> son dos cosas distintas. Cualquiera puede
+        registrarse; solo la administracion concede el acceso. Hay dos caminos.
+      </p>
+
+      <figure>
+        <svg viewBox="0 0 700 330" role="img" aria-label="Los dos caminos para obtener acceso">
+          <g font-family="Segoe UI, sans-serif" font-size="10.5">
+            <text x="8" y="16" font-weight="600" fill="#1d4ed8">
+              Camino A · El residente se registra y la administracion aprueba
+            </text>
+
+            <rect x="8" y="26" width="150" height="52" rx="5" fill="#fff" stroke="#d8dee8" />
+            <text x="83" y="46" text-anchor="middle" fill="#1a2230">Se registra en</text>
+            <text x="83" y="60" text-anchor="middle" font-family="monospace" font-size="9.5" fill="#1d4ed8">/register</text>
+            <text x="83" y="72" text-anchor="middle" font-size="8.5" fill="#7c8797">elige de listas</text>
+
+            <rect x="186" y="26" width="150" height="52" rx="5" fill="#fff8e6" stroke="#e8b93a" />
+            <text x="261" y="46" text-anchor="middle" fill="#1a2230">Solicitud</text>
+            <text x="261" y="60" text-anchor="middle" font-weight="600" fill="#b45309">PENDIENTE</text>
+            <text x="261" y="72" text-anchor="middle" font-size="8.5" fill="#7c8797">sin ningun acceso</text>
+
+            <rect x="364" y="26" width="150" height="52" rx="5" fill="#eff4ff" stroke="#1d4ed8" />
+            <text x="439" y="46" text-anchor="middle" fill="#1a2230">Admin revisa en</text>
+            <text x="439" y="60" text-anchor="middle" font-family="monospace" font-size="9.5" fill="#1d4ed8">/approvals</text>
+
+            <rect x="542" y="10" width="150" height="40" rx="5" fill="#eefaf3" stroke="#35a06a" />
+            <text x="617" y="26" text-anchor="middle" font-size="9.5" fill="#1a2230">Aprueba</text>
+            <text x="617" y="40" text-anchor="middle" font-size="8.5" fill="#35a06a">acceso concedido</text>
+
+            <rect x="542" y="58" width="150" height="40" rx="5" fill="#fdf0f0" stroke="#d8544f" />
+            <text x="617" y="74" text-anchor="middle" font-size="9.5" fill="#1a2230">Rechaza</text>
+            <text x="617" y="88" text-anchor="middle" font-size="8.5" fill="#d8544f">con motivo</text>
+
+            <line x1="158" y1="52" x2="182" y2="52" stroke="#7c8797" marker-end="url(#a1)" />
+            <line x1="336" y1="52" x2="360" y2="52" stroke="#7c8797" marker-end="url(#a1)" />
+            <line x1="514" y1="52" x2="538" y2="30" stroke="#7c8797" marker-end="url(#a1)" />
+            <line x1="514" y1="52" x2="538" y2="78" stroke="#7c8797" marker-end="url(#a1)" />
+
+            <line x1="8" y1="118" x2="692" y2="118" stroke="#d8dee8" stroke-dasharray="3 3" />
+
+            <text x="8" y="146" font-weight="600" fill="#1d4ed8">
+              Camino B · La administracion invita (la invitacion ya es la autorizacion)
+            </text>
+
+            <rect x="8" y="156" width="150" height="52" rx="5" fill="#eff4ff" stroke="#1d4ed8" />
+            <text x="83" y="176" text-anchor="middle" fill="#1a2230">Admin invita en</text>
+            <text x="83" y="190" text-anchor="middle" font-family="monospace" font-size="9.5" fill="#1d4ed8">/users</text>
+            <text x="83" y="202" text-anchor="middle" font-size="8.5" fill="#7c8797">correo + rol</text>
+
+            <rect x="186" y="156" width="150" height="52" rx="5" fill="#fff" stroke="#d8dee8" />
+            <text x="261" y="176" text-anchor="middle" fill="#1a2230">La persona entra</text>
+            <text x="261" y="190" text-anchor="middle" font-size="8.5" fill="#7c8797">se registra o inicia</text>
+            <text x="261" y="202" text-anchor="middle" font-size="8.5" fill="#7c8797">sesion con ese correo</text>
+
+            <rect x="364" y="156" width="150" height="52" rx="5" fill="#eefaf3" stroke="#35a06a" />
+            <text x="439" y="176" text-anchor="middle" fill="#1a2230">Rol asignado</text>
+            <text x="439" y="190" text-anchor="middle" font-size="8.5" fill="#35a06a">automaticamente</text>
+            <text x="439" y="202" text-anchor="middle" font-size="8.5" fill="#7c8797">sin aprobacion</text>
+
+            <line x1="158" y1="182" x2="182" y2="182" stroke="#7c8797" marker-end="url(#a1)" />
+            <line x1="336" y1="182" x2="360" y2="182" stroke="#7c8797" marker-end="url(#a1)" />
+
+            <rect x="8" y="230" width="684" height="90" rx="5" fill="#f7f9fc" stroke="#d8dee8" />
+            <text x="20" y="250" font-weight="600" font-size="10" fill="#1a2230">Cuando usar cada uno</text>
+            <text x="20" y="268" font-size="9.5" fill="#4a5668">
+              Camino A: residentes que llegan por su cuenta. Solo permite Propietario o Arrendatario.
+            </text>
+            <text x="20" y="284" font-size="9.5" fill="#4a5668">
+              Camino B: cualquier rol, incluido Administrador. Es la via para montar un condominio
+              nuevo
+            </text>
+            <text x="20" y="298" font-size="9.5" fill="#4a5668">
+              y para dar de alta celaduria, voceros y personal de servicios.
+            </text>
+            <text x="20" y="314" font-size="9.5" fill="#7c8797">
+              Los roles administrativos NUNCA se pueden obtener por autoregistro.
+            </text>
+          </g>
+        </svg>
+      </figure>
+
+      <h3>Camino A · Autoregistro con aprobacion</h3>
+      <ol>
+        <li>
+          En <code>/register</code> la persona elige <strong>de listas</strong>: condominio, luego
+          edificio, luego apartamento. Nunca escribe texto libre para identificarlos. Los
+          apartamentos ya reclamados, o con una solicitud en curso, aparecen deshabilitados.
+        </li>
+        <li>
+          Indica si es propietario, arrendatario o ambos, y opcionalmente sus vehiculos y un mensaje
+          para la administracion.
+        </li>
+        <li>
+          Se crea la cuenta y una <strong>solicitud pendiente</strong>. La solicitud no otorga
+          acceso: hasta que se apruebe, la base de datos no le muestra nada.
+        </li>
+        <li>
+          Mientras espera, la persona ve el estado de su solicitud y puede corregirla y reenviarla.
+        </li>
+        <li>
+          El administrador la revisa en <code>/approvals</code>, donde ve nombre, correo, telefono,
+          documento, apartamento solicitado, vehiculos y mensaje. Al aprobar, el sistema crea en una
+          sola operacion la membresia activa, el vinculo de propiedad o arriendo, la ficha de
+          residente y los vehiculos, y marca el apartamento como ocupado.
+        </li>
+      </ol>
+
+      <div class="ok">
+        <strong>Por que dos personas no pueden reclamar el mismo apartamento</strong>
+        Antes de aceptar la solicitud se comprueba que el apartamento no tenga ya un propietario o
+        arrendatario activo, ni otra solicitud pendiente. Y una restriccion de la base de datos
+        impide acumular solicitudes duplicadas: reenviar actualiza la que ya existia.
+      </div>
+
+      <h3>Camino B · Invitacion</h3>
+      <p>
+        Crear una cuenta en el sistema de autenticacion exige privilegios que no pueden estar en el
+        navegador. La invitacion resuelve eso sin infraestructura adicional: la administracion
+        <em>reserva</em> un correo con un rol, y la persona obtiene el acceso al entrar.
+      </p>
+      <ul>
+        <li>Admite cualquier rol del condominio, incluido Administrador.</li>
+        <li>Se puede asignar el apartamento desde la propia invitacion.</li>
+        <li>Si la persona ya tiene cuenta, el acceso se aplica en su siguiente inicio de sesion.</li>
+        <li>Si no la tiene, se registra con ese mismo correo y entra directo, sin pasar por aprobacion.</li>
+        <li>Las invitaciones caducan a los 30 dias y se pueden revocar mientras esten pendientes.</li>
+        <li>Super Administrador es un rol global: no se asigna por invitacion.</li>
+      </ul>
+    </section>
+
+    <!-- ================================================================ -->
+    <!-- 5. MODULOS                                                       -->
+    <!-- ================================================================ -->
+    <section class="page">
+      <h2>5. Los modulos, uno por uno</h2>
+
+      <h3>Dashboard</h3>
+      <p>
+        Cambia por completo segun el rol, porque las preguntas de cada uno son distintas.
+      </p>
+      <div class="grid2">
+        <div class="card">
+          <h4>Administrativo <span class="tag t-admin">Admin · Vocero</span></h4>
+          <p>
+            Diez indicadores (apartamentos, residentes, propietarios, arrendatarios, alertas,
+            solicitudes, incidentes, multas, gastos y compras del mes), cinco graficas y la actividad
+            reciente del condominio.
+          </p>
+        </div>
+        <div class="card">
+          <h4>Residente <span class="tag t-res">Propietario · Arrendatario</span></h4>
+          <p>
+            Su apartamento y su bloque, alertas importantes destacadas arriba, comunicados recientes,
+            estado de sus solicitudes, mensajes sin leer y multas pendientes.
+          </p>
+        </div>
+        <div class="card">
+          <h4>Operativo <span class="tag t-ops">Celaduria · Servicios</span></h4>
+          <p>
+            Residentes activos, apartamentos, incidentes o solicitudes segun el turno, y alertas
+            vigentes. Sin ninguna cifra financiera.
+          </p>
+        </div>
+        <div class="card">
+          <h4>Comun a todos <span class="tag t-all">todos</span></h4>
+          <p>
+            Buscador global en el encabezado (apartamentos, residentes, solicitudes, incidentes,
+            multas, documentos, alertas y bloques) y campana de notificaciones en vivo.
+          </p>
+        </div>
+      </div>
+
+      <h3>Estructura: Condominios, Bloques y Apartamentos</h3>
+      <p>
+        Define la realidad fisica del conjunto. Se navega de lo general a lo particular: condominio,
+        bloque, apartamento. Cada bloque muestra su numero real de apartamentos.
+      </p>
+
+      <h4>La ficha del apartamento</h4>
+      <p>
+        Es el corazon del sistema: una vista tipo CRM con diez pestanas que reune todo lo que ocurre
+        en una unidad.
+      </p>
+      <table>
+        <thead>
+          <tr><th style="width: 34mm">Pestana</th><th>Contenido</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Resumen</td><td>Datos fisicos, estado y contadores.</td></tr>
+          <tr><td>Residentes</td><td>Quien habita la unidad, incluidos familiares sin cuenta.</td></tr>
+          <tr><td>Propietarios</td><td>Duenos, porcentaje de propiedad y desde cuando.</td></tr>
+          <tr><td>Arrendatarios</td><td>Contratos, vigencia y canon.</td></tr>
+          <tr><td>Vehiculos</td><td>Placa, tipo, parqueadero asignado.</td></tr>
+          <tr><td>Mascotas</td><td>Tipo, raza, vacunacion.</td></tr>
+          <tr><td>Solicitudes</td><td>Peticiones relacionadas con la unidad.</td></tr>
+          <tr><td>Incidentes</td><td>Eventos de seguridad asociados.</td></tr>
+          <tr><td>Multas</td><td>Sanciones, valor y estado de pago.</td></tr>
+          <tr><td>Actividad</td><td>Linea de tiempo unificada de todo lo anterior.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Comunicacion</h3>
+      <table>
+        <thead>
+          <tr><th style="width: 30mm">Modulo</th><th>Para que sirve</th><th style="width: 32mm">Quien publica</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Alertas</strong></td>
+            <td>
+              Avisos urgentes con tipo (emergencia, seguridad, agua, energia, gas, pagos...) y
+              prioridad. Llegan <strong>en tiempo real</strong>: aparecen sin recargar la pagina, y
+              las de prioridad alta o critica abren un aviso emergente. Se dirigen a todo el
+              condominio, a un bloque, a un apartamento o a un rol.
+            </td>
+            <td>Admin, Vocero, Celaduria</td>
+          </tr>
+          <tr>
+            <td><strong>Comunicados</strong></td>
+            <td>
+              Informacion no urgente: convocatorias, cambios de horario, campanas. Tienen borrador,
+              publicado y archivado, con fecha de publicacion y de expiracion.
+            </td>
+            <td>Admin, Vocero</td>
+          </tr>
+          <tr>
+            <td><strong>Mensajes</strong></td>
+            <td>
+              Canal directo residente-administracion, tipo bandeja de entrada. Los mensajes de la
+              conversacion abierta llegan en vivo y se marca lo no leido.
+            </td>
+            <td>Todos</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Gestion</h3>
+      <table>
+        <thead>
+          <tr><th style="width: 30mm">Modulo</th><th>Flujo</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Solicitudes</strong></td>
+            <td>
+              Un residente reporta algo (mantenimiento, ruido, parqueadero, zonas comunes...). Recibe
+              un codigo consecutivo. La administracion la asigna a alguien, se comenta en hilo y
+              avanza por Abierta, En progreso, Resuelta y Cerrada. Admite adjuntos.
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Incidentes</strong></td>
+            <td>
+              Pensado para celaduria: hurto, vandalismo, ingreso no autorizado, inundacion... Se
+              registra ubicacion, fecha del hecho, prioridad y <strong>evidencias</strong>
+              (fotos o documentos, que se pueden tomar con la camara del telefono). Tiene linea de
+              tiempo y campo de resolucion.
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Multas</strong></td>
+            <td>
+              Sanciones por incumplir el reglamento, con motivo, valor, fecha limite y estado
+              (Pendiente, Pagada, Cancelada, Apelada). Al registrarla se
+              <strong>notifica automaticamente</strong> al propietario y al arrendatario del
+              apartamento.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Finanzas <span class="tag t-admin">sin acceso para arrendatarios, celaduria ni servicios</span></h3>
+      <table>
+        <thead>
+          <tr><th style="width: 30mm">Modulo</th><th>Contenido</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Gastos</strong></td>
+            <td>
+              Egresos por concepto, categoria (con color propio), proveedor, valor, fecha y factura.
+              Incluye tarjetas de resumen y graficas de evolucion mensual y reparto por categoria.
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Compras</strong></td>
+            <td>
+              Ordenes con detalle de productos: cantidad y precio unitario por linea. El total se
+              recalcula solo en la base de datos, asi que nunca queda descuadrado.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Documentos</h3>
+      <p>
+        Reglamentos, actas, presupuestos y manuales. Los archivos <strong>no son publicos</strong>:
+        se guardan en almacenamiento privado y se descargan mediante enlaces firmados que caducan en
+        minutos. Cada documento tiene visibilidad (todo el condominio, un bloque, un apartamento) y
+        puede marcarse como restringido a la administracion y el consejo.
+      </p>
+
+      <h3>Reportes y Auditoria</h3>
+      <p>
+        <strong>Reportes</strong> reune ocho graficas consolidadas con rango configurable.
+        <strong>Auditoria</strong> es el registro automatico de las acciones sensibles: creaciones,
+        modificaciones, borrados, inicios y cierres de sesion, cargas y descargas de archivos,
+        mensajes enviados, alertas publicadas, multas y gastos registrados. Queda constancia de quien
+        hizo que y cuando.
+      </p>
+
+      <div class="note">
+        <strong>Comun a todos los listados</strong>
+        Busqueda, paginacion, ordenamiento, filtros, rango de fechas y exportacion a CSV del
+        conjunto completo de datos, no solo de la pagina visible.
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <!-- 6. SEGURIDAD                                                     -->
+    <!-- ================================================================ -->
+    <section class="page">
+      <h2>6. Seguridad: por que no basta la interfaz</h2>
+
+      <p>
+        Como el navegador habla directamente con la base de datos, ocultar un boton no protege nada:
+        cualquiera con conocimientos podria llamar la API por su cuenta. La proteccion real esta
+        dentro de PostgreSQL.
+      </p>
+
+      <h3>Row Level Security</h3>
+      <p>
+        Cada tabla tiene politicas que se evaluan <em>en cada consulta</em> y filtran las filas
+        segun quien pregunta. No es un filtro que la aplicacion agregue: es una regla que la base
+        aplica siempre.
+      </p>
+
+      <pre><code>Un arrendatario pide la lista de gastos
+   -> PostgreSQL evalua la politica de la tabla de gastos
+   -> su rol no puede ver finanzas
+   -> devuelve una lista vacia
+
+No devuelve un error: devuelve nada. La informacion
+no existe para el, y da igual como haga la peticion.</code></pre>
+
+      <h3>El interruptor del acceso</h3>
+      <p>
+        Todo depende de una condicion: tener una membresia con estado <code>ACTIVE</code> en el
+        condominio. Mientras una solicitud de inscripcion este pendiente, esa fila no existe, y por
+        tanto no hay nada que ver. Esa fila solo la crea la funcion de aprobacion, que a su vez
+        verifica que quien aprueba sea administrador del condominio.
+      </p>
+
+      <h3>Funciones con privilegios controlados</h3>
+      <p>
+        Algunas operaciones necesitan mirar mas alla de lo que el usuario puede ver. Por ejemplo, el
+        listado de condominios de la pantalla de registro: un visitante sin sesion no pasa las
+        politicas, asi que la tabla le devolveria una lista vacia. Para eso existen funciones que
+        corren con privilegios elevados pero <strong>solo devuelven exactamente lo necesario</strong>
+        —en ese caso, el nombre y la ciudad de los condominios activos— y que validan permisos antes
+        de actuar.
+      </p>
+
+      <h3>Otras medidas</h3>
+      <table>
+        <thead>
+          <tr><th style="width: 38mm">Frente</th><th>Como se aborda</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Inyeccion SQL</td><td>No se concatena SQL: todo va parametrizado o por funciones con parametros tipados.</td></tr>
+          <tr><td>XSS</td><td>React escapa el contenido por defecto y no se inyecta HTML crudo en ningun punto.</td></tr>
+          <tr><td>Archivos</td><td>Validacion de tipo y tamano antes de subir, y limites por contenedor en el servidor.</td></tr>
+          <tr><td>Descargas</td><td>Enlaces firmados temporales; los contenedores privados no son accesibles publicamente.</td></tr>
+          <tr><td>Aislamiento de archivos</td><td>La ruta empieza por el identificador del condominio y las politicas de almacenamiento la verifican.</td></tr>
+          <tr><td>Rutas</td><td>Se exige sesion y se filtra por rol antes de renderizar cada pantalla.</td></tr>
+          <tr><td>Credenciales</td><td>La clave secreta jamas se incluye en el codigo del navegador.</td></tr>
+          <tr><td>Trazabilidad</td><td>Auditoria automatica por triggers en las tablas sensibles.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="danger">
+        <strong>La regla que no se debe romper</strong>
+        La clave secreta (o <em>service role</em>) da acceso total saltandose todas las politicas.
+        Solo puede usarse en scripts de servidor. Nunca debe ponerse en el archivo de entorno del
+        frontend, ni en el hosting, ni pegarse en un chat.
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <!-- 7. MOVIL                                                         -->
+    <!-- ================================================================ -->
+    <section class="page">
+      <h2>7. Uso desde el telefono</h2>
+
+      <p>
+        La aplicacion se usa desde el navegador del telefono, en iPhone y en Android, y ademas se
+        puede <strong>instalar</strong> en la pantalla de inicio como si fuera una app.
+      </p>
+
+      <h3>Que cambia en pantalla pequena</h3>
+      <table>
+        <thead>
+          <tr><th style="width: 40mm">Elemento</th><th>Comportamiento en movil</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Tablas</strong></td>
+            <td>
+              Se convierten en tarjetas apiladas. Una tabla administrativa tiene hasta catorce
+              columnas: en un telefono no se arregla con desplazamiento lateral, asi que cada
+              registro pasa a ser una tarjeta con sus campos rotulados y sus acciones al pie.
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Formularios</strong></td>
+            <td>
+              Ocupan el ancho completo y los campos usan un tamano de letra que evita que iOS haga
+              zoom al enfocarlos (ese zoom era lo que desplazaba y deformaba el formulario).
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Menu</strong></td>
+            <td>Se abre como panel lateral deslizante desde el boton del encabezado.</td>
+          </tr>
+          <tr>
+            <td><strong>Mensajes</strong></td>
+            <td>
+              Alterna entre la lista de conversaciones y el chat, con un boton para volver. La altura
+              se adapta a la pantalla.
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Botones y campos</strong></td>
+            <td>Alto minimo comodo para el dedo, segun las guias de Apple y de Material Design.</td>
+          </tr>
+          <tr>
+            <td><strong>Archivos</strong></td>
+            <td>
+              Al tocar «Seleccionar archivos» el telefono ofrece galeria, camara o gestor de
+              archivos segun el tipo permitido. Sirve para subir evidencias de un incidente en el
+              sitio.
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Pantalla completa</strong></td>
+            <td>
+              Se respetan las zonas seguras del iPhone (muesca y barra inferior) y la altura real del
+              navegador, para que nada quede tapado.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Instalar en el telefono</h3>
+      <div class="grid2">
+        <div class="card">
+          <h4>iPhone (Safari)</h4>
+          <p>
+            Abre la direccion, toca el boton Compartir y elige «Anadir a pantalla de inicio». Debe
+            hacerse desde Safari.
+          </p>
+        </div>
+        <div class="card">
+          <h4>Android (Chrome)</h4>
+          <p>
+            Abre la direccion y acepta «Instalar aplicacion», o usa el menu de tres puntos y
+            «Anadir a pantalla de inicio».
+          </p>
+        </div>
+      </div>
+
+      <div class="note">
+        <strong>Sobre el trabajo sin conexion</strong>
+        La aplicacion se instala y arranca rapido porque guarda sus archivos en el dispositivo, pero
+        <em>requiere conexion</em> para consultar y guardar datos. No hay edicion offline.
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <!-- 8. PUESTA EN MARCHA                                              -->
+    <!-- ================================================================ -->
+    <section class="page">
+      <h2>8. Puesta en marcha</h2>
+
+      <p class="lead">
+        Seccion tecnica. De un proyecto vacio a un sistema con usuarios trabajando.
+      </p>
+
+      <h3>1 · Proyecto y credenciales</h3>
+      <p>
+        Crea el proyecto en Supabase y copia la URL y la clave publica. Copia el archivo de ejemplo
+        de entorno y completalo:
+      </p>
+      <pre><code>cp .env.example .env
+npm install</code></pre>
+      <p>
+        Si faltan las variables, la aplicacion muestra una pantalla con instrucciones en lugar de
+        fallar con errores de red.
+      </p>
+
+      <h3>2 · Crear la base de datos</h3>
+      <p>
+        En <strong>SQL Editor</strong> del panel de Supabase, ejecuta el archivo de esquema completo.
+        Crea el esquema, los tipos, las tablas, los indices, las funciones, los triggers, las
+        politicas de seguridad, los contenedores de archivos, la configuracion de tiempo real y el
+        catalogo de roles. Puede ejecutarse varias veces sin romper nada.
+      </p>
+
+      <div class="danger">
+        <strong>Paso obligatorio que suele olvidarse</strong>
+        Ve a <em>Settings → API → Exposed schemas</em> y agrega <code>tribuia</code>. Sin eso,
+        PostgREST no publica el esquema y <strong>ninguna consulta funciona</strong>, aunque las
+        tablas existan.
+      </div>
+
+      <h3>3 · Comprobar</h3>
+      <pre><code>npm run check</code></pre>
+      <p>
+        Compara el esquema del repositorio contra la base real y reporta exactamente que falta:
+        tablas, funciones, exposicion del esquema, estado del registro de usuarios y si hay
+        condominios activos. No imprime ninguna clave. <strong>Ejecutalo siempre que algo no
+        cargue</strong>: te dira si el problema es de datos, de configuracion o de conexion.
+      </p>
+
+      <h3>4 · Parches para bases ya creadas</h3>
+      <p>
+        Crear una tabla «si no existe» no modifica una tabla que ya existia. Por eso, una base creada
+        con una version anterior del esquema puede quedar desalineada. En la carpeta de parches hay
+        archivos que reconcilian esas diferencias; se ejecutan en orden y son repetibles.
+        <code>npm run check</code> indica si hacen falta.
+      </p>
+
+      <h3>5 · Primer usuario y primer condominio</h3>
+      <ol>
+        <li>Crea el Super Administrador.</li>
+        <li>Con esa cuenta, crea el condominio y sus bloques y apartamentos.</li>
+        <li>
+          Invita al Administrador del condominio desde <code>/users</code>, pestana
+          <em>Invitaciones</em>.
+        </li>
+        <li>
+          A partir de ahi el Administrador se encarga: invita voceros, celaduria y personal, y
+          aprueba a los residentes que se registren.
+        </li>
+      </ol>
+
+      <h3>Comandos disponibles</h3>
+      <table>
+        <thead><tr><th style="width: 42mm">Comando</th><th>Que hace</th></tr></thead>
+        <tbody>
+          <tr><td><code>npm run dev</code></td><td>Servidor de desarrollo.</td></tr>
+          <tr><td><code>npm run build</code></td><td>Verifica tipos y compila para produccion.</td></tr>
+          <tr><td><code>npm run preview</code></td><td>Sirve el resultado del build.</td></tr>
+          <tr><td><code>npm run check</code></td><td>Diagnostica la conexion con Supabase.</td></tr>
+          <tr><td><code>npm run test</code></td><td>Ejecuta las pruebas automaticas.</td></tr>
+          <tr><td><code>npm run lint</code></td><td>Revisa el estilo y errores comunes del codigo.</td></tr>
+          <tr><td><code>npm run typecheck</code></td><td>Verifica los tipos sin compilar.</td></tr>
+          <tr><td><code>npm run deadcode</code></td><td>Detecta codigo y exportaciones sin usar.</td></tr>
+          <tr><td><code>npm run seed</code></td><td>Crea usuarios de prueba (requiere clave secreta).</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ================================================================ -->
+    <!-- 9. RECETAS                                                       -->
+    <!-- ================================================================ -->
+    <section class="page">
+      <h2>9. Recetas de operacion</h2>
+
+      <h3>Dar de alta el administrador de un condominio nuevo</h3>
+      <ol>
+        <li>Como Super Administrador, crea el condominio en <em>Condominios</em>.</li>
+        <li>Seleccionalo en el desplegable del encabezado.</li>
+        <li>Crea al menos un bloque y sus apartamentos.</li>
+        <li>
+          Ve a <em>Usuarios → Invitaciones → Invitar usuario</em>, escribe el correo y elige el rol
+          Administrador.
+        </li>
+        <li>
+          Avisa a esa persona: si ya tiene cuenta entra directo; si no, debe registrarse con ese
+          mismo correo.
+        </li>
+      </ol>
+
+      <h3>Aprobar a un residente</h3>
+      <ol>
+        <li>
+          Entra en <em>Aprobaciones</em>. El menu muestra un contador cuando hay solicitudes
+          esperando.
+        </li>
+        <li>Revisa nombre, documento, apartamento solicitado y mensaje.</li>
+        <li>
+          Verifica que el apartamento corresponda. Si no, <strong>Rechazar</strong> e indica el
+          motivo: le llega como notificacion y puede corregir y reenviar.
+        </li>
+        <li>
+          Si es correcto, <strong>Aprobar</strong>. El sistema crea la membresia, el vinculo con el
+          apartamento, la ficha de residente y los vehiculos declarados.
+        </li>
+      </ol>
+
+      <h3>Publicar una alerta urgente</h3>
+      <ol>
+        <li>En <em>Alertas</em>, «Nueva alerta».</li>
+        <li>Elige tipo y prioridad. Las de prioridad alta o critica abren un aviso emergente.</li>
+        <li>
+          Elige los destinatarios: todo el condominio, un bloque concreto, un apartamento o un rol
+          (por ejemplo, solo la celaduria).
+        </li>
+        <li>
+          Define desde cuando y hasta cuando esta vigente. Al publicarla, los destinatarios la
+          reciben sin recargar la pagina.
+        </li>
+      </ol>
+
+      <h3>Registrar un incidente con evidencia desde el telefono</h3>
+      <ol>
+        <li>En <em>Incidentes</em>, «Registrar incidente».</li>
+        <li>Completa tipo, ubicacion y fecha del hecho.</li>
+        <li>
+          En «Evidencias» toca <em>Seleccionar archivos</em> y elige la camara para fotografiar en el
+          sitio.
+        </li>
+        <li>Asigna responsable si aplica. Al resolverlo, completa el campo de resolucion.</li>
+      </ol>
+
+      <h3>Subir el reglamento y limitar quien lo ve</h3>
+      <ol>
+        <li>En <em>Documentos</em>, «Subir documento».</li>
+        <li>Elige el archivo y ponle titulo y categoria.</li>
+        <li>Define la visibilidad: todo el condominio, un bloque o un apartamento.</li>
+        <li>
+          Activa «Solo administracion y voceros» para material interno, como estados financieros en
+          revision.
+        </li>
+      </ol>
+
+      <h3>Cerrar el mes financiero</h3>
+      <ol>
+        <li>En <em>Gastos</em>, filtra por el rango de fechas del mes.</li>
+        <li>Revisa que no queden gastos en estado Pendiente que ya se pagaron.</li>
+        <li>Exporta a CSV para conciliar con el extracto bancario.</li>
+        <li>En <em>Reportes</em>, revisa la evolucion mensual y el reparto por categoria.</li>
+      </ol>
+
+      <h3>Quitarle el acceso a alguien</h3>
+      <ol>
+        <li>En <em>Usuarios</em>, busca a la persona.</li>
+        <li>
+          Para suspender temporalmente, editala y cambia su estado a Inactivo: pierde el acceso pero
+          se conserva el historico.
+        </li>
+        <li>
+          Para desvincularla, usa «Quitar del condominio». Su cuenta no se elimina; solo deja de
+          pertenecer a este condominio.
+        </li>
+      </ol>
+    </section>
+
+    <!-- ================================================================ -->
+    <!-- 10. PROBLEMAS                                                    -->
+    <!-- ================================================================ -->
+    <section class="page">
+      <h2>10. Solucion de problemas</h2>
+
+      <p>
+        Ante cualquier duda, el primer paso es <code>npm run check</code>: distingue si el problema
+        es de conexion, de configuracion o de datos.
+      </p>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 52mm">Sintoma</th>
+            <th style="width: 52mm">Causa real</th>
+            <th>Que hacer</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>«El esquema debe ser uno de los siguientes: public...»</td>
+            <td>El esquema <code>tribuia</code> no esta publicado en la API.</td>
+            <td>Settings → API → Exposed schemas → agregar <code>tribuia</code>.</td>
+          </tr>
+          <tr>
+            <td>«Falta una funcion en la base de datos»</td>
+            <td>El esquema o los parches no se ejecutaron completos.</td>
+            <td>
+              Ejecutar el esquema y los parches pendientes. <code>npm run check</code> lista
+              exactamente cuales faltan.
+            </td>
+          </tr>
+          <tr>
+            <td>El desplegable de condominios en el registro esta vacio</td>
+            <td>
+              No hay condominios <em>activos</em>, o falta la funcion de catalogo. Ojo: la pantalla
+              de registro no lee la tabla directamente, porque un visitante sin sesion no pasa las
+              politicas de seguridad.
+            </td>
+            <td>
+              Verificar con <code>npm run check</code>. Crear un condominio y ponerlo en estado
+              activo, con al menos un bloque activo y apartamentos.
+            </td>
+          </tr>
+          <tr>
+            <td>Puedo elegir condominio pero no apartamento</td>
+            <td>Ese bloque no tiene apartamentos, o todos estan ya reclamados.</td>
+            <td>Crear los apartamentos, o asignar el apartamento por invitacion.</td>
+          </tr>
+          <tr>
+            <td>Un condominio recien creado no aparece en el selector</td>
+            <td>La lista estaba en cache.</td>
+            <td>Ya se refresca sola. Si persiste, recargar la pagina.</td>
+          </tr>
+          <tr>
+            <td>Inicie sesion pero no veo nada</td>
+            <td>La cuenta no tiene membresia activa: la solicitud esta pendiente de aprobacion.</td>
+            <td>
+              El administrador debe aprobarla en <em>Aprobaciones</em>, o invitar a esa persona
+              directamente.
+            </td>
+          </tr>
+          <tr>
+            <td>«No tienes permisos para realizar esta accion»</td>
+            <td>
+              El rol no alcanza. Lo rechaza la base de datos, no la interfaz: es la proteccion
+              funcionando.
+            </td>
+            <td>Revisar el rol en <em>Usuarios</em> y ajustarlo si corresponde.</td>
+          </tr>
+          <tr>
+            <td>«El archivo solicitado no existe en el almacenamiento»</td>
+            <td>Hay una ficha de documento cuyo archivo nunca se subio (tipico de datos de prueba).</td>
+            <td>Volver a subir el archivo, o eliminar la ficha.</td>
+          </tr>
+          <tr>
+            <td>«El bucket de almacenamiento no existe»</td>
+            <td>Faltan los contenedores de archivos.</td>
+            <td>Los crea el esquema. Si no, crearlos desde Storage con los mismos nombres.</td>
+          </tr>
+          <tr>
+            <td>«La clave secreta fue rechazada» al ejecutar el seed</td>
+            <td>
+              La clave clasica esta revocada en el proyecto.
+            </td>
+            <td>Usar la clave secreta nueva desde Settings → API Keys → Secret keys.</td>
+          </tr>
+          <tr>
+            <td>No llegan las alertas en tiempo real</td>
+            <td>Las tablas no estan en la publicacion de tiempo real.</td>
+            <td>
+              Verificar en Database → Replication. El esquema las agrega; si se creo antes, volver a
+              ejecutarlo.
+            </td>
+          </tr>
+          <tr>
+            <td>En el telefono el formulario «salta» al escribir</td>
+            <td>Zoom automatico de iOS por tamano de letra pequeno.</td>
+            <td>Ya corregido. Si reaparece, recargar para descartar version en cache.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="warn">
+        <strong>Un principio util al diagnosticar</strong>
+        Una lista vacia y un error significan cosas distintas. Vacia suele ser
+        <em>seguridad funcionando</em>: existen datos, pero no para ese usuario. Error suele ser
+        <em>configuracion</em>. <code>npm run check</code> separa ambos casos.
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <!-- 11. GLOSARIO                                                     -->
+    <!-- ================================================================ -->
+    <section class="page">
+      <h2>11. Glosario</h2>
+
+      <table>
+        <thead><tr><th style="width: 46mm">Termino</th><th>Significado</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Aprobacion</strong></td><td>Acto por el que un administrador concede acceso a quien se registro por su cuenta.</td></tr>
+          <tr><td><strong>Auditoria</strong></td><td>Registro automatico de acciones sensibles: quien, que y cuando.</td></tr>
+          <tr><td><strong>Clave publica</strong></td><td>Credencial que viaja en el navegador. Es publica por diseno; no da acceso a nada por si sola, porque las politicas siguen aplicandose.</td></tr>
+          <tr><td><strong>Clave secreta</strong></td><td>Credencial con acceso total que salta las politicas. Solo en scripts de servidor.</td></tr>
+          <tr><td><strong>Enlace firmado</strong></td><td>Direccion temporal para descargar un archivo privado. Caduca en minutos.</td></tr>
+          <tr><td><strong>Esquema</strong></td><td>Espacio de nombres dentro de la base de datos. El de esta aplicacion es <code>tribuia</code>.</td></tr>
+          <tr><td><strong>Invitacion</strong></td><td>Reserva de un correo con un rol. Al entrar, la persona recibe el acceso sin pasar por aprobacion.</td></tr>
+          <tr><td><strong>Membresia</strong></td><td>Vinculo persona-condominio con rol y estado. Es la llave del acceso.</td></tr>
+          <tr><td><strong>Multi-tenant</strong></td><td>Una instalacion atiende a varios condominios con datos aislados entre si.</td></tr>
+          <tr><td><strong>PWA</strong></td><td>Aplicacion web instalable en el telefono como si fuera nativa.</td></tr>
+          <tr><td><strong>RLS</strong></td><td><em>Row Level Security</em>: reglas de PostgreSQL que filtran filas por usuario en cada consulta.</td></tr>
+          <tr><td><strong>Semilla (seed)</strong></td><td>Datos de prueba para poder recorrer el sistema antes de cargar informacion real.</td></tr>
+          <tr><td><strong>Tiempo real</strong></td><td>Mecanismo por el que un cambio en la base llega al navegador sin recargar.</td></tr>
+        </tbody>
+      </table>
+
+      <h3 class="page">Anexo · Los dos estados que confunden</h3>
+      <div class="grid2">
+        <div class="card">
+          <h4>Tener cuenta</h4>
+          <p>
+            Existe en el sistema de autenticacion y puede iniciar sesion. No implica ver nada: sin
+            membresia activa, la base de datos no le devuelve informacion de ningun condominio.
+          </p>
+        </div>
+        <div class="card">
+          <h4>Tener acceso</h4>
+          <p>
+            Existe una membresia activa en un condominio, con un rol. Se consigue por aprobacion de
+            una solicitud o por invitacion de la administracion.
+          </p>
+        </div>
+      </div>
+
+      <p style="margin-top: 24px; font-size: 9pt; color: var(--ink-faint); border-top: 1px solid var(--line); padding-top: 12px">
+        Documento generado a partir del codigo del proyecto. Si la aplicacion cambia, esta guia debe
+        actualizarse: vive en <code>docs/guia-del-sistema.html</code> del repositorio.
+      </p>
+    </section>
+  </body>
+</html>

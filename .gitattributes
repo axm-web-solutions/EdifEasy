@@ -1,0 +1,16 @@
+# Normaliza los finales de linea: el repo guarda LF y cada equipo usa lo suyo.
+# Sin esto, un mismo archivo editado en Windows y en Linux aparece como
+# "cambiado por completo" en cada commit.
+* text=auto eol=lf
+
+# Binarios: nunca convertir.
+*.png binary
+*.jpg binary
+*.pdf binary
+*.ico binary
+*.woff  binary
+*.woff2 binary
+
+# Generados: se versionan, pero no ensucian los diffs.
+docs/guia-de-uso.html linguist-generated=true
+pnpm-lock.yaml        linguist-generated=true

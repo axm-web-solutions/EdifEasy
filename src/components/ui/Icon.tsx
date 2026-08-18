@@ -1,0 +1,60 @@
+import {
+  BarChart3,
+  Blocks,
+  Building,
+  Building2,
+  ClipboardList,
+  DoorOpen,
+  FileQuestion,
+  FolderOpen,
+  Gavel,
+  History,
+  Home,
+  LayoutDashboard,
+  Megaphone,
+  MessageCircle,
+  MessagesSquare,
+  Receipt,
+  Settings,
+  ShieldAlert,
+  ShoppingCart,
+  Siren,
+  UserCheck,
+  Users,
+  UsersRound,
+  Wallet,
+  type LucideIcon,
+} from 'lucide-react'
+
+const ICONS: Record<string, LucideIcon> = {
+  LayoutDashboard,
+  Home,
+  Building,
+  Building2,
+  Blocks,
+  DoorOpen,
+  UserCheck,
+  Users,
+  UsersRound,
+  MessagesSquare,
+  Siren,
+  Megaphone,
+  MessageCircle,
+  ClipboardList,
+  FileQuestion,
+  ShieldAlert,
+  Gavel,
+  Wallet,
+  Receipt,
+  ShoppingCart,
+  FolderOpen,
+  BarChart3,
+  History,
+  Settings,
+}
+
+export function Icon({ name, size = 18 }: { name?: string; size?: number }) {
+  const Component = name ? ICONS[name] : undefined
+  if (!Component) return null
+  return <Component size={size} />
+}
