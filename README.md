@@ -490,6 +490,7 @@ el despliegue esta bien y lo que falta es SQL: ejecuta los parches (ver [paso 5.
 | `npm run deadcode` | Detecta archivos y exportaciones sin usar |
 | `npm run screenshots` | Captura las pantallas en `docs/img/` (requiere `npm run dev`) |
 | `npm run guide` | Reconstruye la guia de uso y genera los dos PDF de `docs/` |
+| `npm run responsive` | Audita 4 vistas a 1920/1440/1024/768/390 px: desbordamiento horizontal, objetivos tactiles < 44 px y campos con letra < 16 px (requiere `npm run dev`) |
 
 ---
 

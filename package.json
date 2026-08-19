@@ -17,7 +17,8 @@
     "check": "tsx scripts/check-supabase.ts",
     "deadcode": "npx -y knip@5 --config .knip.json",
     "screenshots": "node scripts/screenshots.mjs",
-    "guide": "node scripts/build-guide.mjs"
+    "guide": "node scripts/build-guide.mjs",
+    "responsive": "node scripts/responsive-check.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "3.9.0",
