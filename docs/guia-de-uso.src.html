@@ -457,6 +457,32 @@ npm run guide</code></pre>
         <li><strong>Contrasena</strong> y aceptacion de terminos.</li>
       </ol>
 
+      <h3>Elegir el apartamento en el plano</h3>
+      <p>
+        Al elegir el bloque aparece su <strong>plano</strong>: una fila por piso, del ultimo al
+        primero, con cada apartamento como un boton. Se toca el propio y queda seleccionado.
+      </p>
+      {{IMG:register-plan-desktop|Plano del bloque A: los pisos se leen de arriba abajo como una fachada, y la cabecera dice cuantos apartamentos quedan libres.}}
+      <p>
+        Los colores dicen si se puede elegir cada uno, y al pasar el cursor por uno bloqueado se lee
+        el motivo:
+      </p>
+      <table>
+        <thead>
+          <tr><th style="width: 34mm">Estado</th><th>Que significa</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Disponible</td><td>Se puede seleccionar.</td></tr>
+          <tr><td>Ocupado</td><td>Ya tiene propietario o arrendatario para el rol que pediste.</td></tr>
+          <tr><td>En revision</td><td>Otra persona lo solicito y espera aprobacion.</td></tr>
+          <tr><td>No disponible</td><td>Fuera de servicio: inactivo o en mantenimiento.</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size: 9.5pt; color: var(--ink-faint)">
+        Un apartamento ocupado como propietario puede seguir libre como arrendatario: el plano se
+        recalcula segun el tipo de usuario que elegiste en el primer campo.
+      </p>
+
       <div class="ok">
         <strong>Por que solo se puede elegir de listas</strong>
         Si el apartamento se escribiera a mano, cualquiera podria reclamar el 301 sin que exista, o
@@ -465,8 +491,9 @@ npm run guide</code></pre>
       </div>
 
       <h3>El mismo formulario en el telefono</h3>
-      <div class="shot-narrow">
-        {{IMG:register-mobile|Registro en un telefono de 390 px: formulario completo, sin recortes y sin desplazamiento horizontal.}}
+      <div class="shot-row">
+        {{IMG:register-mobile|Registro en un telefono de 390 px: formulario completo, sin recortes ni desplazamiento horizontal.}}
+        {{IMG:register-plan-mobile|El plano en el telefono: los botones mantienen 44 px de alto, la medida comoda para el dedo.}}
       </div>
 
       <div class="note">

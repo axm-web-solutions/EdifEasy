@@ -35,10 +35,62 @@ const VIEWPORTS = {
   mobile: { width: 390, height: 844, scale: 1, mobile: true },
 }
 
+/*
+ * Ayudantes que se inyectan en la pagina para poder operar la interfaz antes de
+ * capturar. Los Select de antd no son <select> nativos: ignoran .click() y
+ * necesitan la secuencia pointerdown/mousedown/mouseup/click.
+ */
+const PAGE_HELPERS = `
+  window.__fire = (el) => {
+    for (const type of ['pointerdown', 'mousedown', 'mouseup', 'click']) {
+      el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window }))
+    }
+  };
+  window.__openSelect = (labelText) => {
+    const item = [...document.querySelectorAll('.ant-form-item')]
+      .find((i) => i.textContent.includes(labelText))
+    if (!item) return 'sin campo: ' + labelText
+    const selector = item.querySelector('.ant-select-selector')
+    if (!selector) return 'el campo no es un select: ' + labelText
+    window.__fire(selector)
+    return 'ok'
+  };
+  window.__pickOption = (index) => {
+    const options = [...document.querySelectorAll(
+      '.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option')]
+    if (!options.length) return 'sin opciones visibles'
+    const option = options[index] ?? options[0]
+    window.__fire(option)
+    return 'elegido: ' + option.textContent
+  };
+  window.__clickText = (text) => {
+    const el = [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === text)
+    if (!el) return 'sin boton: ' + text
+    window.__fire(el)
+    return 'ok'
+  };
+`
+
+/** Pasos para llegar al plano de apartamentos, que solo aparece tras elegir bloque. */
+const PLAN_STEPS = [
+  { js: `window.__openSelect('Tipo de usuario')` },
+  { js: `window.__pickOption(1)` },
+  { js: `window.__openSelect('Condominio')` },
+  { js: `window.__pickOption(0)`, wait: 1600 },
+  { js: `window.__openSelect('Edificio')` },
+  { js: `window.__pickOption(0)`, wait: 1800 },
+]
+
 /** Vistas publicas: no requieren sesion. */
 const PUBLIC_SHOTS = [
   { name: 'login', route: '/login', viewports: ['desktop', 'tablet', 'mobile'] },
   { name: 'register', route: '/register', viewports: ['desktop', 'mobile'] },
+  {
+    name: 'register-plan',
+    route: '/register',
+    viewports: ['desktop', 'mobile'],
+    prepare: PLAN_STEPS,
+  },
   { name: 'forgot', route: '/forgot-password', viewports: ['desktop'] },
   { name: 'notfound', route: '/ruta-inexistente', viewports: ['desktop'] },
 ]
@@ -190,6 +242,19 @@ async function main() {
       skipped.push(`${shot.name}-${viewportName}`)
       console.log(`  omitida  ${`${shot.name}-${viewportName}`.padEnd(26)} redirigio a /login`)
       return
+    }
+
+    // Pasos previos (elegir en un desplegable, abrir un panel...) si la vista
+    // solo muestra lo interesante despues de interactuar.
+    if (shot.prepare) {
+      await cdp.evaluate(PAGE_HELPERS)
+      for (const step of shot.prepare) {
+        const outcome = await cdp.evaluate(step.js)
+        if (typeof outcome === 'string' && !outcome.startsWith('ok') && !outcome.startsWith('elegido')) {
+          console.log(`           aviso: ${outcome}`)
+        }
+        await sleep(step.wait ?? 900)
+      }
     }
 
     /*

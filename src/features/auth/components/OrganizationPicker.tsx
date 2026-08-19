@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Alert, Button } from 'antd'
+import { Alert, Button, Form } from 'antd'
+import { useController } from 'react-hook-form'
 import type {
   Control,
   FieldPath,
@@ -10,6 +11,7 @@ import type {
 } from 'react-hook-form'
 import type { PathValue } from 'react-hook-form'
 import { SelectField } from '@/components/forms/fields'
+import { BuildingPlan, type PlanUnit } from '@/components/ui/BuildingPlan'
 import { registrationService } from '@/services/registrationService'
 import { getErrorMessage } from '@/lib/errors'
 import type { SelfRegisterRole } from '@/schemas/auth'
@@ -87,24 +89,42 @@ export function OrganizationPicker<T extends OrganizationFields>({
   const wantsOwner = userType === 'OWNER' || userType === 'BOTH'
   const wantsTenant = userType === 'TENANT' || userType === 'BOTH'
 
-  const apartmentOptions = (apartments.data ?? []).map((apartment) => {
-    const takenAsOwner = wantsOwner && apartment.claimed_by_owner
-    const takenAsTenant = wantsTenant && apartment.claimed_by_tenant
-    const pending = apartment.has_pending_request
+  /*
+   * El apartamento se elige en el plano, no en un desplegable, asi que el campo
+   * se controla a mano. useController mantiene intacta la validacion de Zod:
+   * el valor sigue viviendo en el formulario y el error sale del mismo sitio.
+   */
+  const apartment = useController({ control, name: apartmentField })
 
-    let suffix = ''
-    if (pending) suffix = ' - solicitud en revision'
-    else if (takenAsOwner) suffix = ' - ya tiene propietario'
-    else if (takenAsTenant) suffix = ' - ya tiene arrendatario'
+  const units: PlanUnit[] = (apartments.data ?? []).map((unit) => {
+    const takenAsOwner = wantsOwner && unit.claimed_by_owner
+    const takenAsTenant = wantsTenant && unit.claimed_by_tenant
 
-    return {
-      value: apartment.id,
-      label: `Apto ${apartment.number} (piso ${apartment.floor})${suffix}`,
-      disabled: pending || takenAsOwner || takenAsTenant,
+    let state: PlanUnit['state'] = 'available'
+    let hint: string | undefined
+
+    if (unit.has_pending_request) {
+      state = 'pending'
+      hint = 'Ya hay una solicitud en revision para este apartamento.'
+    } else if (takenAsOwner) {
+      state = 'taken'
+      hint = 'Este apartamento ya tiene un propietario registrado.'
+    } else if (takenAsTenant) {
+      state = 'taken'
+      hint = 'Este apartamento ya tiene un arrendatario registrado.'
     }
+
+    return { id: unit.id, number: unit.number, floor: unit.floor, state, hint }
   })
 
-  const availableCount = apartmentOptions.filter((option) => !option.disabled).length
+  const availableCount = units.filter((unit) => unit.state === 'available').length
+  const selectedUnit = units.find((unit) => unit.id === apartment.field.value)
+
+  const buildings_ = buildings.data ?? []
+  const currentBuilding = buildings_.find((building) => building.id === buildingId)
+  const buildingLabel = currentBuilding
+    ? currentBuilding.name ?? `Bloque ${currentBuilding.number}`
+    : 'Plano del edificio'
 
   return (
     <>
@@ -162,23 +182,48 @@ export function OrganizationPicker<T extends OrganizationFields>({
         }))}
       />
 
-      <SelectField
-        control={control}
-        name={apartmentField}
+      {/*
+        El texto informativo va DENTRO del campo, no en `help`.
+        Medido en el navegador: antd 5 acompana cada mensaje de ayuda con un
+        `ant-form-item-margin-offset` de margen negativo que compensa su altura
+        para que el formulario no salte. Eso anula el margen inferior del campo
+        y el divisor de la seccion siguiente acaba pegado al texto (hueco de 0px,
+        con margenes de 24px y 16px declarados). `help` se reserva para el error.
+      */}
+      <Form.Item
         label="Apartamento"
         required
-        placeholder={buildingId ? 'Selecciona tu apartamento' : 'Elige primero el edificio'}
-        disabled={!buildingId}
-        loading={apartments.isLoading}
-        options={apartmentOptions}
-        help={
-          buildingId && !apartments.isLoading
-            ? availableCount === 0
-              ? 'No hay apartamentos disponibles en este edificio. Contacta a la administracion.'
-              : `${availableCount} apartamento(s) disponible(s).`
-            : undefined
-        }
-      />
+        layout="vertical"
+        validateStatus={apartment.fieldState.error ? 'error' : undefined}
+        help={apartment.fieldState.error?.message}
+      >
+        {buildingId ? (
+          <>
+            <BuildingPlan
+              units={units}
+              value={apartment.field.value as string}
+              onSelect={(unitId) =>
+                apartment.field.onChange(unitId as PathValue<T, FieldPath<T>>)
+              }
+              buildingLabel={buildingLabel}
+              loading={apartments.isLoading}
+            />
+            {!apartments.isLoading ? (
+              <p className="mb-0 mt-2 text-xs text-slate-500">
+                {selectedUnit
+                  ? `Elegiste el apartamento ${selectedUnit.number}, piso ${selectedUnit.floor}.`
+                  : availableCount === 0
+                    ? 'No hay apartamentos disponibles en este edificio. Contacta a la administracion.'
+                    : 'Toca tu apartamento en el plano.'}
+              </p>
+            ) : null}
+          </>
+        ) : (
+          <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+            Elige primero el condominio y el edificio para ver el plano.
+          </div>
+        )}
+      </Form.Item>
     </>
   )
 }
