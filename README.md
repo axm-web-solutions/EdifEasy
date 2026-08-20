@@ -28,7 +28,7 @@ dependencias) y en PDF ya generado:
 
 ```bash
 npm run dev          # terminal 1
-npm run screenshots  # terminal 2 - captura docs/img/*.png con Chrome headless
+npm run screenshots  # terminal 2 - captura docs/img/ con Chrome headless
 npm run guide        # reconstruye el HTML e imprime los dos PDF
 ```
 
@@ -39,7 +39,9 @@ el Chrome o Edge ya instalado. **Editar la plantilla, no el HTML generado.**
 Notas sobre las capturas:
 
 - `npm run screenshots` emula dispositivos reales (1440 px escritorio, 768 px tableta, 390 px
-  telefono) por el protocolo DevTools. No usa `--window-size`, porque headless Chrome impone un
+  telefono) por el protocolo DevTools. Las de escritorio se guardan en **JPEG** porque incluyen la
+  ilustracion del panel de acceso, un degradado grande: en PNG las cuatro capturas engordaban la
+  guia de 1,8 a 5,7 MB. Las de movil y tableta siguen en PNG, que con interfaz plana pesa menos. No usa `--window-size`, porque headless Chrome impone un
   ancho minimo de ventana de 500 px y recorta la imagen: el resultado parece contenido cortado
   cuando la pagina nunca se maqueto como movil.
 - Si una vista protegida redirige a `/login`, la captura **no se guarda** y el script lo informa.

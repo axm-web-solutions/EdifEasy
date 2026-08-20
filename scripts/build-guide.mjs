@@ -62,9 +62,18 @@ let imageBytes = 0
 const html = template.replace(
   /\{\{IMG:([a-z0-9-]+)(?:\|([^}]*))?\}\}/g,
   (_match, name, caption = '') => {
-    const file = join(IMG_DIR, `${name}.png`)
+    /*
+     * Se admiten los dos formatos: las capturas de escritorio se guardan en JPEG
+     * (degradados grandes) y las de movil en PNG (interfaz plana con texto).
+     */
+    const candidates = [
+      { path: join(IMG_DIR, `${name}.jpg`), mime: 'image/jpeg' },
+      { path: join(IMG_DIR, `${name}.png`), mime: 'image/png' },
+    ]
+    const found = candidates.find((candidate) => existsSync(candidate.path))
+    const file = found?.path ?? candidates[1].path
 
-    if (!existsSync(file)) {
+    if (!found) {
       missing += 1
       /*
        * Recuadro deliberadamente corto: el motivo se explica una sola vez al
@@ -83,7 +92,7 @@ const html = template.replace(
     imageBytes += statSync(file).size
 
     return `<figure class="shot">
-      <img src="data:image/png;base64,${readFileSync(file).toString('base64')}" alt="${caption || name}" />
+      <img src="data:${found.mime};base64,${readFileSync(file).toString('base64')}" alt="${caption || name}" />
       ${caption ? `<figcaption>${caption}</figcaption>` : ''}
     </figure>`
   },

@@ -28,11 +28,19 @@ const ONLY = process.env.SHOT_ONLY ?? ''
 const OUT_DIR = resolve(process.cwd(), 'docs/img')
 const PORT = 9355
 
-/** Perfiles de dispositivo reales. */
+/*
+ * Perfiles de dispositivo reales.
+ *
+ * `format`: las vistas de escritorio incluyen la ilustracion del panel, que es
+ * un degradado grande. En PNG (sin perdida, pesimo con degradados) esas cuatro
+ * capturas subieron la guia de 1,8 a 5,7 MB; en JPEG bajan a una fraccion sin
+ * diferencia apreciable. Las de movil y tableta se quedan en PNG: son interfaz
+ * plana con texto, donde el PNG pesa menos y no introduce artefactos.
+ */
 const VIEWPORTS = {
-  desktop: { width: 1440, height: 900, scale: 1, mobile: false },
-  tablet: { width: 768, height: 1024, scale: 1, mobile: true },
-  mobile: { width: 390, height: 844, scale: 1, mobile: true },
+  desktop: { width: 1440, height: 900, scale: 1, mobile: false, format: 'jpeg', quality: 84 },
+  tablet: { width: 768, height: 1024, scale: 1, mobile: true, format: 'png' },
+  mobile: { width: 390, height: 844, scale: 1, mobile: true, format: 'png' },
 }
 
 /*
@@ -274,14 +282,18 @@ async function main() {
     })
     await sleep(700)
 
-    const result = await cdp.send('Page.captureScreenshot', { format: 'png' })
+    const result = await cdp.send('Page.captureScreenshot', {
+      format: viewport.format,
+      ...(viewport.quality ? { quality: viewport.quality } : {}),
+    })
     const data = result.result?.data
     if (!data) {
       console.log(`  fallo    ${shot.name}-${viewportName}`)
       return
     }
 
-    const file = join(OUT_DIR, `${shot.name}-${viewportName}.png`)
+    const extension = viewport.format === 'jpeg' ? 'jpg' : 'png'
+    const file = join(OUT_DIR, `${shot.name}-${viewportName}.${extension}`)
     writeFileSync(file, Buffer.from(data, 'base64'))
     const kb = Math.round(statSync(file).size / 1024)
     console.log(

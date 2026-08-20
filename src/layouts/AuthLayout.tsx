@@ -1,6 +1,6 @@
 import { Outlet } from 'react-router-dom'
 import { Building2, ShieldCheck, Sparkles } from 'lucide-react'
-import { BuildingSkyline } from '@/components/ui/BuildingSkyline'
+import { GlassTowers } from '@/components/ui/GlassTowers'
 
 const HIGHLIGHTS = [
   {
@@ -34,17 +34,18 @@ export function AuthLayout() {
         <div className="absolute -bottom-24 -left-20 h-80 w-80 rounded-full bg-brand-800/40 blur-3xl" />
 
         {/*
-          La franja de edificios se ancla abajo y ocupa todo el ancho. No lleva
-          alto fijo: el SVG es ancho y bajo (720x260), asi que a ancho completo
-          resulta una banda de la altura justa, sin ampliar el dibujo.
+          La ilustracion cubre el panel entero (`slice` recorta lo que sobra en
+          lugar de deformar), y el velo va de IZQUIERDA a derecha: opaco donde se
+          apoya el texto y transparente sobre el cielo del punto de fuga, que es
+          la parte que interesa ver.
 
-          El velo va al reves de lo que parece natural: OPACO ARRIBA, donde se
-          apoya el texto, y transparente abajo, donde interesa ver los edificios.
-          Con el degradado al contrario, las ventanas encendidas quedaban justo
-          detras de las palabras y no se podia leer.
+          Con el velo de abajo arriba que habia antes, un cielo claro dejaba el
+          texto ilegible; con este, la foto respira por la derecha y el texto
+          conserva contraste.
         */}
-        <BuildingSkyline className="pointer-events-none absolute inset-x-0 bottom-0 w-full" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[46%] bg-gradient-to-t from-transparent via-slate-900/70 to-slate-900" />
+        <GlassTowers className="pointer-events-none absolute inset-0 h-full w-full" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/60 to-transparent" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-slate-950/25" />
 
         <div className="relative z-10 flex items-center gap-3 p-10 pb-0">
           <img src="/favicon.svg" alt="EdiFeasy" className="h-10 w-10" />
@@ -78,12 +79,9 @@ export function AuthLayout() {
           </div>
         </div>
 
-        {/* Va sobre la ilustracion, asi que lleva su propio fondo para leerse. */}
-        <div className="relative z-10 p-10 pt-0">
-          <p className="m-0 inline-block rounded-md bg-slate-900/70 px-2 py-1 text-xs text-slate-400 backdrop-blur-sm">
-            &copy; {new Date().getFullYear()} EdiFeasy. Todos los derechos reservados.
-          </p>
-        </div>
+        <p className="relative z-10 m-0 p-10 pt-0 text-xs text-slate-400">
+          &copy; {new Date().getFullYear()} EdiFeasy. Todos los derechos reservados.
+        </p>
       </aside>
 
       {/* Degradado suave para que la columna del formulario no sea un plano gris. */}
