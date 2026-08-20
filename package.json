@@ -18,7 +18,8 @@
     "deadcode": "npx -y knip@5 --config .knip.json",
     "screenshots": "node scripts/screenshots.mjs",
     "guide": "node scripts/build-guide.mjs",
-    "responsive": "node scripts/responsive-check.mjs"
+    "responsive": "node scripts/responsive-check.mjs",
+    "verify:plan": "node scripts/verify-plan.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "3.9.0",

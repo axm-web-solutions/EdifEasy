@@ -79,14 +79,18 @@ const PAGE_HELPERS = `
   };
 `
 
-/** Pasos para llegar al plano de apartamentos, que solo aparece tras elegir bloque. */
-const PLAN_STEPS = [
+/**
+ * Pasos para llegar al plano, que solo aparece tras elegir bloque.
+ * `userType`: 1 = arrendatario (en el condominio demo deja unidades libres),
+ * 0 = propietario (todas reclamadas, sirve para documentar el estado ocupado).
+ */
+const planSteps = (userType) => [
   { js: `window.__openSelect('Tipo de usuario')` },
-  { js: `window.__pickOption(1)` },
+  { js: `window.__pickOption(${userType})` },
   { js: `window.__openSelect('Condominio')` },
   { js: `window.__pickOption(0)`, wait: 1600 },
   { js: `window.__openSelect('Edificio')` },
-  { js: `window.__pickOption(0)`, wait: 1800 },
+  { js: `window.__pickOption(0)`, wait: 2000 },
 ]
 
 /** Vistas publicas: no requieren sesion. */
@@ -97,7 +101,13 @@ const PUBLIC_SHOTS = [
     name: 'register-plan',
     route: '/register',
     viewports: ['desktop', 'mobile'],
-    prepare: PLAN_STEPS,
+    prepare: planSteps(1),
+  },
+  {
+    name: 'register-plan-ocupado',
+    route: '/register',
+    viewports: ['desktop'],
+    prepare: planSteps(0),
   },
   { name: 'forgot', route: '/forgot-password', viewports: ['desktop'] },
   { name: 'notfound', route: '/ruta-inexistente', viewports: ['desktop'] },
