@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { Controller, useFieldArray, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Alert, Button, Card, Checkbox, Divider, Form, Result, Typography } from 'antd'
@@ -11,6 +11,13 @@ import { registrationService } from '@/services/registrationService'
 import { OrganizationPicker } from '../components/OrganizationPicker'
 
 const { Title, Text } = Typography
+
+/** Modal de documentos legales. Lazy: recien se carga al abrirlo. */
+const LegalDocsModal = lazy(() =>
+  import('@/components/ui/LegalDocsModal').then((m) => ({ default: m.LegalDocsModal })),
+)
+
+type LegalSection = 'terms' | 'privacy'
 
 const USER_TYPE_OPTIONS = [
   { value: 'OWNER', label: 'Propietario / Dueno' },
@@ -36,6 +43,7 @@ export function RegisterPage() {
    * ready   -> cuenta creada pero el envio fallo; se reintenta en /sin-condominio.
    */
   const [done, setDone] = useState<'confirm' | 'sent' | 'ready' | null>(null)
+  const [legalSection, setLegalSection] = useState<LegalSection | null>(null)
 
   const {
     control,
@@ -295,7 +303,27 @@ export function RegisterPage() {
                 checked={Boolean(field.value)}
                 onChange={(event) => field.onChange(event.target.checked)}
               >
-                Acepto los terminos y condiciones y la politica de tratamiento de datos.
+                Acepto los{' '}
+                <Typography.Link
+                  onClick={(event) => {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    setLegalSection('terms')
+                  }}
+                >
+                  terminos y condiciones
+                </Typography.Link>{' '}
+                y la{' '}
+                <Typography.Link
+                  onClick={(event) => {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    setLegalSection('privacy')
+                  }}
+                >
+                  politica de tratamiento de datos
+                </Typography.Link>
+                .
               </Checkbox>
             </Form.Item>
           )}
@@ -314,6 +342,16 @@ export function RegisterPage() {
           </Link>
         </Text>
       </div>
+
+      {legalSection ? (
+        <Suspense fallback={null}>
+          <LegalDocsModal
+            open
+            initialSection={legalSection}
+            onClose={() => setLegalSection(null)}
+          />
+        </Suspense>
+      ) : null}
     </Card>
   )
 }
