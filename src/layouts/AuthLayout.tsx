@@ -1,6 +1,15 @@
+import { Suspense, lazy } from 'react'
 import { Outlet } from 'react-router-dom'
 import { Building2, ShieldCheck, Sparkles } from 'lucide-react'
 import { GlassTowers } from '@/components/ui/GlassTowers'
+
+/**
+ * Escena 3D cargada bajo demanda: mantiene Three.js fuera del bundle inicial
+ * de la app autenticada. Mientras descarga se muestra la ilustracion SVG.
+ */
+const GlassTowers3D = lazy(() =>
+  import('@/components/ui/GlassTowers3D').then((module) => ({ default: module.GlassTowers3D })),
+)
 
 const HIGHLIGHTS = [
   {
@@ -34,16 +43,22 @@ export function AuthLayout() {
         <div className="absolute -bottom-24 -left-20 h-80 w-80 rounded-full bg-brand-800/40 blur-3xl" />
 
         {/*
-          La ilustracion cubre el panel entero (`slice` recorta lo que sobra en
-          lugar de deformar), y el velo va de IZQUIERDA a derecha: opaco donde se
-          apoya el texto y transparente sobre el cielo del punto de fuga, que es
-          la parte que interesa ver.
+          La escena 3D cubre el panel entero (la camara recorre las torres en
+          distintos "tomas"), y el velo va de IZQUIERDA a derecha: opaco donde
+          se apoya el texto y transparente sobre el cielo del punto de fuga,
+          que es la parte que interesa ver.
 
           Con el velo de abajo arriba que habia antes, un cielo claro dejaba el
-          texto ilegible; con este, la foto respira por la derecha y el texto
+          texto ilegible; con este, la escena respira por la derecha y el texto
           conserva contraste.
         */}
-        <GlassTowers className="pointer-events-none absolute inset-0 h-full w-full" />
+        <Suspense
+          fallback={
+            <GlassTowers className="pointer-events-none absolute inset-0 h-full w-full" />
+          }
+        >
+          <GlassTowers3D className="pointer-events-none absolute inset-0 h-full w-full" />
+        </Suspense>
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/60 to-transparent" />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-slate-950/25" />
 

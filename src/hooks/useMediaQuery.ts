@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
  * Se lee de forma sincrona en el primer render (no como los breakpoints de antd,
  * que llegan vacios y provocan un parpadeo de escritorio a movil).
  */
-function useMediaQuery(query: string): boolean {
+export function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState<boolean>(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false
     return window.matchMedia(query).matches
