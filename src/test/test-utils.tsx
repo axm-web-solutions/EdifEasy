@@ -29,6 +29,8 @@ function mockMembership(role: RoleCode): Membership {
     condominium_id: 'condo-1',
     condominium_name: 'Conjunto Altos del Parque',
     condominium_status: 'ACTIVE',
+    condominium_logo_url: null,
+    condominium_primary_color: null,
     role_id: `role-${role}`,
     role_code: role,
     role_name: role,

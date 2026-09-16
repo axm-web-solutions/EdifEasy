@@ -1,5 +1,5 @@
 import { Avatar, Button, Dropdown, Select, Space, Tag, Tooltip, Typography } from 'antd'
-import { LogOut, Menu as MenuIcon, Settings, User } from 'lucide-react'
+import { Building2, LogOut, Menu as MenuIcon, Settings, User } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { roleColor, roleLabel } from '@/constants/roles'
@@ -30,6 +30,24 @@ export function Topbar({ onOpenDrawer }: { onOpenDrawer: () => void }) {
     (option, index, list) => list.findIndex((candidate) => candidate.value === option.value) === index,
   )
 
+  const renderCondominiumLabel = (value: string | number | undefined) => {
+    const membership = memberships.find((candidate) => candidate.condominium_id === String(value))
+    return (
+      <span className="flex min-w-0 items-center gap-2">
+        {membership?.condominium_logo_url ? (
+          <img
+            src={membership.condominium_logo_url}
+            alt=""
+            className="h-5 w-5 shrink-0 rounded object-contain"
+          />
+        ) : (
+          <Building2 size={16} className="shrink-0 text-slate-400" />
+        )}
+        <span className="truncate">{memberships.find((c) => c.condominium_id === String(value))?.condominium_name}</span>
+      </span>
+    )
+  }
+
   return (
     <div className="flex h-full items-center gap-3 px-3 md:px-5">
       <Button
@@ -56,6 +74,8 @@ export function Topbar({ onOpenDrawer }: { onOpenDrawer: () => void }) {
               size="middle"
               showSearch
               optionFilterProp="label"
+              labelRender={({ value }) => renderCondominiumLabel(value)}
+              optionRender={(option) => renderCondominiumLabel(option.value)}
             />
           </Tooltip>
         ) : null}
@@ -114,7 +134,7 @@ export function Topbar({ onOpenDrawer }: { onOpenDrawer: () => void }) {
             <Avatar
               size={34}
               src={profile?.avatar_url ?? undefined}
-              style={{ backgroundColor: '#2559eb' }}
+              style={{ backgroundColor: 'var(--edifeasy-brand, #2559eb)' }}
             >
               {initials(profile?.full_name)}
             </Avatar>

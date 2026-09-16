@@ -7,6 +7,7 @@ import 'dayjs/locale/es'
 import { queryClient } from '@/lib/queryClient'
 import { NotifyBridge } from '@/lib/notify'
 import { AuthProvider } from './AuthProvider'
+import { DEFAULT_BRAND_COLOR } from '@/utils/brand'
 
 dayjs.locale('es')
 
@@ -17,8 +18,8 @@ export function AppProviders({ children }: { children: ReactNode }) {
       theme={{
         algorithm: theme.defaultAlgorithm,
         token: {
-          colorPrimary: '#2559eb',
-          colorInfo: '#2559eb',
+          colorPrimary: DEFAULT_BRAND_COLOR,
+          colorInfo: DEFAULT_BRAND_COLOR,
           colorSuccess: '#10b981',
           colorWarning: '#f59e0b',
           colorError: '#ef4444',
@@ -32,11 +33,17 @@ export function AppProviders({ children }: { children: ReactNode }) {
           Menu: {
             darkItemBg: '#0f172a',
             darkSubMenuItemBg: '#0b1220',
-            darkItemSelectedBg: '#2559eb',
+            darkItemSelectedBg: DEFAULT_BRAND_COLOR,
             darkItemHoverBg: '#1e293b',
           },
           Card: { borderRadiusLG: 12 },
-          Table: { headerBg: '#f8fafc', headerColor: '#475569', rowHoverBg: '#f8fafc' },
+          Table: {
+            headerBg: '#f8fafc',
+            headerColor: '#475569',
+            rowHoverBg: '#f1f5f9',
+            headerSplitColor: 'rgba(226,232,240,0.7)',
+            cellPaddingBlock: 12,
+          },
           Statistic: { titleFontSize: 13 },
         },
       }}

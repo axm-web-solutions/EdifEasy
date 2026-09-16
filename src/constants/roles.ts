@@ -90,6 +90,8 @@ export const PERMISSIONS = {
   viewFinance: ['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON', 'OWNER'] as RoleCode[],
   manageFinance: ['SUPER_ADMIN', 'ADMINISTRATOR'] as RoleCode[],
   manageFines: ['SUPER_ADMIN', 'ADMINISTRATOR'] as RoleCode[],
+  viewVisitors: ['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY', 'OWNER', 'TENANT'] as RoleCode[],
+  manageVisitors: ['SUPER_ADMIN', 'ADMINISTRATOR', 'SECURITY', 'OWNER', 'TENANT'] as RoleCode[],
   manageDocuments: ['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON'] as RoleCode[],
   viewResidents: ['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY'] as RoleCode[],
   viewReports: ['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON'] as RoleCode[],

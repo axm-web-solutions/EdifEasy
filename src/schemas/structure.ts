@@ -11,6 +11,10 @@ export const condominiumSchema = z.object({
   phone: optionalText(30),
   email: z.string().email('Correo invalido').optional().or(z.literal('')),
   logo_url: z.string().url('URL invalida').optional().or(z.literal('')),
+  primary_color: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/, 'Usa un color hex, ej. #2559eb')
+    .default('#2559eb'),
   description: optionalText(1000),
   status: z.enum(['ACTIVE', 'INACTIVE', 'SUSPENDED']).default('ACTIVE'),
 })

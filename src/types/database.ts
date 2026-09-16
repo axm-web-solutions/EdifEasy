@@ -34,6 +34,8 @@ export type ApartmentStatus = 'OCCUPIED' | 'VACANT' | 'MAINTENANCE' | 'INACTIVE'
 export type ResidentRelationship = 'OWNER' | 'TENANT' | 'FAMILY' | 'EMPLOYEE' | 'OTHER'
 export type VehicleType = 'CAR' | 'MOTORCYCLE' | 'BICYCLE' | 'TRUCK' | 'OTHER'
 export type PetType = 'DOG' | 'CAT' | 'BIRD' | 'FISH' | 'REPTILE' | 'OTHER'
+export type VisitorType = 'VISIT' | 'DELIVERY' | 'PROVIDER' | 'OTHER'
+export type VisitorStatus = 'EXPECTED' | 'INSIDE' | 'LEFT' | 'CANCELLED'
 export type AudienceType = 'CONDOMINIUM' | 'BUILDING' | 'APARTMENT' | 'ROLE'
 export type AlertType =
   | 'EMERGENCY'
@@ -288,6 +290,26 @@ export interface PetRow {
   vaccinated: boolean
   notes: string | null
   is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface VisitorRow {
+  id: string
+  condominium_id: string
+  apartment_id: string
+  full_name: string
+  document_number: string | null
+  phone: string | null
+  type: VisitorType
+  status: VisitorStatus
+  plate: string | null
+  company: string | null
+  scheduled_at: string | null
+  entry_at: string | null
+  exit_at: string | null
+  notes: string | null
+  registered_by: string | null
   created_at: string
   updated_at: string
 }
@@ -664,6 +686,7 @@ export interface Database {
       residents: TableDef<ResidentRow, 'condominium_id' | 'apartment_id' | 'full_name'>
       vehicles: TableDef<VehicleRow, 'condominium_id' | 'apartment_id' | 'plate'>
       pets: TableDef<PetRow, 'condominium_id' | 'apartment_id' | 'name'>
+      visitors: TableDef<VisitorRow, 'condominium_id' | 'apartment_id' | 'full_name'>
       alerts: TableDef<AlertRow, 'condominium_id' | 'title' | 'description'>
       announcements: TableDef<AnnouncementRow, 'condominium_id' | 'title' | 'content'>
       notifications: TableDef<NotificationRow, 'user_id' | 'title'>
@@ -798,6 +821,8 @@ export interface Database {
       resident_relationship: ResidentRelationship
       vehicle_type: VehicleType
       pet_type: PetType
+      visitor_type: VisitorType
+      visitor_status: VisitorStatus
       audience_type: AudienceType
       alert_type: AlertType
       priority_level: PriorityLevel

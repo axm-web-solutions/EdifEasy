@@ -44,6 +44,9 @@ const ApprovalsPage = lazy(() =>
 const ResidentsPage = lazy(() =>
   import('@/features/residents/pages/ResidentsPage').then((m) => ({ default: m.ResidentsPage })),
 )
+const VisitorsPage = lazy(() =>
+  import('@/features/visitors/pages/VisitorsPage').then((m) => ({ default: m.VisitorsPage })),
+)
 const AlertsPage = lazy(() =>
   import('@/features/alerts/pages/AlertsPage').then((m) => ({ default: m.AlertsPage })),
 )
@@ -171,6 +174,14 @@ export function AppRoutes() {
               element={
                 <RoleGuard permission="viewResidents">
                   <ResidentsPage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/visitors"
+              element={
+                <RoleGuard permission="viewVisitors">
+                  <VisitorsPage />
                 </RoleGuard>
               }
             />

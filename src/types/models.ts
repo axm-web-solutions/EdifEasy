@@ -24,6 +24,7 @@ import type {
   ResidentRow,
   RoleCode,
   RoleRow,
+  VisitorRow,
 } from './database'
 
 export type ProfileRef = Pick<ProfileRow, 'id' | 'full_name' | 'email' | 'avatar_url' | 'phone'>
@@ -42,6 +43,19 @@ export interface MemberWithRelations extends CondominiumMemberRow {
 
 export interface ResidentWithRelations extends ResidentRow {
   apartment: ApartmentRef | null
+}
+
+export interface VisitorApartmentRef {
+  id: string
+  number: string
+  floor: string | null
+  building_id: string | null
+  building: BuildingRef | null
+}
+
+export interface VisitorWithRelations extends VisitorRow {
+  apartment: VisitorApartmentRef | null
+  registeredBy: ProfileRef | null
 }
 
 export interface OwnerWithProfile extends ApartmentOwnerRow {
@@ -118,6 +132,8 @@ export interface Membership {
   condominium_id: string
   condominium_name: string
   condominium_status: string
+  condominium_logo_url: string | null
+  condominium_primary_color: string | null
   role_id: string
   role_code: RoleCode
   role_name: string

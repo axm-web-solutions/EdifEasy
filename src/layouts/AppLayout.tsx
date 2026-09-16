@@ -12,12 +12,16 @@ const { Header, Sider, Content } = Layout
 const { useBreakpoint } = Grid
 
 function Brand({ collapsed }: { collapsed: boolean }) {
+  const { currentMembership } = useAuth()
+  const logoSrc = currentMembership?.condominium_logo_url ?? '/favicon.svg'
+  const name = currentMembership?.condominium_name ?? 'EdiFeasy'
+
   return (
-    <div className="flex h-16 items-center gap-2 px-4">
-      <img src="/favicon.svg" alt="EdiFeasy" className="h-8 w-8 shrink-0" />
+    <div className={`flex h-16 items-center gap-2 ${collapsed ? 'justify-center px-0' : 'px-4'}`}>
+      <img src={logoSrc} alt={name} className="h-8 w-8 shrink-0 rounded bg-white/10 object-contain p-0.5" />
       {!collapsed ? (
         <div className="min-w-0">
-          <p className="m-0 truncate text-base font-semibold text-white">EdiFeasy</p>
+          <p className="m-0 truncate text-base font-semibold text-white">{name}</p>
           <p className="m-0 truncate text-[11px] text-slate-400">Administracion de condominios</p>
         </div>
       ) : null}
@@ -49,7 +53,7 @@ export function AppLayout() {
           className="!fixed left-0 top-0 bottom-0 z-20 overflow-auto"
         >
           <Brand collapsed={collapsed} />
-          <Sidebar />
+          <Sidebar collapsed={collapsed} />
         </Sider>
       ) : (
         <Drawer

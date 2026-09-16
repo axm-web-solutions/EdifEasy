@@ -150,7 +150,7 @@ export function ApprovalsPage() {
               >
                 <List.Item.Meta
                   avatar={
-                    <Avatar size={44} style={{ backgroundColor: '#2559eb' }}>
+                    <Avatar size={44} style={{ backgroundColor: 'var(--edifeasy-brand, #2559eb)' }}>
                       {initials(request.full_name)}
                     </Avatar>
                   }

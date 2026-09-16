@@ -181,7 +181,7 @@ export function MessagesPage() {
                       <List.Item.Meta
                         avatar={
                           <Badge count={unread} size="small">
-                            <Avatar style={{ backgroundColor: '#2559eb' }}>
+                            <Avatar style={{ backgroundColor: 'var(--edifeasy-brand, #2559eb)' }}>
                               {initials(conversation.subject)}
                             </Avatar>
                           </Badge>
@@ -287,7 +287,7 @@ export function MessagesPage() {
                             <Avatar
                               size={30}
                               src={message.sender?.avatar_url ?? undefined}
-                              style={{ backgroundColor: mine ? '#2559eb' : '#94a3b8' }}
+                              style={{ backgroundColor: mine ? 'var(--edifeasy-brand, #2559eb)' : '#94a3b8' }}
                             >
                               {initials(mine ? profile?.full_name : message.sender?.full_name)}
                             </Avatar>

@@ -322,7 +322,7 @@ export function ApartmentDetailPage() {
           >
             <List.Item.Meta
               avatar={
-                <Avatar src={owner.profile?.avatar_url ?? undefined} style={{ backgroundColor: '#2559eb' }}>
+                <Avatar src={owner.profile?.avatar_url ?? undefined} style={{ backgroundColor: 'var(--edifeasy-brand, #2559eb)' }}>
                   {initials(owner.profile?.full_name)}
                 </Avatar>
               }

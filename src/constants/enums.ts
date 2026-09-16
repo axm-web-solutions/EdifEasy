@@ -19,6 +19,8 @@ import type {
   RequestType,
   ResidentRelationship,
   VehicleType,
+  VisitorStatus,
+  VisitorType,
 } from '@/types/database'
 
 export interface EnumMeta {
@@ -89,6 +91,20 @@ export const PET_TYPE: EnumMap<PetType> = {
   FISH: { label: 'Pez', color: 'blue', hex: '#3b76f6' },
   REPTILE: { label: 'Reptil', color: 'green', hex: '#10b981' },
   OTHER: { label: 'Otro', color: 'default', hex: '#94a3b8' },
+}
+
+export const VISITOR_TYPE: EnumMap<VisitorType> = {
+  VISIT: { label: 'Visita', color: 'blue', hex: '#3b76f6' },
+  DELIVERY: { label: 'Domicilio', color: 'green', hex: '#10b981' },
+  PROVIDER: { label: 'Proveedor', color: 'orange', hex: '#f97316' },
+  OTHER: { label: 'Otro', color: 'default', hex: '#94a3b8' },
+}
+
+export const VISITOR_STATUS: EnumMap<VisitorStatus> = {
+  EXPECTED: { label: 'Esperado', color: 'gold', hex: '#f59e0b' },
+  INSIDE: { label: 'Dentro', color: 'blue', hex: '#3b76f6' },
+  LEFT: { label: 'Salio', color: 'green', hex: '#10b981' },
+  CANCELLED: { label: 'Cancelado', color: 'red', hex: '#ef4444' },
 }
 
 export const AUDIENCE_TYPE: EnumMap<AudienceType> = {

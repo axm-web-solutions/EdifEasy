@@ -9,7 +9,9 @@ import { invitationService } from '@/services/invitationService'
 import { PERMISSIONS, type PermissionKey } from '@/constants/roles'
 import type { RoleCode } from '@/types/database'
 import type { Membership } from '@/types/models'
+import { readSetting } from '@/utils/brand'
 import { AuthContext, type AuthContextValue } from './AuthContext'
+import { BrandThemeProvider } from './BrandThemeProvider'
 
 const CONDOMINIUM_STORAGE_KEY = 'edifeasy.currentCondominium'
 
@@ -130,6 +132,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       condominium_id: condominium.id,
       condominium_name: condominium.name,
       condominium_status: condominium.status,
+      condominium_logo_url: condominium.logo_url,
+      condominium_primary_color: readSetting(condominium.settings, 'primaryColor') as string | null,
       role_id: 'super-admin',
       role_code: 'SUPER_ADMIN' as RoleCode,
       role_name: 'Super Administrador',
@@ -249,5 +253,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ],
   )
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  return (
+    <AuthContext.Provider value={value}>
+      <BrandThemeProvider>{children}</BrandThemeProvider>
+    </AuthContext.Provider>
+  )
 }

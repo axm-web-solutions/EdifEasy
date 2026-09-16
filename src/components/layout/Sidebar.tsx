@@ -67,7 +67,13 @@ function findOpenKeys(items: NavItem[], pathname: string): string[] {
   return keys
 }
 
-export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
+export function Sidebar({
+  collapsed,
+  onNavigate,
+}: {
+  collapsed?: boolean
+  onNavigate?: () => void
+}) {
   const navigate = useNavigate()
   const location = useLocation()
   const { hasRole, hasPermission, currentCondominiumId } = useAuth()
@@ -98,6 +104,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     <Menu
       theme="dark"
       mode="inline"
+      inlineCollapsed={collapsed}
       items={items}
       selectedKeys={[selectedKey]}
       defaultOpenKeys={defaultOpenKeys}

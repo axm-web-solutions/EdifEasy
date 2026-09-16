@@ -66,6 +66,12 @@ begin
   if not exists (select 1 from pg_type t join pg_namespace n on n.oid = t.typnamespace where n.nspname = 'tribuia' and t.typname = 'pet_type') then
     create type tribuia.pet_type as enum ('DOG', 'CAT', 'BIRD', 'FISH', 'REPTILE', 'OTHER');
   end if;
+  if not exists (select 1 from pg_type t join pg_namespace n on n.oid = t.typnamespace where n.nspname = 'tribuia' and t.typname = 'visitor_type') then
+    create type tribuia.visitor_type as enum ('VISIT', 'DELIVERY', 'PROVIDER', 'OTHER');
+  end if;
+  if not exists (select 1 from pg_type t join pg_namespace n on n.oid = t.typnamespace where n.nspname = 'tribuia' and t.typname = 'visitor_status') then
+    create type tribuia.visitor_status as enum ('EXPECTED', 'INSIDE', 'LEFT', 'CANCELLED');
+  end if;
   if not exists (select 1 from pg_type t join pg_namespace n on n.oid = t.typnamespace where n.nspname = 'tribuia' and t.typname = 'audience_type') then
     create type tribuia.audience_type as enum ('CONDOMINIUM', 'BUILDING', 'APARTMENT', 'ROLE');
   end if;
@@ -326,7 +332,31 @@ create table if not exists tribuia.pets (
   updated_at     timestamptz not null default now()
 );
 
--- 3.13 Alertas ------------------------------------------------------------------
+-- 3.13 Visitantes -----------------------------------------------------------------
+-- Registro de personas externas (visitas, domicilios, proveedores) ligadas
+-- siempre a un apartamento. El estado sigue el ciclo
+-- EXPECTED (programado) -> INSIDE (entro) -> LEFT (salio), o CANCELLED.
+create table if not exists tribuia.visitors (
+  id              uuid primary key default gen_random_uuid(),
+  condominium_id  uuid not null references tribuia.condominiums (id) on delete cascade,
+  apartment_id    uuid not null references tribuia.apartments (id) on delete cascade,
+  full_name       text not null,
+  document_number text,
+  phone           text,
+  type            tribuia.visitor_type not null default 'VISIT',
+  status          tribuia.visitor_status not null default 'EXPECTED',
+  plate           text,
+  company         text,
+  scheduled_at    timestamptz,
+  entry_at        timestamptz,
+  exit_at         timestamptz,
+  notes           text,
+  registered_by   uuid references tribuia.profiles (id) on delete set null,
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now()
+);
+
+-- 3.14 Alertas ------------------------------------------------------------------
 create table if not exists tribuia.alerts (
   id               uuid primary key default gen_random_uuid(),
   condominium_id   uuid not null references tribuia.condominiums (id) on delete cascade,
@@ -726,6 +756,10 @@ create index if not exists idx_vehicles_condominium on tribuia.vehicles (condomi
 create unique index if not exists idx_vehicles_plate on tribuia.vehicles (condominium_id, upper(plate));
 create index if not exists idx_pets_apartment on tribuia.pets (apartment_id);
 create index if not exists idx_pets_condominium on tribuia.pets (condominium_id);
+create index if not exists idx_visitors_condominium on tribuia.visitors (condominium_id, status, scheduled_at desc);
+create index if not exists idx_visitors_apartment on tribuia.visitors (apartment_id);
+create index if not exists idx_visitors_scheduled_at on tribuia.visitors (scheduled_at desc);
+create index if not exists idx_visitors_created_at on tribuia.visitors (created_at desc);
 create index if not exists idx_alerts_condominium on tribuia.alerts (condominium_id, status, priority);
 create index if not exists idx_alerts_created_at on tribuia.alerts (created_at desc);
 create index if not exists idx_announcements_condominium on tribuia.announcements (condominium_id, status);
@@ -1364,7 +1398,7 @@ begin
   foreach t in array array[
     'profiles', 'roles', 'user_roles', 'condominiums', 'condominium_members',
     'buildings', 'apartments', 'apartment_owners', 'apartment_tenants', 'residents',
-    'vehicles', 'pets', 'alerts', 'announcements', 'conversations',
+    'vehicles', 'pets', 'visitors', 'alerts', 'announcements', 'conversations',
     'conversation_participants', 'messages', 'requests', 'request_comments',
     'incidents', 'expense_categories', 'expenses', 'purchases', 'purchase_items',
     'fines', 'document_categories', 'documents', 'meetings', 'meeting_signatures',
@@ -1698,7 +1732,7 @@ begin
   foreach t in array array[
     'profiles', 'roles', 'user_roles', 'condominiums', 'condominium_members',
     'buildings', 'apartments', 'apartment_owners', 'apartment_tenants', 'residents',
-    'vehicles', 'pets', 'alerts', 'announcements', 'notifications', 'conversations',
+    'vehicles', 'pets', 'visitors', 'alerts', 'announcements', 'notifications', 'conversations',
     'conversation_participants', 'messages', 'requests', 'request_comments',
     'incidents', 'expense_categories', 'expenses', 'purchases', 'purchase_items',
     'fines', 'document_categories', 'documents', 'audit_logs', 'meetings',
@@ -1865,7 +1899,31 @@ create policy pets_write on tribuia.pets for all to authenticated
     or tribuia.user_is_tenant(apartment_id)
   );
 
--- 7.13 alerts ----------------------------------------------------------------------------
+-- 7.13 visitors ------------------------------------------------------------------
+-- Celaduria puede ver todos los visitantes del condominio y registrar/actualizar
+-- el ciclo de entrada/salida. Los residentes (propietario/arrendatario) solo ven
+-- y gestionan los visitantes de sus propios apartamentos.
+create policy visitors_select on tribuia.visitors for select to authenticated
+  using (
+    tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY'])
+    or apartment_id in (select tribuia.user_apartment_ids())
+    or tribuia.user_is_tenant(apartment_id)
+  );
+create policy visitors_write on tribuia.visitors for all to authenticated
+  using (
+    tribuia.is_condominium_admin(condominium_id)
+    or tribuia.has_role(condominium_id, array['SECURITY'])
+    or tribuia.user_owns_apartment(apartment_id)
+    or tribuia.user_is_tenant(apartment_id)
+  )
+  with check (
+    tribuia.is_condominium_admin(condominium_id)
+    or tribuia.has_role(condominium_id, array['SECURITY'])
+    or tribuia.user_owns_apartment(apartment_id)
+    or tribuia.user_is_tenant(apartment_id)
+  );
+
+-- 7.14 alerts ----------------------------------------------------------------------------
 create policy alerts_select on tribuia.alerts for select to authenticated
   using (
     tribuia.user_can_access_condominium(condominium_id)
@@ -2299,7 +2357,7 @@ begin
   end if;
 
   foreach t in array array['alerts', 'notifications', 'messages', 'conversations',
-                           'requests', 'incidents', 'announcements']
+                           'requests', 'incidents', 'announcements', 'visitors']
   loop
     if not exists (
       select 1 from pg_publication_tables
@@ -2438,6 +2496,8 @@ as $$
         'condominium_id', m.condominium_id,
         'condominium_name', c.name,
         'condominium_status', c.status,
+        'condominium_logo_url', c.logo_url,
+        'condominium_primary_color', c.settings->>'primaryColor',
         'role_id', m.role_id,
         'role_code', r.code,
         'role_name', r.name,

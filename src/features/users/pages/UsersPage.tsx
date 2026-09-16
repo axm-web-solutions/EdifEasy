@@ -118,7 +118,7 @@ export function UsersPage() {
       width: 260,
       render: (_, row) => (
         <Space>
-          <Avatar src={row.profile?.avatar_url ?? undefined} style={{ backgroundColor: '#2559eb' }}>
+          <Avatar src={row.profile?.avatar_url ?? undefined} style={{ backgroundColor: 'var(--edifeasy-brand, #2559eb)' }}>
             {initials(row.profile?.full_name)}
           </Avatar>
           <div className="min-w-0">

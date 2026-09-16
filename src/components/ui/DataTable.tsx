@@ -168,7 +168,7 @@ export function DataTable<T extends object>({
               mode={filter.multiple ? 'multiple' : undefined}
               maxTagCount="responsive"
               placeholder={filter.label}
-              style={{ minWidth: filter.width ?? 170 }}
+              style={isMobile ? { width: '100%' } : { minWidth: filter.width ?? 170 }}
               options={filter.options}
               value={(params.filters?.[filter.key] as string | string[] | undefined) ?? undefined}
               onChange={(value) => onFilter(filter.key, (value as FilterValue) ?? null)}

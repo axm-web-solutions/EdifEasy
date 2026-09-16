@@ -2,10 +2,11 @@ import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { FormDrawer } from '@/components/ui/FormDrawer'
-import { SelectField, TextAreaField, TextField } from '@/components/forms/fields'
+import { ColorField, SelectField, TextAreaField, TextField } from '@/components/forms/fields'
 import { condominiumSchema, type CondominiumFormValues } from '@/schemas/structure'
 import { CONDOMINIUM_STATUS, toOptions } from '@/constants/enums'
 import { emptyToNull } from '@/utils/format'
+import { DEFAULT_BRAND_COLOR, mergeSetting, readSetting, resolvePrimaryColor } from '@/utils/brand'
 import type { CondominiumRow, TablesInsert } from '@/types/database'
 
 const EMPTY: CondominiumFormValues = {
@@ -17,6 +18,7 @@ const EMPTY: CondominiumFormValues = {
   phone: '',
   email: '',
   logo_url: '',
+  primary_color: DEFAULT_BRAND_COLOR,
   description: '',
   status: 'ACTIVE',
 }
@@ -52,6 +54,7 @@ export function CondominiumForm({
             phone: condominium.phone ?? '',
             email: condominium.email ?? '',
             logo_url: condominium.logo_url ?? '',
+            primary_color: resolvePrimaryColor(readSetting(condominium.settings, 'primaryColor')),
             description: condominium.description ?? '',
             status: condominium.status,
           }
@@ -60,7 +63,11 @@ export function CondominiumForm({
   }, [open, condominium, reset])
 
   const submit = handleSubmit((values) => {
-    onSubmit(emptyToNull(values) as TablesInsert<'condominiums'>)
+    const { primary_color, ...rest } = values
+    onSubmit({
+      ...(emptyToNull(rest) as TablesInsert<'condominiums'>),
+      settings: mergeSetting(condominium?.settings, 'primaryColor', resolvePrimaryColor(primary_color)),
+    })
   })
 
   return (
@@ -99,7 +106,18 @@ export function CondominiumForm({
           />
         </div>
 
-        <TextField control={control} name="logo_url" label="URL del logo" placeholder="https://..." />
+        <p className="mb-1 mt-4 text-xs font-semibold uppercase tracking-wide text-slate-400">
+          Marca e imagen
+        </p>
+        <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
+          <ColorField control={control} name="primary_color" label="Color principal" />
+          <TextField
+            control={control}
+            name="logo_url"
+            label="URL del logo"
+            placeholder="https://..."
+          />
+        </div>
         <TextAreaField control={control} name="description" label="Descripcion" maxLength={1000} />
       </form>
     </FormDrawer>

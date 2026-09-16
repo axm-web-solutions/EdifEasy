@@ -89,7 +89,7 @@ export function SettingsPage() {
           <Avatar
             size={96}
             src={profile?.avatar_url ?? undefined}
-            style={{ backgroundColor: '#2559eb' }}
+            style={{ backgroundColor: 'var(--edifeasy-brand, #2559eb)' }}
           >
             {initials(profile?.full_name)}
           </Avatar>

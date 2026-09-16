@@ -49,6 +49,12 @@ export const queryKeys = {
     byApartment: (apartmentId: string) => ['pets', 'by-apartment', apartmentId] as const,
   },
 
+  visitors: {
+    list: (condominiumId: string, params: ListParams) =>
+      ['visitors', condominiumId, 'list', params] as const,
+    recent: (condominiumId: string) => ['visitors', condominiumId, 'recent'] as const,
+  },
+
   members: {
     list: (condominiumId: string, params: ListParams) =>
       ['members', condominiumId, 'list', params] as const,

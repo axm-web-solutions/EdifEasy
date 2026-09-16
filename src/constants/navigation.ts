@@ -57,6 +57,14 @@ export const NAVIGATION: NavItem[] = [
   },
 
   {
+    key: 'visitors',
+    label: 'Visitantes',
+    path: '/visitors',
+    icon: 'IdCard',
+    roles: ['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY', 'OWNER', 'TENANT'],
+  },
+
+  {
     key: 'communication',
     label: 'Comunicacion',
     icon: 'MessagesSquare',

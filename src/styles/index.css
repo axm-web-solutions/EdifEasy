@@ -85,6 +85,11 @@ body {
 @layer components {
   .app-shell-content {
     @apply p-4 md:p-6;
+    /* Contenedor legible en pantallas muy anchas: el contenido no se estira
+       hasta el borde, se centra con aire a los lados. */
+    margin-inline: auto;
+    width: 100%;
+    max-width: 1440px;
     /* Respeta la barra inferior del iPhone. */
     padding-bottom: calc(1rem + var(--safe-bottom));
   }
@@ -102,7 +107,10 @@ body {
   }
 
   .surface-card {
-    @apply bg-white rounded-xl shadow-card border border-slate-100;
+    @apply bg-white rounded-xl border border-slate-200/70;
+    box-shadow:
+      0 1px 2px 0 rgb(16 24 40 / 0.04),
+      0 1px 3px 0 rgb(16 24 40 / 0.05);
   }
 
   .stat-value {
