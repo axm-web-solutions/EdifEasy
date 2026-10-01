@@ -6,6 +6,7 @@ import { roleColor, roleLabel } from '@/constants/roles'
 import { initials } from '@/utils/format'
 import { NotificationBell } from './NotificationBell'
 import { GlobalSearch } from './GlobalSearch'
+import { TourButton } from '@/components/tour/TourButton'
 
 const { Text } = Typography
 
@@ -79,6 +80,8 @@ export function Topbar({ onOpenDrawer }: { onOpenDrawer: () => void }) {
             />
           </Tooltip>
         ) : null}
+
+        <TourButton />
 
         <NotificationBell />
 

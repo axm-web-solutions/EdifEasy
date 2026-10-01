@@ -114,6 +114,7 @@ export function ActivityPage() {
       <PageHeader
         title="Auditoria"
         subtitle="Registro automatico de todas las acciones criticas sobre el condominio."
+        dataTour="page-header"
       />
 
       <DataTable<AuditLogWithUser>
@@ -164,6 +165,7 @@ export function ActivityPage() {
         }}
         emptyTitle="Sin registros de auditoria"
         scrollX={900}
+        dataTour="data-table"
       />
     </>
   )

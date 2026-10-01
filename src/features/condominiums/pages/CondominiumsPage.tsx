@@ -152,11 +152,12 @@ export function CondominiumsPage() {
         subtitle="Conjuntos residenciales a los que tienes acceso."
         actions={
           isSuperAdmin ? (
-            <Button type="primary" icon={<Plus size={16} />} onClick={openCreate}>
+            <Button type="primary" icon={<Plus size={16} />} onClick={openCreate} data-tour="create-button">
               Nuevo condominio
             </Button>
           ) : null
         }
+        dataTour="page-header"
       />
 
       <DataTable<CondominiumRow>
@@ -189,6 +190,7 @@ export function CondominiumsPage() {
         emptyTitle="Sin condominios"
         emptyDescription="Crea el primer condominio para comenzar."
         scrollX={1100}
+        dataTour="data-table"
       />
 
       <CondominiumForm

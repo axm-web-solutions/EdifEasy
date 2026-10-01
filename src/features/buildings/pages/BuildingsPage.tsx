@@ -140,11 +140,13 @@ export function BuildingsPage() {
                 setEditing(null)
                 setFormOpen(true)
               }}
+              data-tour="create-button"
             >
               Nuevo bloque
             </Button>
           ) : null
         }
+        dataTour="page-header"
       />
 
       <Row gutter={[16, 16]} className="mb-4">
@@ -214,6 +216,7 @@ export function BuildingsPage() {
         }}
         emptyTitle="Sin bloques"
         scrollX={900}
+        dataTour="data-table"
       />
 
       {currentCondominiumId ? (

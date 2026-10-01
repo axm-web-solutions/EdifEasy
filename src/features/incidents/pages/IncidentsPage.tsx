@@ -181,10 +181,12 @@ export function IncidentsPage() {
               setEditing(null)
               setFormOpen(true)
             }}
+            data-tour="create-button"
           >
             Registrar incidente
           </Button>
         }
+        dataTour="page-header"
       />
 
       <DataTable<IncidentWithRelations>
@@ -224,6 +226,7 @@ export function IncidentsPage() {
         onRowClick={(row) => setDetail(row)}
         emptyTitle="Sin incidentes"
         scrollX={1450}
+        dataTour="data-table"
       />
 
       <Drawer open={Boolean(detail)} onClose={() => setDetail(null)} width={620} title="Detalle del incidente">

@@ -263,12 +263,14 @@ export function ExpensesPage() {
                   setEditing(null)
                   setFormOpen(true)
                 }}
+                data-tour="create-button"
               >
                 Nuevo gasto
               </Button>
             </Space>
           ) : null
         }
+        dataTour="page-header"
       />
 
       <Row gutter={[16, 16]} className="mb-4">
@@ -372,6 +374,7 @@ export function ExpensesPage() {
         }}
         emptyTitle="Sin gastos registrados"
         scrollX={1150}
+        dataTour="data-table"
       />
 
       <FormDrawer

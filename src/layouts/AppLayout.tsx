@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useAlertsRealtime } from '@/hooks/useAlerts'
 import { useNotificationsRealtime } from '@/hooks/useNotifications'
 import { GlobalSearch } from '@/components/layout/GlobalSearch'
+import { TourAutoStart } from '@/components/tour/TourAutoStart'
 
 const { Header, Sider, Content } = Layout
 const { useBreakpoint } = Grid
@@ -82,6 +83,7 @@ export function AppLayout() {
         </div>
 
         <Content className="app-shell-content">
+          <TourAutoStart />
           <Outlet />
         </Content>
       </Layout>

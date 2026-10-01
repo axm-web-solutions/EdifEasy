@@ -12,6 +12,7 @@ export interface StatCardProps {
   to?: string
   loading?: boolean
   footer?: ReactNode
+  dataTour?: string
 }
 
 const TONES: Record<NonNullable<StatCardProps['tone']>, string> = {
@@ -32,9 +33,10 @@ export function StatCard({
   to,
   loading = false,
   footer,
+  dataTour,
 }: StatCardProps) {
   const content = (
-    <Card className="surface-card h-full" styles={{ body: { padding: 18 } }} hoverable={Boolean(to)}>
+    <Card className="surface-card h-full" styles={{ body: { padding: 18 } }} hoverable={Boolean(to)} data-tour={dataTour}>
       {loading ? (
         <Skeleton active paragraph={{ rows: 1 }} title={false} />
       ) : (

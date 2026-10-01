@@ -232,11 +232,13 @@ export function VisitorsPage() {
                 setEditing(null)
                 setFormOpen(true)
               }}
+              data-tour="create-button"
             >
               Registrar visitante
             </Button>
           ) : undefined
         }
+        dataTour="page-header"
       />
 
       <DataTable<VisitorWithRelations>
@@ -275,6 +277,7 @@ export function VisitorsPage() {
         onRowClick={(row) => setDetail(row)}
         emptyTitle="Sin visitantes registrados"
         scrollX={1180}
+        dataTour="data-table"
       />
 
       <Drawer open={Boolean(detail)} onClose={() => setDetail(null)} width={580} title="Detalle del visitante">

@@ -40,6 +40,7 @@ export function OperationalDashboard() {
       <PageHeader
         title={`Panel operativo · ${roleLabel(role)}`}
         subtitle={currentMembership?.condominium_name ?? 'Condominio'}
+        dataTour="page-header"
       />
 
       <Row gutter={[16, 16]}>
@@ -51,6 +52,7 @@ export function OperationalDashboard() {
             tone="green"
             loading={statsQuery.isLoading}
             to="/residents"
+            dataTour="stat-card"
           />
         </Col>
         <Col xs={24} sm={12} xl={6}>

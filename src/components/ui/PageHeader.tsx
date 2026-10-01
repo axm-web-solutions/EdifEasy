@@ -15,15 +15,17 @@ export function PageHeader({
   actions,
   breadcrumbs,
   extra,
+  dataTour,
 }: {
   title: string
   subtitle?: string
   actions?: ReactNode
   breadcrumbs?: BreadcrumbItem[]
   extra?: ReactNode
+  dataTour?: string
 }) {
   return (
-    <div className="mb-5">
+    <div className="mb-5" data-tour={dataTour}>
       {breadcrumbs && breadcrumbs.length > 0 ? (
         <Breadcrumb
           className="mb-2"

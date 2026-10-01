@@ -154,11 +154,13 @@ export function AnnouncementsPage() {
                 setEditing(null)
                 setFormOpen(true)
               }}
+              data-tour="create-button"
             >
               Nuevo comunicado
             </Button>
           ) : null
         }
+        dataTour="page-header"
       />
 
       <DataTable<AnnouncementWithRelations>
@@ -197,6 +199,7 @@ export function AnnouncementsPage() {
         onRowClick={(row) => setPreview(row)}
         emptyTitle="Sin comunicados"
         scrollX={1250}
+        dataTour="data-table"
       />
 
       <Drawer

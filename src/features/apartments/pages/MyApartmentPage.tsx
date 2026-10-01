@@ -50,6 +50,7 @@ export function MyApartmentPage() {
       <PageHeader
         title="Mis apartamentos"
         subtitle="Selecciona el apartamento que deseas consultar."
+        dataTour="page-header"
       />
 
       <Row gutter={[16, 16]}>

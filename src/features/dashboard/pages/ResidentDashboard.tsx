@@ -44,6 +44,7 @@ export function ResidentDashboard() {
       <PageHeader
         title={`Hola, ${profile?.full_name?.split(' ')[0] ?? 'residente'}`}
         subtitle={`${currentMembership?.condominium_name ?? 'Condominio'} · ${roleLabel(role)}`}
+        dataTour="page-header"
       />
 
       {criticalAlerts.length > 0 ? (
@@ -71,6 +72,7 @@ export function ResidentDashboard() {
             className="surface-card h-full"
             title={<span className="text-sm font-semibold">Mi apartamento</span>}
             extra={<Link to="/my-apartment">Ver detalle</Link>}
+            data-tour="apartment-card"
           >
             {apartments.length === 0 ? (
               <EmptyState
@@ -125,6 +127,7 @@ export function ResidentDashboard() {
                 icon={<Siren size={20} />}
                 tone="red"
                 to="/alerts"
+                dataTour="stat-card"
               />
             </Col>
             <Col xs={12}>
@@ -201,6 +204,7 @@ export function ResidentDashboard() {
             className="surface-card h-full"
             title={<span className="text-sm font-semibold">Alertas del condominio</span>}
             extra={<Link to="/alerts">Ver todas</Link>}
+            data-tour="alerts-card"
           >
             {alertsQuery.data && alertsQuery.data.length > 0 ? (
               <List

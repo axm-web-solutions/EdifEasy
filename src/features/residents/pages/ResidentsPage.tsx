@@ -160,11 +160,13 @@ export function ResidentsPage() {
                 setEditing(null)
                 setFormOpen(true)
               }}
+              data-tour="create-button"
             >
               Nuevo residente
             </Button>
           ) : null
         }
+        dataTour="page-header"
       />
 
       <DataTable<ResidentWithRelations>
@@ -211,6 +213,7 @@ export function ResidentsPage() {
         emptyTitle="Sin residentes"
         emptyDescription="Registra residentes desde aqui o desde la ficha de cada apartamento."
         scrollX={1100}
+        dataTour="data-table"
       />
 
       {currentCondominiumId ? (

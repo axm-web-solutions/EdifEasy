@@ -59,6 +59,7 @@ export interface DataTableProps<T> {
   emptyAction?: ReactNode
   scrollX?: number
   expandable?: React.ComponentProps<typeof Table<T>>['expandable']
+  dataTour?: string
 }
 
 export function DataTable<T extends object>({
@@ -92,6 +93,7 @@ export function DataTable<T extends object>({
   emptyAction,
   scrollX = 900,
   expandable,
+  dataTour,
 }: DataTableProps<T>) {
   const [searchValue, setSearchValue] = useState(params.search ?? '')
   const [exporting, setExporting] = useState(false)
@@ -142,7 +144,7 @@ export function DataTable<T extends object>({
     params.dateFrom && params.dateTo ? [dayjs(params.dateFrom), dayjs(params.dateTo)] : null
 
   return (
-    <Card className="surface-card" styles={{ body: { padding: 16 } }}>
+    <Card className="surface-card" styles={{ body: { padding: 16 } }} data-tour={dataTour}>
       <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-1 flex-wrap items-center gap-2">
           <Input

@@ -231,11 +231,13 @@ export function PurchasesPage() {
                 setEditing(null)
                 setFormOpen(true)
               }}
+              data-tour="create-button"
             >
               Nueva compra
             </Button>
           ) : null
         }
+        dataTour="page-header"
       />
 
       <DataTable<PurchaseWithRelations>
@@ -270,6 +272,7 @@ export function PurchasesPage() {
         }}
         emptyTitle="Sin compras registradas"
         scrollX={1000}
+        dataTour="data-table"
         expandable={{
           expandedRowRender: (row) => (
             <Table<PurchaseItemRow>

@@ -198,14 +198,14 @@ export function SettingsPage() {
 
   return (
     <>
-      <PageHeader title="Configuracion" subtitle="Perfil, roles y datos del condominio." />
+      <PageHeader title="Configuracion" subtitle="Perfil, roles y datos del condominio." dataTour="page-header" />
 
       <Tabs
         defaultActiveKey="profile"
         items={[
-          { key: 'profile', label: 'Mi perfil', children: profileTab },
-          { key: 'memberships', label: 'Mis roles', children: membershipsTab },
-          { key: 'condominium', label: 'Condominio', children: condominiumTab },
+          { key: 'profile', label: 'Mi perfil', children: <div data-tour="profile-tab">{profileTab}</div> },
+          { key: 'memberships', label: 'Mis roles', children: <div data-tour="memberships-tab">{membershipsTab}</div> },
+          { key: 'condominium', label: 'Condominio', children: <div data-tour="condominium-tab">{condominiumTab}</div> },
         ]}
       />
 

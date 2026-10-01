@@ -45,6 +45,7 @@ function ChartShell({
   height = 280,
   extra,
   children,
+  dataTour,
 }: {
   title: string
   subtitle?: string
@@ -53,6 +54,7 @@ function ChartShell({
   height?: number
   extra?: ReactNode
   children: ReactNode
+  dataTour?: string
 }) {
   return (
     <Card
@@ -65,6 +67,7 @@ function ChartShell({
       }
       extra={extra}
       styles={{ body: { padding: 12 } }}
+      data-tour={dataTour}
     >
       {loading ? (
         <div style={{ height }}>
@@ -88,6 +91,7 @@ export function AreaChartCard({
   loading,
   currency = false,
   height,
+  dataTour,
 }: {
   title: string
   subtitle?: string
@@ -95,6 +99,7 @@ export function AreaChartCard({
   loading?: boolean
   currency?: boolean
   height?: number
+  dataTour?: string
 }) {
   return (
     <ChartShell
@@ -103,6 +108,7 @@ export function AreaChartCard({
       loading={loading}
       isEmpty={data.length === 0}
       height={height}
+      dataTour={dataTour}
     >
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
@@ -148,6 +154,7 @@ export function BarChartCard({
   loading,
   currency = false,
   height,
+  dataTour,
 }: {
   title: string
   subtitle?: string
@@ -155,6 +162,7 @@ export function BarChartCard({
   loading?: boolean
   currency?: boolean
   height?: number
+  dataTour?: string
 }) {
   return (
     <ChartShell
@@ -163,6 +171,7 @@ export function BarChartCard({
       loading={loading}
       isEmpty={data.length === 0}
       height={height}
+      dataTour={dataTour}
     >
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
@@ -201,6 +210,7 @@ export function PieChartCard({
   loading,
   currency = false,
   height,
+  dataTour,
 }: {
   title: string
   subtitle?: string
@@ -208,6 +218,7 @@ export function PieChartCard({
   loading?: boolean
   currency?: boolean
   height?: number
+  dataTour?: string
 }) {
   return (
     <ChartShell
@@ -216,6 +227,7 @@ export function PieChartCard({
       loading={loading}
       isEmpty={data.length === 0}
       height={height}
+      dataTour={dataTour}
     >
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>

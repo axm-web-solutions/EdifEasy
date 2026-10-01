@@ -322,3 +322,52 @@ body {
     display: none !important;
   }
 }
+
+/* --- Tours guiados (driver.js) ------------------------------------------- */
+.edifeasy-driver-popover {
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(15, 23, 42, 0.18);
+  font-family: inherit;
+}
+
+.edifeasy-driver-popover .driver-popover-title {
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.edifeasy-driver-popover .driver-popover-description {
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.edifeasy-driver-popover .driver-popover-progress-text {
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.edifeasy-driver-popover .driver-btn {
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 14px;
+}
+
+.edifeasy-driver-popover .driver-btn-primary,
+.edifeasy-driver-popover .driver-btn-next,
+.edifeasy-driver-popover .driver-btn-done {
+  background: var(--edifeasy-brand, #2559eb);
+  border-color: var(--edifeasy-brand, #2559eb);
+}
+
+.edifeasy-driver-popover .driver-btn-primary:hover,
+.edifeasy-driver-popover .driver-btn-next:hover,
+.edifeasy-driver-popover .driver-btn-done:hover {
+  background: color-mix(in srgb, var(--edifeasy-brand, #2559eb) 88%, black);
+  border-color: color-mix(in srgb, var(--edifeasy-brand, #2559eb) 88%, black);
+}
+
+.driver-popover-arrow {
+  display: none;
+}

@@ -135,10 +135,12 @@ export function MessagesPage() {
             type="primary"
             icon={<MessageCirclePlus size={16} />}
             onClick={() => setNewOpen(true)}
+            data-tour="new-conversation-button"
           >
             Nueva conversacion
           </Button>
         }
+        dataTour="page-header"
       />
 
       <Row gutter={[16, 16]}>
@@ -152,6 +154,7 @@ export function MessagesPage() {
             className="surface-card"
             title={<span className="text-sm font-semibold">Conversaciones</span>}
             styles={{ body: { padding: 0, maxHeight: isMobile ? '55vh' : 620, overflowY: 'auto' } }}
+            data-tour="conversations-list"
           >
             {conversationsQuery.isLoading ? (
               <div className="p-4">
@@ -227,6 +230,7 @@ export function MessagesPage() {
                 minHeight: 320,
               },
             }}
+            data-tour="chat-area"
             title={
               selected ? (
                 <div>

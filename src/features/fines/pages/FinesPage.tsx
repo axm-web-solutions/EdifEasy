@@ -236,11 +236,13 @@ export function FinesPage() {
                 setEditing(null)
                 setFormOpen(true)
               }}
+              data-tour="create-button"
             >
               Nueva multa
             </Button>
           ) : null
         }
+        dataTour="page-header"
       />
 
       <Row gutter={[16, 16]} className="mb-4">
@@ -308,6 +310,7 @@ export function FinesPage() {
         }}
         emptyTitle="Sin multas registradas"
         scrollX={1100}
+        dataTour="data-table"
       />
 
       <FormDrawer

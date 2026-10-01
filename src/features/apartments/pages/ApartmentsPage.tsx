@@ -184,11 +184,13 @@ export function ApartmentsPage() {
                 setEditing(null)
                 setFormOpen(true)
               }}
+              data-tour="create-button"
             >
               Nuevo apartamento
             </Button>
           ) : null
         }
+        dataTour="page-header"
       />
 
       <DataTable<ApartmentWithRelations>
@@ -246,6 +248,7 @@ export function ApartmentsPage() {
         emptyTitle="Sin apartamentos"
         emptyDescription="Registra bloques y apartamentos para comenzar."
         scrollX={1000}
+        dataTour="data-table"
       />
 
       {currentCondominiumId ? (

@@ -82,6 +82,7 @@ export function AdminDashboard() {
       <PageHeader
         title={`Dashboard - ${currentMembership?.condominium_name ?? 'Condominio'}`}
         subtitle="Resumen operativo y financiero del condominio en tiempo real."
+        dataTour="page-header"
       />
 
       <Row gutter={[16, 16]}>
@@ -94,6 +95,7 @@ export function AdminDashboard() {
             loading={loading}
             to="/apartments"
             footer={`${formatNumber(stats?.occupied_apartments ?? 0)} ocupados · ${formatNumber(stats?.buildings ?? 0)} bloques`}
+            dataTour="stat-card"
           />
         </Col>
         <Col xs={24} sm={12} xl={6}>
@@ -204,6 +206,7 @@ export function AdminDashboard() {
               name: point.period,
               value: point.total,
             }))}
+            dataTour="chart-card"
           />
         </Col>
         <Col xs={24} lg={8}>
@@ -261,6 +264,7 @@ export function AdminDashboard() {
             className="surface-card h-full"
             title={<span className="text-sm font-semibold">Alertas activas</span>}
             extra={<Link to="/alerts">Ver todas</Link>}
+            data-tour="activity-card"
           >
             {alertsQuery.data && alertsQuery.data.length > 0 ? (
               <List
@@ -297,6 +301,7 @@ export function AdminDashboard() {
             className="surface-card h-full"
             title={<span className="text-sm font-semibold">Actividad reciente</span>}
             extra={<Link to="/activity">Ver auditoria</Link>}
+            data-tour="activity-card"
           >
             {activityQuery.data && activityQuery.data.length > 0 ? (
               <Timeline

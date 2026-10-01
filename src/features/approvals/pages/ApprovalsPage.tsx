@@ -74,6 +74,7 @@ export function ApprovalsPage() {
       <PageHeader
         title="Aprobaciones de inscripcion"
         subtitle="Autoriza o rechaza a quienes se registran como propietarios o arrendatarios."
+        dataTour="page-header"
         actions={
           <Space>
             <Segmented
@@ -97,7 +98,7 @@ export function ApprovalsPage() {
         }
       />
 
-      <Card className="surface-card">
+      <Card className="surface-card" data-tour="data-table">
         {query.isLoading ? (
           <TableSkeleton rows={4} />
         ) : query.isError ? (

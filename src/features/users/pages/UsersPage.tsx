@@ -211,11 +211,12 @@ export function UsersPage() {
         subtitle="Administra los usuarios vinculados y su rol dentro del condominio."
         actions={
           canManage ? (
-            <Button type="primary" icon={<UserPlus size={16} />} onClick={() => setAddOpen(true)}>
+            <Button type="primary" icon={<UserPlus size={16} />} onClick={() => setAddOpen(true)} data-tour="create-button">
               Vincular usuario
             </Button>
           ) : null
         }
+        dataTour="page-header"
       />
 
       <Tabs
@@ -271,6 +272,7 @@ export function UsersPage() {
                 emptyTitle="Sin usuarios vinculados"
                 emptyDescription="Invita usuarios o vincula cuentas ya registradas para darles acceso."
                 scrollX={1050}
+                dataTour="data-table"
               />
             ),
           },

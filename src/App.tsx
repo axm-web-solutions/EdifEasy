@@ -3,6 +3,7 @@ import { AppProviders } from '@/providers/AppProviders'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { EnvGuard } from '@/components/EnvGuard'
 import { AppRoutes } from '@/routes'
+import { TourProvider } from '@/providers/TourProvider'
 
 export function App() {
   return (
@@ -10,7 +11,9 @@ export function App() {
       <EnvGuard>
         <BrowserRouter>
           <AppProviders>
-            <AppRoutes />
+            <TourProvider>
+              <AppRoutes />
+            </TourProvider>
           </AppProviders>
         </BrowserRouter>
       </EnvGuard>

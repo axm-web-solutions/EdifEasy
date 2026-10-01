@@ -199,10 +199,12 @@ export function RequestsPage() {
               setEditing(null)
               setFormOpen(true)
             }}
+            data-tour="create-button"
           >
             Nueva solicitud
           </Button>
         }
+        dataTour="page-header"
       />
 
       <DataTable<RequestWithRelations>
@@ -243,6 +245,7 @@ export function RequestsPage() {
         emptyTitle="Sin solicitudes"
         emptyDescription="Crea una solicitud para reportar una necesidad."
         scrollX={1400}
+        dataTour="data-table"
       />
 
       <Drawer open={Boolean(detail)} onClose={() => setDetail(null)} width={640} title="Detalle de la solicitud">

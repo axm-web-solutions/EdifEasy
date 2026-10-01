@@ -694,6 +694,7 @@ export function ApartmentDetailPage() {
           { label: 'Apartamentos', to: '/apartments' },
           { label: `Apto ${apartment.number}` },
         ]}
+        dataTour="page-header"
         actions={
           <Space>
             <Button icon={<ArrowLeft size={15} />} onClick={() => navigate('/apartments')}>
@@ -713,7 +714,7 @@ export function ApartmentDetailPage() {
       <Tabs
         defaultActiveKey="overview"
         items={[
-          { key: 'overview', label: 'Resumen', children: overviewTab },
+          { key: 'overview', label: 'Resumen', children: <div data-tour="apartment-card">{overviewTab}</div> },
           {
             key: 'residents',
             label: (
@@ -740,7 +741,7 @@ export function ApartmentDetailPage() {
                 <Car size={14} /> Vehiculos
               </span>
             ),
-            children: vehiclesTab,
+            children: <div data-tour="vehicles-pets">{vehiclesTab}</div>,
           },
           {
             key: 'pets',

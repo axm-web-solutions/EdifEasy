@@ -195,11 +195,13 @@ export function AlertsPage() {
                 setEditing(null)
                 setFormOpen(true)
               }}
+              data-tour="create-button"
             >
               Nueva alerta
             </Button>
           ) : null
         }
+        dataTour="page-header"
       />
 
       <DataTable<AlertWithRelations>
@@ -239,6 +241,7 @@ export function AlertsPage() {
         emptyTitle="Sin alertas"
         emptyDescription="No hay alertas registradas para los filtros seleccionados."
         scrollX={1400}
+        dataTour="data-table"
       />
 
       {currentCondominiumId && user ? (

@@ -205,11 +205,12 @@ export function DocumentsPage() {
         subtitle="Reglamentos, actas, manuales y archivos del condominio."
         actions={
           canManage ? (
-            <Button type="primary" icon={<Plus size={16} />} onClick={() => setFormOpen(true)}>
+            <Button type="primary" icon={<Plus size={16} />} onClick={() => setFormOpen(true)} data-tour="create-button">
               Subir documento
             </Button>
           ) : null
         }
+        dataTour="page-header"
       />
 
       <DataTable<DocumentWithRelations>
@@ -256,6 +257,7 @@ export function DocumentsPage() {
         emptyTitle="Sin documentos"
         emptyDescription="Sube el reglamento, las actas y los manuales del condominio."
         scrollX={1100}
+        dataTour="data-table"
       />
 
       <FormDrawer

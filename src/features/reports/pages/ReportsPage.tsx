@@ -54,7 +54,7 @@ export function ReportsPage() {
         title="Reportes"
         subtitle="Indicadores consolidados del condominio."
         actions={
-          <Space>
+          <Space data-tour="report-filters">
             <Select
               value={months}
               onChange={setMonths}
@@ -67,6 +67,7 @@ export function ReportsPage() {
             />
           </Space>
         }
+        dataTour="page-header"
       />
 
       <Row gutter={[16, 16]} className="mb-4">
