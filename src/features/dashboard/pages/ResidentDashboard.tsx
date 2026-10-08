@@ -15,6 +15,7 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { StatCard } from '@/components/ui/StatCard'
 import { EmptyState, PageSkeleton } from '@/components/ui/states'
 import { useAuth } from '@/hooks/useAuth'
+import { NearbyPlacesCard } from '../components/NearbyPlacesCard'
 import { useResidentDashboard } from '@/hooks/useDashboard'
 import { useActiveAlerts } from '@/hooks/useAlerts'
 import { usePublishedAnnouncements } from '@/hooks/useAnnouncements'
@@ -276,6 +277,10 @@ export function ResidentDashboard() {
           </Card>
         </Col>
       </Row>
+
+      <div className="mt-4">
+        <NearbyPlacesCard condominiumId={currentCondominiumId} dataTour="nearby-map" />
+      </div>
     </>
   )
 }

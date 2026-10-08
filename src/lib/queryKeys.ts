@@ -147,4 +147,10 @@ export const queryKeys = {
   },
 
   search: (condominiumId: string, term: string) => ['global-search', condominiumId, term] as const,
+
+  places: {
+    geocode: (location: string) => ['places', 'geocode', location] as const,
+    nearby: (lat: number, lon: number, radius: number) =>
+      ['places', 'nearby', lat, lon, radius] as const,
+  },
 } as const

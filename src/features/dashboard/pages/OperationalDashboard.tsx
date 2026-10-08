@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { StatCard } from '@/components/ui/StatCard'
 import { EmptyState } from '@/components/ui/states'
 import { useAuth } from '@/hooks/useAuth'
+import { NearbyPlacesCard } from '../components/NearbyPlacesCard'
 import { useAdminDashboard } from '@/hooks/useDashboard'
 import { useRecentIncidents } from '@/hooks/useIncidents'
 import { useRecentRequests } from '@/hooks/useRequests'
@@ -212,6 +213,10 @@ export function OperationalDashboard() {
           </Card>
         </Col>
       </Row>
+
+      <div className="mt-4">
+        <NearbyPlacesCard condominiumId={currentCondominiumId} dataTour="nearby-map" />
+      </div>
     </>
   )
 }

@@ -25,6 +25,7 @@ import {
   useRequestsByStatus,
 } from '@/hooks/useReports'
 import { useActiveAlerts } from '@/hooks/useAlerts'
+import { NearbyPlacesCard } from '../components/NearbyPlacesCard'
 import { FINE_STATUS, INCIDENT_TYPE, PRIORITY_LEVEL, REQUEST_STATUS, ALERT_TYPE } from '@/constants/enums'
 import { formatCompactCurrency, formatDateTime, formatNumber } from '@/utils/format'
 import type { RequestStatus, IncidentType, FineStatus } from '@/types/database'
@@ -257,6 +258,14 @@ export function AdminDashboard() {
           />
         </Col>
       </Row>
+
+      <div className="mt-4">
+        <NearbyPlacesCard
+          condominiumId={currentCondominiumId}
+          editAddressPath="/settings"
+          dataTour="nearby-map"
+        />
+      </div>
 
       <Row gutter={[16, 16]} className="mt-4">
         <Col xs={24} lg={12}>

@@ -49,6 +49,16 @@ export const TOURS: TourConfig[] = [
           align: 'start',
         },
       },
+      {
+        element: '[data-tour="nearby-map"]',
+        popover: {
+          title: 'Ubicación y alrededores',
+          description:
+            'Mapa con la ubicación del condominio y los comercios cercanos: centros comerciales, supermercados, restaurantes, droguerías y más. Filtra por categoría, cambia el radio y toca un lugar para verlo en el mapa.',
+          side: 'top',
+          align: 'start',
+        },
+      },
     ],
   },
   {
@@ -95,6 +105,16 @@ export const TOURS: TourConfig[] = [
           align: 'start',
         },
       },
+      {
+        element: '[data-tour="nearby-map"]',
+        popover: {
+          title: 'Ubicación y alrededores',
+          description:
+            'Mapa con la ubicación del condominio y los comercios cercanos: centros comerciales, supermercados, restaurantes, droguerías y más. Filtra por categoría, cambia el radio y toca un lugar para verlo en el mapa.',
+          side: 'top',
+          align: 'start',
+        },
+      },
     ],
   },
   {
@@ -118,6 +138,16 @@ export const TOURS: TourConfig[] = [
           description:
             'Estas tarjetas muestran los indicadores clave para tu trabajo: visitantes, alertas, solicitudes, incidentes y más.',
           side: 'bottom',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="nearby-map"]',
+        popover: {
+          title: 'Ubicación y alrededores',
+          description:
+            'Mapa con la ubicación del condominio y los comercios cercanos: centros comerciales, supermercados, restaurantes, droguerías y más. Filtra por categoría, cambia el radio y toca un lugar para verlo en el mapa.',
+          side: 'top',
           align: 'start',
         },
       },
