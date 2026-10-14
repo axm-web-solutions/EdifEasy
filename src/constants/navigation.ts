@@ -1,6 +1,9 @@
 import type { RoleCode } from '@/types/database'
 import type { PermissionKey } from './roles'
 
+type HasRole = (roles: RoleCode[]) => boolean
+type HasPermission = (permission: PermissionKey) => boolean
+
 export interface NavItem {
   key: string
   label: string
@@ -139,3 +142,25 @@ export const NAVIGATION: NavItem[] = [
 
   { key: 'settings', label: 'Configuracion', path: '/settings', icon: 'Settings' },
 ]
+
+/** Regla unica de visibilidad: rol y permiso del usuario en el condominio activo. */
+export function isNavItemVisible(item: NavItem, hasRole: HasRole, hasPermission: HasPermission): boolean {
+  if (item.roles && item.roles.length > 0 && !hasRole(item.roles)) return false
+  if (item.permission && !hasPermission(item.permission)) return false
+  return true
+}
+
+/** Rutas del menu a las que el usuario tiene acceso (un hijo exige ver tambien a su padre). */
+export function visibleNavPaths(
+  hasRole: HasRole,
+  hasPermission: HasPermission,
+  items: NavItem[] = NAVIGATION,
+): Set<string> {
+  const paths = new Set<string>()
+  for (const item of items) {
+    if (!isNavItemVisible(item, hasRole, hasPermission)) continue
+    if (item.path) paths.add(item.path)
+    if (item.children) visibleNavPaths(hasRole, hasPermission, item.children).forEach((path) => paths.add(path))
+  }
+  return paths
+}

@@ -826,6 +826,33 @@ export function getTourById(id: string): TourConfig | undefined {
 
 const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON']
 const OPERATIONAL_ROLES = ['SECURITY', 'SERVICE_STAFF']
+const DASHBOARD_TOURS = ['dashboard-admin', 'dashboard-resident', 'dashboard-operational']
+
+/** Ruta de cada seccion y el tour que la explica (el dashboard se resuelve por rol). */
+const ROUTE_TOURS: Record<string, string> = {
+  '/condominiums': 'condominiums',
+  '/buildings': 'buildings',
+  '/apartments': 'apartments',
+  '/users': 'users',
+  '/approvals': 'approvals',
+  '/residents': 'residents',
+  '/visitors': 'visitors',
+  '/alerts': 'alerts',
+  '/announcements': 'announcements',
+  '/messages': 'messages',
+  '/requests': 'requests',
+  '/incidents': 'incidents',
+  '/fines': 'fines',
+  '/admin-fees': 'admin-fees',
+  '/plans': 'plans',
+  '/expenses': 'expenses',
+  '/purchases': 'purchases',
+  '/documents': 'documents',
+  '/reports': 'reports',
+  '/activity': 'activity',
+  '/settings': 'settings',
+  '/my-apartment': 'my-apartment',
+}
 
 /**
  * Devuelve el ID del tour correspondiente a la ruta actual, considerando el
@@ -837,33 +864,13 @@ export function getTourIdForRoute(pathname: string, role?: string | null): strin
     if (role && OPERATIONAL_ROLES.includes(role)) return 'dashboard-operational'
     return 'dashboard-resident'
   }
+  return ROUTE_TOURS[pathname]
+}
 
-  const routeMap: Record<string, string> = {
-    '/condominiums': 'condominiums',
-    '/buildings': 'buildings',
-    '/apartments': 'apartments',
-    '/users': 'users',
-    '/approvals': 'approvals',
-    '/residents': 'residents',
-    '/visitors': 'visitors',
-    '/alerts': 'alerts',
-    '/announcements': 'announcements',
-    '/messages': 'messages',
-    '/requests': 'requests',
-    '/incidents': 'incidents',
-    '/fines': 'fines',
-    '/admin-fees': 'admin-fees',
-    '/plans': 'plans',
-    '/expenses': 'expenses',
-    '/purchases': 'purchases',
-    '/documents': 'documents',
-    '/reports': 'reports',
-    '/activity': 'activity',
-    '/settings': 'settings',
-    '/my-apartment': 'my-apartment',
-  }
-
-  return routeMap[pathname]
+/** Pagina donde vive un tour: a donde hay que ir antes de iniciarlo. */
+export function getRouteForTour(tourId: string): string | undefined {
+  if (DASHBOARD_TOURS.includes(tourId)) return '/dashboard'
+  return Object.keys(ROUTE_TOURS).find((path) => ROUTE_TOURS[path] === tourId)
 }
 
 /**

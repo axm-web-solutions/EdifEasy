@@ -2,22 +2,12 @@ import { useMemo } from 'react'
 import { Badge, Menu } from 'antd'
 import type { MenuProps } from 'antd'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { NAVIGATION, type NavItem } from '@/constants/navigation'
+import { NAVIGATION, isNavItemVisible, type NavItem } from '@/constants/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { usePendingRegistrationCount } from '@/hooks/useRegistrationRequests'
 import { Icon } from '@/components/ui/Icon'
 
 type MenuItem = Required<MenuProps>['items'][number]
-
-function isVisible(
-  item: NavItem,
-  hasRole: (roles: Parameters<ReturnType<typeof useAuth>['hasRole']>[0]) => boolean,
-  hasPermission: ReturnType<typeof useAuth>['hasPermission'],
-): boolean {
-  if (item.roles && item.roles.length > 0 && !hasRole(item.roles)) return false
-  if (item.permission && !hasPermission(item.permission)) return false
-  return true
-}
 
 function buildMenu(
   items: NavItem[],
@@ -26,7 +16,7 @@ function buildMenu(
   pendingApprovals: number,
 ): MenuItem[] {
   return items
-    .filter((item) => isVisible(item, hasRole, hasPermission))
+    .filter((item) => isNavItemVisible(item, hasRole, hasPermission))
     .map<MenuItem | null>((item) => {
       if (item.children) {
         const children = buildMenu(item.children, hasRole, hasPermission, pendingApprovals)
