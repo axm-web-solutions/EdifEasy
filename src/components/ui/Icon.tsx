@@ -1,9 +1,11 @@
 import {
+  BadgeCheck,
   BarChart3,
   Blocks,
   Building,
   Building2,
   ClipboardList,
+  CreditCard,
   DoorOpen,
   FileQuestion,
   FolderOpen,
@@ -29,6 +31,8 @@ import {
 
 const ICONS: Record<string, LucideIcon> = {
   LayoutDashboard,
+  CreditCard,
+  BadgeCheck,
   Home,
   Building,
   Building2,

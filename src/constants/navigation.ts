@@ -29,6 +29,14 @@ export const NAVIGATION: NavItem[] = [
   },
 
   {
+    key: 'admin-fees',
+    label: 'Cuotas de administracion',
+    path: '/admin-fees',
+    icon: 'CreditCard',
+    roles: ['SUPER_ADMIN', 'ADMINISTRATOR', 'OWNER'],
+  },
+
+  {
     key: 'structure',
     label: 'Estructura',
     icon: 'Building2',
@@ -119,6 +127,14 @@ export const NAVIGATION: NavItem[] = [
     path: '/activity',
     icon: 'History',
     permission: 'viewAudit',
+  },
+
+  {
+    key: 'plans',
+    label: 'Planes',
+    path: '/plans',
+    icon: 'BadgeCheck',
+    roles: ['ADMINISTRATOR'],
   },
 
   { key: 'settings', label: 'Configuracion', path: '/settings', icon: 'Settings' },

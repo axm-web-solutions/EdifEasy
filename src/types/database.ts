@@ -86,6 +86,10 @@ export type IncidentStatus = 'OPEN' | 'INVESTIGATING' | 'RESOLVED' | 'CLOSED'
 export type ExpenseStatus = 'PENDING' | 'APPROVED' | 'PAID' | 'REJECTED'
 export type PurchaseStatus = 'DRAFT' | 'ORDERED' | 'RECEIVED' | 'CANCELLED'
 export type FineStatus = 'PENDING' | 'PAID' | 'CANCELLED' | 'APPEALED'
+export type PaymentKind = 'ADMIN_FEE' | 'SUBSCRIPTION'
+export type PaymentStatus = 'PENDING' | 'APPROVED' | 'DECLINED' | 'VOIDED' | 'ERROR'
+export type PlanPeriod = 'MONTHLY' | 'SEMIANNUAL' | 'ANNUAL'
+export type AdminFeeStatus = 'PENDING' | 'PAID' | 'CANCELLED'
 export type AuditAction =
   | 'CREATE'
   | 'UPDATE'
@@ -509,6 +513,59 @@ export interface PurchaseItemRow {
   updated_at: string
 }
 
+export interface AdminFeeRow {
+  id: string
+  condominium_id: string
+  apartment_id: string
+  /** Primer dia del mes cobrado (YYYY-MM-01). */
+  period: string
+  amount: number
+  due_date: string
+  status: AdminFeeStatus
+  paid_at: string | null
+  payment_method: string | null
+  payment_id: string | null
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface PaymentRow {
+  id: string
+  condominium_id: string
+  kind: PaymentKind
+  reference: string
+  amount: number
+  currency: string
+  status: PaymentStatus
+  payer_id: string | null
+  admin_fee_id: string | null
+  plan_period: PlanPeriod | null
+  apartments_count: number | null
+  unit_price: number | null
+  wompi_transaction_id: string | null
+  payment_method: string | null
+  status_message: string | null
+  paid_at: string | null
+  raw: Json
+  created_at: string
+  updated_at: string
+}
+
+export interface SubscriptionRow {
+  id: string
+  condominium_id: string
+  plan_period: PlanPeriod
+  apartments_count: number
+  unit_price: number
+  amount: number
+  starts_at: string
+  ends_at: string
+  payment_id: string | null
+  created_at: string
+}
+
 export interface FineRow {
   id: string
   condominium_id: string
@@ -701,6 +758,15 @@ export interface Database {
       purchases: TableDef<PurchaseRow, 'condominium_id' | 'provider'>
       purchase_items: TableDef<PurchaseItemRow, 'purchase_id' | 'product'>
       fines: TableDef<FineRow, 'condominium_id' | 'apartment_id' | 'reason'>
+      admin_fees: TableDef<
+        AdminFeeRow,
+        'condominium_id' | 'apartment_id' | 'period' | 'amount' | 'due_date'
+      >
+      payments: TableDef<PaymentRow, 'condominium_id' | 'kind' | 'reference' | 'amount'>
+      subscriptions: TableDef<
+        SubscriptionRow,
+        'condominium_id' | 'plan_period' | 'apartments_count' | 'unit_price' | 'amount' | 'starts_at' | 'ends_at'
+      >
       document_categories: TableDef<DocumentCategoryRow, 'condominium_id' | 'name'>
       documents: TableDef<
         DocumentRow,
@@ -809,6 +875,11 @@ export interface Database {
         Returns: Json
       }
       claim_my_invitations: { Args: Record<string, never>; Returns: Json }
+      subscription_quote: { Args: { p_condominium: string }; Returns: Json }
+      generate_admin_fees: {
+        Args: { p_condominium: string; p_period: string; p_amount: number; p_due_date: string }
+        Returns: number
+      }
     }
     Enums: {
       registration_status: RegistrationStatus
@@ -837,6 +908,10 @@ export interface Database {
       expense_status: ExpenseStatus
       purchase_status: PurchaseStatus
       fine_status: FineStatus
+      payment_kind: PaymentKind
+      payment_status: PaymentStatus
+      plan_period: PlanPeriod
+      admin_fee_status: AdminFeeStatus
       audit_action: AuditAction
       meeting_type: MeetingType
       meeting_status: MeetingStatus

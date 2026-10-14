@@ -71,6 +71,8 @@ export function confirmDelete(options: {
   title?: string
   content?: string
   okText?: string
+  /** false para confirmaciones que no destruyen nada (boton primario normal). */
+  danger?: boolean
 }): Promise<boolean> {
   return new Promise((resolve) => {
     Modal.confirm({
@@ -79,7 +81,7 @@ export function confirmDelete(options: {
       content:
         options.content ?? 'Esta accion no se puede deshacer. Deseas continuar con la eliminacion?',
       okText: options.okText ?? 'Eliminar',
-      okButtonProps: { danger: true },
+      okButtonProps: { danger: options.danger ?? true },
       cancelText: 'Cancelar',
       onOk: () => resolve(true),
       onCancel: () => resolve(false),

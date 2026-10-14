@@ -43,3 +43,10 @@ enabled = true
 
 [functions.invite-member]
 verify_jwt = true
+
+[functions.wompi-payments]
+verify_jwt = true
+
+# Wompi no envia JWT de Supabase; la autenticidad se valida con el checksum.
+[functions.wompi-webhook]
+verify_jwt = false

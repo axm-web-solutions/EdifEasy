@@ -73,6 +73,15 @@ const PurchasesPage = lazy(() =>
 const FinesPage = lazy(() =>
   import('@/features/fines/pages/FinesPage').then((m) => ({ default: m.FinesPage })),
 )
+const AdminFeesPage = lazy(() =>
+  import('@/features/payments/pages/AdminFeesPage').then((m) => ({ default: m.AdminFeesPage })),
+)
+const PlansPage = lazy(() =>
+  import('@/features/payments/pages/PlansPage').then((m) => ({ default: m.PlansPage })),
+)
+const PaymentResultPage = lazy(() =>
+  import('@/features/payments/pages/PaymentResultPage').then((m) => ({ default: m.PaymentResultPage })),
+)
 const DocumentsPage = lazy(() =>
   import('@/features/documents/pages/DocumentsPage').then((m) => ({ default: m.DocumentsPage })),
 )
@@ -209,6 +218,25 @@ export function AppRoutes() {
                 </RoleGuard>
               }
             />
+
+            <Route
+              path="/admin-fees"
+              element={
+                <RoleGuard roles={['ADMINISTRATOR', 'OWNER']}>
+                  <AdminFeesPage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/plans"
+              element={
+                <RoleGuard roles={['ADMINISTRATOR']}>
+                  <PlansPage />
+                </RoleGuard>
+              }
+            />
+            {/* Retorno desde Wompi: lo usan propietarios y administradores. */}
+            <Route path="/payments/result" element={<PaymentResultPage />} />
 
             <Route path="/documents" element={<DocumentsPage />} />
 

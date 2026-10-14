@@ -119,6 +119,17 @@ export const queryKeys = {
     detail: (id: string) => ['purchases', 'detail', id] as const,
   },
 
+  adminFees: {
+    list: (condominiumId: string, params: ListParams) =>
+      ['admin-fees', condominiumId, 'list', params] as const,
+    mine: (condominiumId: string) => ['admin-fees', condominiumId, 'mine'] as const,
+  },
+
+  payments: {
+    list: (condominiumId: string, kind: string) => ['payments', condominiumId, kind] as const,
+    quote: (condominiumId: string) => ['payments', condominiumId, 'quote'] as const,
+  },
+
   fines: {
     list: (condominiumId: string, params: ListParams) =>
       ['fines', condominiumId, 'list', params] as const,

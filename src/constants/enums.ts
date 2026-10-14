@@ -1,4 +1,5 @@
 import type {
+  AdminFeeStatus,
   AlertStatus,
   AlertType,
   AnnouncementStatus,
@@ -12,7 +13,9 @@ import type {
   IncidentType,
   MemberStatus,
   NotificationType,
+  PaymentStatus,
   PetType,
+  PlanPeriod,
   PriorityLevel,
   PurchaseStatus,
   RequestStatus,
@@ -216,6 +219,26 @@ export const FINE_STATUS: EnumMap<FineStatus> = {
   PAID: { label: 'Pagada', color: 'green', hex: '#10b981' },
   CANCELLED: { label: 'Cancelada', color: 'default', hex: '#94a3b8' },
   APPEALED: { label: 'Apelada', color: 'purple', hex: '#8b5cf6' },
+}
+
+export const ADMIN_FEE_STATUS: EnumMap<AdminFeeStatus> = {
+  PENDING: { label: 'Pendiente', color: 'gold', hex: '#f59e0b' },
+  PAID: { label: 'Pagada', color: 'green', hex: '#10b981' },
+  CANCELLED: { label: 'Anulada', color: 'default', hex: '#94a3b8' },
+}
+
+export const PAYMENT_STATUS: EnumMap<PaymentStatus> = {
+  PENDING: { label: 'En proceso', color: 'processing', hex: '#3b82f6' },
+  APPROVED: { label: 'Aprobado', color: 'green', hex: '#10b981' },
+  DECLINED: { label: 'Rechazado', color: 'red', hex: '#ef4444' },
+  VOIDED: { label: 'Anulado', color: 'default', hex: '#94a3b8' },
+  ERROR: { label: 'Error', color: 'red', hex: '#ef4444' },
+}
+
+export const PLAN_PERIOD: Record<PlanPeriod, { label: string; months: number; description: string }> = {
+  MONTHLY: { label: 'Mensual', months: 1, description: 'Pago mes a mes' },
+  SEMIANNUAL: { label: 'Semestral', months: 6, description: 'Un pago cada 6 meses' },
+  ANNUAL: { label: 'Anual', months: 12, description: 'Un solo pago al ano' },
 }
 
 export const DOCUMENT_TYPE_OPTIONS: SelectOption[] = [

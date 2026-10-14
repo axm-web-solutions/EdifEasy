@@ -3,6 +3,7 @@
  * relaciones que se traen en los `select` de cada servicio.
  */
 import type {
+  AdminFeeRow,
   AlertRow,
   AnnouncementRow,
   ApartmentOwnerRow,
@@ -16,6 +17,8 @@ import type {
   FineRow,
   IncidentRow,
   MessageRow,
+  PaymentRow,
+  PlanPeriod,
   ProfileRow,
   PurchaseItemRow,
   PurchaseRow,
@@ -24,6 +27,7 @@ import type {
   ResidentRow,
   RoleCode,
   RoleRow,
+  SubscriptionRow,
   VisitorRow,
 } from './database'
 
@@ -108,6 +112,23 @@ export interface PurchaseWithRelations extends PurchaseRow {
 export interface FineWithRelations extends FineRow {
   apartment: ApartmentRef | null
   resident: { id: string; full_name: string } | null
+}
+
+export interface AdminFeeWithRelations extends AdminFeeRow {
+  apartment: (ApartmentRef & { building: { id: string; name: string } | null }) | null
+}
+
+export interface PaymentWithRelations extends PaymentRow {
+  payer: Pick<ProfileRow, 'id' | 'full_name' | 'email'> | null
+}
+
+/** Respuesta de `subscription_quote`: precio del plan segun el tamano del conjunto. */
+export interface SubscriptionQuote {
+  apartments_count: number
+  unit_price: number
+  plans: { period: PlanPeriod; months: number; amount: number }[]
+  /** Ultimo periodo pagado (puede estar vencido). */
+  current: SubscriptionRow | null
 }
 
 export interface DocumentWithRelations extends DocumentRow {

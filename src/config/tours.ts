@@ -552,6 +552,58 @@ export const TOURS: TourConfig[] = [
     ],
   },
   {
+    id: 'admin-fees',
+    once: true,
+    steps: [
+      {
+        element: '[data-tour="page-header"]',
+        popover: {
+          title: 'Cuotas de administración',
+          description:
+            'El administrador define el valor mensual y genera las cuotas; cada propietario paga las de sus apartamentos en línea.',
+          side: 'bottom',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="fees-list"]',
+        popover: {
+          title: 'Cuotas',
+          description:
+            'Aquí ves cada cuota con su mes, valor, fecha límite y estado. Los pagos se hacen con Wompi: PSE, tarjeta, Nequi o Botón Bancolombia.',
+          side: 'top',
+          align: 'start',
+        },
+      },
+    ],
+  },
+  {
+    id: 'plans',
+    once: true,
+    steps: [
+      {
+        element: '[data-tour="page-header"]',
+        popover: {
+          title: 'Planes de EdiFeasy',
+          description:
+            'Un solo pago por todo el conjunto. El valor depende del número de apartamentos: $4.500 por apartamento al mes si son menos de 80 y $4.000 si son 80 o más.',
+          side: 'bottom',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="plan-card"]',
+        popover: {
+          title: 'Elige la frecuencia',
+          description:
+            'Paga mensual, semestral o anual. Si aún tienes un plan activo, el nuevo periodo empieza cuando termine el actual.',
+          side: 'top',
+          align: 'start',
+        },
+      },
+    ],
+  },
+  {
     id: 'expenses',
     once: true,
     steps: [
@@ -800,6 +852,8 @@ export function getTourIdForRoute(pathname: string, role?: string | null): strin
     '/requests': 'requests',
     '/incidents': 'incidents',
     '/fines': 'fines',
+    '/admin-fees': 'admin-fees',
+    '/plans': 'plans',
     '/expenses': 'expenses',
     '/purchases': 'purchases',
     '/documents': 'documents',
