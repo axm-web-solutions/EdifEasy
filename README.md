@@ -103,8 +103,12 @@ VITE_APP_ENV=development
 # Solo para `npm run seed` (Node, nunca el navegador)
 SUPABASE_URL=https://xxxxxxxx.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOi...
-SEED_DEFAULT_PASSWORD=EdiFeasy2024*
+SEED_DEFAULT_PASSWORD=<clave-temporal-fuerte>
 ```
+
+> `SEED_DEFAULT_PASSWORD` no admite un valor por defecto y `npm run seed` la valida antes de
+> crear nada (minimo 12 caracteres, mayuscula, minuscula, numero y simbolo). Estas cuentas son
+> de prueba: no ejecutes el seed contra el proyecto de produccion.
 
 > Si faltan `VITE_SUPABASE_URL` o `VITE_SUPABASE_ANON_KEY`, la aplicacion muestra una pantalla
 > de configuracion con instrucciones en lugar de fallar con errores de red.

@@ -9,6 +9,7 @@ import { invitationService } from '@/services/invitationService'
 import { PERMISSIONS, type PermissionKey } from '@/constants/roles'
 import type { RoleCode } from '@/types/database'
 import type { Membership } from '@/types/models'
+import { queryKeys } from '@/lib/queryKeys'
 import { readSetting } from '@/utils/brand'
 import { AuthContext, type AuthContextValue } from './AuthContext'
 import { BrandThemeProvider } from './BrandThemeProvider'
@@ -74,7 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const userId = session?.user?.id ?? null
 
   const contextQuery = useQuery({
-    queryKey: ['user-context', userId],
+    queryKey: queryKeys.userContext(userId),
     queryFn: () => authService.getUserContext(),
     enabled: Boolean(userId),
     staleTime: 60_000,
@@ -117,7 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * selector de condominio y el menu funcionen igual que para el resto.
    */
   const superAdminCondominiums = useQuery({
-    queryKey: ['super-admin-condominiums', userId],
+    queryKey: queryKeys.superAdminCondominiums(userId),
     queryFn: () => condominiumService.listAll(),
     enabled: Boolean(userId) && isSuperAdmin,
     staleTime: 60_000,

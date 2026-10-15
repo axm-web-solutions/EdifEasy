@@ -56,4 +56,10 @@ export const env: AppEnv = parsed.success
       VITE_APP_ENV: 'development',
     }
 
-export const isProduction = env.VITE_APP_ENV === 'production'
+export const isProduction = import.meta.env.PROD
+
+/**
+ * Entorno declarado por el despliegue. Solo para etiquetas y telemetria: NO se
+ * usa para decidir si se muestran logs.
+ */
+export const appEnvironment = env.VITE_APP_ENV

@@ -44,9 +44,25 @@ export interface ListOptions {
 
 const DEFAULT_PAGE_SIZE = 10
 
+/**
+ * Longitud minima para lanzar una busqueda.
+ *
+ * Un termino de 1 caracter genera un `ILIKE '%x%'` que recorre la tabla entera y
+ * que ademas no puede aprovechar el indice trigram (un trigrama necesita 3
+ * caracteres). Se exige el mismo minimo que ya usa el buscador global
+ * (`useGlobalSearch`, `src/hooks/useDashboard.ts`).
+ */
+const MIN_SEARCH_LENGTH = 2
+
 function escapeSearchTerm(term: string): string {
-  // PostgREST usa `,` y `)` como separadores dentro de `or(...)`.
-  return term.replace(/[,()%]/g, ' ').trim()
+  // PostgREST usa `,` y `)` como separadores dentro de `or(...)`: se sustituyen
+  // por espacios para no romper la gramatica del filtro.
+  //
+  // El `%` se CONSERVA: antes se borraba, de modo que un usuario que escribia
+  // `%` veia su termino alterado en silencio. Como comodin solo amplia la
+  // busqueda, que es un comportamiento aceptable en un buscador.
+  // Tampoco se usa `\` de escape: PostgREST no lo interpreta dentro de `or()`.
+  return term.replace(/[,()]/g, ' ').trim()
 }
 
 export function buildSearchExpression(
@@ -55,7 +71,7 @@ export function buildSearchExpression(
 ): string | null {
   if (!search || !columns || columns.length === 0) return null
   const term = escapeSearchTerm(search)
-  if (!term) return null
+  if (term.length < MIN_SEARCH_LENGTH) return null
   return columns.map((column) => `${column}.ilike.%${term}%`).join(',')
 }
 

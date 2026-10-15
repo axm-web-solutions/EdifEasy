@@ -4,6 +4,9 @@ import type { ListParams } from '@/types/models'
 export const queryKeys = {
   userContext: (userId: string | null) => ['user-context', userId] as const,
 
+  superAdminCondominiums: (userId: string | null) =>
+    ['super-admin-condominiums', userId] as const,
+
   condominiums: {
     all: ['condominiums'] as const,
     list: (params: ListParams) => ['condominiums', 'list', params] as const,

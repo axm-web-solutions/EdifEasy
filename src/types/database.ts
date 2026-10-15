@@ -728,6 +728,17 @@ interface TableDef<TRow, TRequired extends keyof TRow = never> {
   Relationships: []
 }
 
+/**
+ * Definicion de una vista de solo lectura. Las vistas no aceptan insert ni
+ * update, de ahi que `Insert`/`Update` sean objetos sin campos permitidos.
+ */
+type ViewDef<TRow> = {
+  Row: TRow
+  Insert: Record<string, never>
+  Update: Record<string, never>
+  Relationships: []
+}
+
 export interface Database {
   tribuia: {
     Tables: {
@@ -786,7 +797,9 @@ export interface Database {
       reports: TableDef<ReportRow, 'condominium_id' | 'title'>
       report_images: TableDef<ReportImageRow, 'report_id' | 'file_path' | 'file_name'>
     }
-    Views: Record<never, never>
+    Views: {
+      buildings_with_counts: ViewDef<BuildingRow & { apartment_count: number }>
+    }
     Functions: {
       is_super_admin: { Args: { p_user?: string }; Returns: boolean }
       is_condominium_admin: { Args: { p_condominium: string }; Returns: boolean }

@@ -102,4 +102,7 @@ export const SEED_USERS: SeedUser[] = [
   ...tenants,
 ]
 
-export const DEFAULT_SEED_PASSWORD = 'EdiFeasy2024*'
+// La clave de los usuarios de prueba NO vive aqui. Un valor por defecto en el
+// repositorio es una credencial publicada: cualquiera que lea este archivo
+// podria entrar con esas cuentas. `scripts/seed-users.ts` exige que
+// SEED_DEFAULT_PASSWORD venga del entorno y la valida antes de crear nada.

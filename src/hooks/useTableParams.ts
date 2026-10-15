@@ -14,7 +14,10 @@ export interface UseTableParamsResult {
 }
 
 export function useTableParams(initial: Partial<ListParams> = {}): UseTableParamsResult {
-  const initialParams: ListParams = {
+  // `initialParams` se calcula UNA vez (inicializador perezoso de useState). Antes
+  // se reconstruia en cada render y `reset` lo capturaba del primer render con un
+  // `eslint-disable`: funcionaba solo mientras `initial` fuese un literal estable.
+  const [initialParams] = useState<ListParams>(() => ({
     page: 1,
     pageSize: 10,
     search: '',
@@ -22,7 +25,7 @@ export function useTableParams(initial: Partial<ListParams> = {}): UseTableParam
     dateFrom: null,
     dateTo: null,
     ...initial,
-  }
+  }))
 
   const [params, setParams] = useState<ListParams>(initialParams)
 
@@ -54,12 +57,7 @@ export function useTableParams(initial: Partial<ListParams> = {}): UseTableParam
     setParams((previous) => ({ ...previous, page: 1, dateFrom: from, dateTo: to }))
   }, [])
 
-  const reset = useCallback(() => {
-    setParams(initialParams)
-    // `initialParams` se reconstruye en cada render pero su contenido es estable
-    // porque `initial` proviene de constantes de la pagina.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  const reset = useCallback(() => setParams(initialParams), [initialParams])
 
   const hasActiveFilters =
     Boolean(params.search) ||

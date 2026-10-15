@@ -17,13 +17,12 @@
  */
 import { createClient } from '@supabase/supabase-js'
 import { config as loadEnv } from 'dotenv'
-import { DEFAULT_SEED_PASSWORD, SEED_USERS, type SeedUser } from './seed-data'
+import { SEED_USERS, type SeedUser } from './seed-data'
 
 loadEnv()
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-const PASSWORD = process.env.SEED_DEFAULT_PASSWORD ?? DEFAULT_SEED_PASSWORD
 
 if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
   console.error(
@@ -33,6 +32,46 @@ if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
   )
   process.exit(1)
 }
+
+/**
+ * Valida la clave de los usuarios de prueba.
+ *
+ * No hay valor por defecto a proposito: un literal en el repositorio equivale a
+ * publicar la credencial de 12 cuentas. Ademas se rechazan las claves debiles o
+ * predecibles, que es exactamente el problema del antiguo `EdiFeasy2024*`.
+ */
+function assertSeedPassword(password: string): string {
+  const problemas: string[] = []
+
+  if (!password) {
+    problemas.push('no esta definida')
+  } else {
+    if (password.length < 12) problemas.push('debe tener al menos 12 caracteres')
+    if (!/[A-Z]/.test(password)) problemas.push('debe incluir una mayuscula')
+    if (!/[a-z]/.test(password)) problemas.push('debe incluir una minuscula')
+    if (!/[0-9]/.test(password)) problemas.push('debe incluir un numero')
+    if (!/[^A-Za-z0-9]/.test(password)) problemas.push('debe incluir un simbolo')
+    if (/edifeasy|password|contrasena|123456|qwerty|admin/i.test(password)) {
+      problemas.push('contiene una palabra predecible')
+    }
+  }
+
+  if (problemas.length > 0) {
+    console.error(
+      '\n[seed] La clave de los usuarios de prueba no es valida:\n' +
+        problemas.map((problema) => `  - ${problema}`).join('\n') +
+        '\n\nDefine una clave temporal fuerte en tu .env:\n' +
+        '  SEED_DEFAULT_PASSWORD=<clave-temporal-fuerte>\n' +
+        '\nNo uses la clave de produccion: estas cuentas son de prueba y quedan\n' +
+        'con acceso a los datos del proyecto donde se ejecute el seed.\n',
+    )
+    process.exit(1)
+  }
+
+  return password
+}
+
+const PASSWORD = assertSeedPassword((process.env.SEED_DEFAULT_PASSWORD ?? '').trim())
 
 /** Debe coincidir con `DB_SCHEMA` en src/lib/supabase.ts */
 const DB_SCHEMA = 'tribuia'

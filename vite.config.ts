@@ -61,6 +61,11 @@ export default defineConfig({
           antd: ['antd'],
           charts: ['recharts'],
           supabase: ['@supabase/supabase-js'],
+          // Dependencias pesadas que solo usa una pantalla: en su propio chunk
+          // para que actualizarlas no invalide la cache del resto.
+          map: ['leaflet'],
+          three: ['three'],
+          tour: ['driver.js'],
         },
       },
     },

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Button, Card, DatePicker, Input, Select, Space, Table, Tooltip } from 'antd'
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table'
 import type { FilterValue as AntFilterValue, SorterResult } from 'antd/es/table/interface'
@@ -99,6 +99,19 @@ export function DataTable<T extends object>({
   const [exporting, setExporting] = useState(false)
   const isMobile = useIsMobile()
 
+  /**
+   * Busqueda con retardo. Antes solo se aplicaba con Enter o al perder el foco
+   * (y el `onBlur` se disparaba tambien al pulsar "Exportar"), una convencion
+   * distinta a la del buscador global, que ya usa 300 ms.
+   */
+  useEffect(() => {
+    const term = searchValue.trim()
+    if (term === (params.search ?? '')) return
+
+    const timer = window.setTimeout(() => onSearch(searchValue), 350)
+    return () => window.clearTimeout(timer)
+  }, [searchValue, params.search, onSearch])
+
   const handleTableChange = (
     _pagination: TablePaginationConfig,
     _filters: Record<string, AntFilterValue | null>,
@@ -153,14 +166,7 @@ export function DataTable<T extends object>({
             prefix={<Search size={15} className="text-slate-400" />}
             placeholder={searchPlaceholder}
             className="w-full sm:w-64"
-            onChange={(event) => {
-              setSearchValue(event.target.value)
-              if (event.target.value === '') onSearch('')
-            }}
-            onPressEnter={() => onSearch(searchValue)}
-            onBlur={() => {
-              if (searchValue !== (params.search ?? '')) onSearch(searchValue)
-            }}
+            onChange={(event) => setSearchValue(event.target.value)}
           />
 
           {filters.map((filter) => (

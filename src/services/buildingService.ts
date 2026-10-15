@@ -33,29 +33,24 @@ export const buildingService = {
     return data
   },
 
-  /** Bloques con el conteo real de apartamentos (para la vista de navegacion). */
+  /**
+   * Bloques con el conteo real de apartamentos (para la vista de navegacion).
+   *
+   * El conteo lo calcula PostgreSQL con la vista `tribuia.buildings_with_counts`.
+   * Antes se descargaban TODOS los apartamentos para contarlos en JavaScript, lo
+   * que ademas se truncaba en silencio cuando el condominio superaba el `max_rows`
+   * de PostgREST (1000 por defecto) y devolvia un total equivocado.
+   */
   async listWithCounts(condominiumId: string): Promise<BuildingWithApartments[]> {
-    const [buildingsResult, apartmentsResult] = await Promise.all([
-      supabase
-        .from('buildings')
-        .select(SELECT)
-        .eq('condominium_id', condominiumId)
-        .order('number', { ascending: true }),
-      supabase.from('apartments').select('building_id').eq('condominium_id', condominiumId),
-    ])
+    const { data, error } = await supabase
+      .from('buildings_with_counts')
+      .select('*')
+      .eq('condominium_id', condominiumId)
+      .order('number', { ascending: true })
+      .returns<BuildingWithApartments[]>()
 
-    if (buildingsResult.error) throw toAppError(buildingsResult.error)
-    if (apartmentsResult.error) throw toAppError(apartmentsResult.error)
-
-    const counts = new Map<string, number>()
-    for (const row of apartmentsResult.data) {
-      counts.set(row.building_id, (counts.get(row.building_id) ?? 0) + 1)
-    }
-
-    return buildingsResult.data.map((building) => ({
-      ...building,
-      apartment_count: counts.get(building.id) ?? 0,
-    }))
+    if (error) throw toAppError(error)
+    return data
   },
 
   async getById(id: string): Promise<BuildingRow | null> {

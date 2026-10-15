@@ -1,3 +1,4 @@
+import { useLayoutEffect } from 'react'
 import { App } from 'antd'
 import type { MessageInstance } from 'antd/es/message/interface'
 import type { NotificationInstance } from 'antd/es/notification/interface'
@@ -12,8 +13,19 @@ let notificationApi: NotificationInstance | null = null
 
 export function NotifyBridge(): null {
   const staticFunction = App.useApp()
-  messageApi = staticFunction.message
-  notificationApi = staticFunction.notification
+
+  // Asignar las instancias desde un efecto (no durante el render) evita depender
+  // de que React no descarte el render, y la limpieza impide que las funciones
+  // de `notify` sigan apuntando a una instancia que ya se desmonto.
+  useLayoutEffect(() => {
+    messageApi = staticFunction.message
+    notificationApi = staticFunction.notification
+    return () => {
+      messageApi = null
+      notificationApi = null
+    }
+  }, [staticFunction.message, staticFunction.notification])
+
   return null
 }
 

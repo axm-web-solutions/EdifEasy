@@ -3,13 +3,21 @@ import { toAppError } from '@/lib/errors'
 import type { AttachmentMeta } from '@/types/models'
 
 /**
- * Convencion de rutas en Storage:
- *   <condominium_id>/<entidad>/<timestamp>-<nombre>
- * Las politicas de `storage.objects` leen el primer segmento para aislar
- * tenants; por eso TODA ruta debe empezar por el id del condominio
- * (excepto `avatars`, que usa el id del usuario).
+ * Limite REAL de cada bucket en Supabase Storage.
+ *
+ * Debe coincidir con `storage.buckets.file_size_limit`. Si el cliente acepta un
+ * archivo que Storage rechaza, el usuario solo ve un error opaco de bucket:
+ * `avatars` esta en 2 MB (no 25 MB) y `signatures` en 5 MB.
  */
-const MAX_FILE_SIZE = 25 * 1024 * 1024
+const BUCKET_MAX_SIZE: Record<StorageBucket, number> = {
+  documents: 25 * 1024 * 1024,
+  avatars: 2 * 1024 * 1024,
+  incidentEvidence: 25 * 1024 * 1024,
+  invoices: 25 * 1024 * 1024,
+  announcements: 25 * 1024 * 1024,
+  signatures: 5 * 1024 * 1024,
+  reportImages: 25 * 1024 * 1024,
+}
 
 const ALLOWED_MIME = new Set([
   'application/pdf',
@@ -35,13 +43,23 @@ function sanitizeFileName(name: string): string {
     .slice(0, 120)
 }
 
+/**
+ * Convencion de rutas en Storage:
+ *   <condominium_id>/<entidad>/<timestamp>-<nombre>
+ * Las politicas de `storage.objects` leen el primer segmento para aislar
+ * tenants; por eso TODA ruta debe empezar por el id del condominio
+ * (excepto `avatars`, que usa el id del usuario).
+ */
 export function buildStoragePath(condominiumId: string, entity: string, fileName: string): string {
   return `${condominiumId}/${entity}/${Date.now()}-${sanitizeFileName(fileName)}`
 }
 
-function validateFile(file: File): void {
-  if (file.size > MAX_FILE_SIZE) {
-    throw toAppError({ message: 'El archivo supera el limite de 25 MB.' })
+function validateFile(bucket: StorageBucket, file: File): void {
+  const maxSize = BUCKET_MAX_SIZE[bucket]
+  if (file.size > maxSize) {
+    throw toAppError({
+      message: `El archivo supera el limite de ${Math.round(maxSize / 1024 / 1024)} MB.`,
+    })
   }
   if (file.type && !ALLOWED_MIME.has(file.type)) {
     throw toAppError({
@@ -57,7 +75,7 @@ export const storageService = {
     file: File,
     options: { upsert?: boolean } = {},
   ): Promise<AttachmentMeta> {
-    validateFile(file)
+    validateFile(bucket, file)
 
     const { error } = await supabase.storage.from(bucket).upload(path, file, {
       upsert: options.upsert ?? false,
