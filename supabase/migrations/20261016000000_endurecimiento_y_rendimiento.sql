@@ -1,15 +1,6 @@
 -- ============================================================================
--- PARCHE 10 :: Endurecimiento de permisos y rendimiento de consultas
+-- Endurecimiento de permisos y rendimiento de consultas
 -- ----------------------------------------------------------------------------
--- ALCANCE: UNICAMENTE el esquema `tribuia`.
---
---   >>> ESTE PARCHE NO TOCA EL ESQUEMA `public` NI EL ESQUEMA `storage`. <<<
---
---   En el bloque A los permisos se revocan del rol `public` (el rol implicito
---   de PostgreSQL, no el esquema). Ninguna sentencia de este archivo menciona
---   el esquema `public`: todas las referencias son `tribuia.*`.
---
--- Que hace:
 --   A. Funciones auxiliares de conjunto: mueven el trabajo de las politicas RLS
 --      de "una vez por fila" a "una vez por consulta".
 --   B. Politicas RLS: convierte en InitPlan las llamadas con argumento constante
@@ -24,13 +15,16 @@
 --   G. Vista `buildings_with_counts` (conteo de apartamentos por bloque en la
 --      base, en lugar de contarlos en JavaScript).
 --
--- Orden recomendado:
---   1) supabase/schema.sql
---   2) supabase/patches/01..09
---   3) ESTE archivo (10)
+-- Idempotente. Requiere 20261015000000_resumenes_y_plataforma.sql: corre despues
+-- de todas las migraciones de esquema para que el optimizador de politicas
+-- alcance tambien a las politicas que ellas crean.
 --
--- Seguro de re-ejecutar: todo es idempotente. La seccion B se puede repetir
--- porque cada sustitucion comprueba antes si ya estaba aplicada.
+-- NO toca el esquema `public` ni el esquema `storage`. En `revoke ... from
+-- public` el termino `public` es el rol implicito de PostgreSQL, no el esquema:
+-- todas las referencias de este archivo son `tribuia.*`.
+--
+-- Mismo contenido que el bloque 16 de supabase/schema.sql y que el parche
+-- supabase/patches/11-endurecimiento-y-rendimiento.sql (se mantienen sincronia).
 -- ============================================================================
 
 

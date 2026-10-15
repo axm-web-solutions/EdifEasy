@@ -23,9 +23,9 @@
 --   8. Storage (buckets + politicas)
 --   9. Realtime (publicacion)
 --  10. Datos estructurales (catalogo de roles)
---  11. Endurecimiento y rendimiento (RPC, InitPlan en politicas, indices)
+--  16. Endurecimiento y rendimiento (RPC, InitPlan en politicas, indices)
 --
--- El bloque 11 replica `supabase/patches/10-endurecimiento-y-rendimiento.sql`.
+-- El bloque 16 replica `supabase/patches/11-endurecimiento-y-rendimiento.sql`.
 -- Se mantienen sincronizados a proposito: este archivo debe dejar la base en el
 -- estado final aunque se ejecute solo.
 -- ============================================================================
@@ -4700,16 +4700,16 @@ grant execute on function tribuia.platform_overview() to authenticated;
 notify pgrst, 'reload schema';
 
 -- ============================================================================
--- 11. ENDURECIMIENTO Y RENDIMIENTO
+-- 16. ENDURECIMIENTO Y RENDIMIENTO
 -- ----------------------------------------------------------------------------
--- Replica de `supabase/patches/10-endurecimiento-y-rendimiento.sql`.
+-- Replica de `supabase/patches/11-endurecimiento-y-rendimiento.sql`.
 --
 -- ALCANCE: UNICAMENTE el esquema `tribuia`. Ninguna sentencia de este bloque
 -- toca el esquema `public` ni el esquema `storage`.
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
--- 11.1 Funciones auxiliares de conjunto
+-- 16.1 Funciones auxiliares de conjunto
 -- ----------------------------------------------------------------------------
 -- Las funciones originales (has_role, user_can_access_condominium, ...) reciben
 -- el id de la fila evaluada, asi que PostgreSQL las ejecutaba una vez POR FILA.
@@ -4755,7 +4755,7 @@ grant execute on function tribuia.shared_profile_ids(uuid)
   to authenticated, service_role;
 
 -- ----------------------------------------------------------------------------
--- 11.2 Optimizacion de las politicas RLS (InitPlan por consulta)
+-- 16.2 Optimizacion de las politicas RLS (InitPlan por consulta)
 -- ----------------------------------------------------------------------------
 -- Transformacion de TEXTO equivalente (no cambia la logica):
 --   auth.uid()                             -> (select auth.uid())
@@ -4880,7 +4880,7 @@ $opt$;
 drop function if exists tribuia._opt_policy_expr(text);
 
 -- ----------------------------------------------------------------------------
--- 11.3 Cierre de la superficie RPC
+-- 16.3 Cierre de la superficie RPC
 -- ----------------------------------------------------------------------------
 -- Antes, 24 de las 25 funciones RPC que usa el frontend eran invocables por el
 -- rol `anon` (sin sesion). Ahora solo quedan abiertas a `anon` las 4 que el flujo
@@ -4930,7 +4930,7 @@ end
 $rpc$;
 
 -- ----------------------------------------------------------------------------
--- 11.4 Indices trigram para las busquedas de la UI
+-- 16.4 Indices trigram para las busquedas de la UI
 -- ----------------------------------------------------------------------------
 -- `applyListParams` genera `columna.ilike.%termino%`. Un patron con `%` a la
 -- izquierda no puede usar un indice B-tree, asi que PostgreSQL hacia un
@@ -4985,7 +4985,7 @@ create index if not exists idx_audit_logs_search on tribuia.audit_logs
   using gin (entity gin_trgm_ops);
 
 -- ----------------------------------------------------------------------------
--- 11.5 Indices de cobertura para las claves foraneas
+-- 16.5 Indices de cobertura para las claves foraneas
 -- ----------------------------------------------------------------------------
 -- Sin indice, un UPDATE/DELETE sobre la tabla padre obliga a un sequential scan
 -- de la hija para validar la clave foranea, y los join por esas columnas no se
@@ -5035,7 +5035,7 @@ end
 $fk$;
 
 -- ----------------------------------------------------------------------------
--- 11.6 Indices redundantes y parciales
+-- 16.6 Indices redundantes y parciales
 -- ----------------------------------------------------------------------------
 -- Baja de indices NO unicos (y que no respaldan un constraint) cuyas columnas
 -- lideres ya estan cubiertas por otro indice TOTAL y btree. Uno parcial (con
@@ -5099,7 +5099,7 @@ create index if not exists idx_tenants_active
   on tribuia.apartment_tenants (profile_id, apartment_id) where is_active;
 
 -- ----------------------------------------------------------------------------
--- 11.7 Vista con el conteo de apartamentos por bloque
+-- 16.7 Vista con el conteo de apartamentos por bloque
 -- ----------------------------------------------------------------------------
 -- `buildingService.listWithCounts` descargaba TODOS los apartamentos para
 -- contarlos en JavaScript; si el condominio superaba el `max_rows` de PostgREST

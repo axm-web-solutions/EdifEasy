@@ -44,25 +44,18 @@ export interface ListOptions {
 
 const DEFAULT_PAGE_SIZE = 10
 
-/**
- * Longitud minima para lanzar una busqueda.
- *
- * Un termino de 1 caracter genera un `ILIKE '%x%'` que recorre la tabla entera y
- * que ademas no puede aprovechar el indice trigram (un trigrama necesita 3
- * caracteres). Se exige el mismo minimo que ya usa el buscador global
- * (`useGlobalSearch`, `src/hooks/useDashboard.ts`).
- */
-const MIN_SEARCH_LENGTH = 2
-
 function escapeSearchTerm(term: string): string {
-  // PostgREST usa `,` y `)` como separadores dentro de `or(...)`: se sustituyen
-  // por espacios para no romper la gramatica del filtro.
+  // PostgREST usa `,` y `)` como separadores dentro de `or(...)`, y `%` actua como
+  // comodin de ILIKE: se sustituyen por espacios para que el termino del usuario
+  // no altere la gramatica del filtro.
   //
-  // El `%` se CONSERVA: antes se borraba, de modo que un usuario que escribia
-  // `%` veia su termino alterado en silencio. Como comodin solo amplia la
-  // busqueda, que es un comportamiento aceptable en un buscador.
-  // Tampoco se usa `\` de escape: PostgREST no lo interpreta dentro de `or()`.
-  return term.replace(/[,()]/g, ' ').trim()
+  // IMPORTANTE: esto debe hacer EXACTAMENTE lo mismo que `tribuia.list_search_pattern`
+  // (migracion 20261015000000_resumenes_y_plataforma). Los totales de las tarjetas
+  // (fines_summary, admin_fees_summary, expenses_summary) se calculan en el servidor
+  // con ese patron; si los dos divergen, la suma no cuadra con el listado visible.
+  // El comodin que se documenta al usuario es `*`, que PostgREST y esa funcion
+  // traducen a `%`.
+  return term.replace(/[,()%]/g, ' ').trim()
 }
 
 export function buildSearchExpression(
@@ -71,7 +64,12 @@ export function buildSearchExpression(
 ): string | null {
   if (!search || !columns || columns.length === 0) return null
   const term = escapeSearchTerm(search)
-  if (term.length < MIN_SEARCH_LENGTH) return null
+  if (!term) return null
+  // Sin minimo de caracteres A PROPOSITO: `tribuia.list_search_pattern` tampoco lo
+  // tiene, y los totales de las tarjetas se calculan con ese patron. Si aqui se
+  // ignorase una busqueda de un caracter, el listado mostraria todo y la suma no
+  // cuadraria. El minimo de 2 caracteres solo aplica al buscador global
+  // (`useGlobalSearch`), que no alimenta ninguna tarjeta.
   return columns.map((column) => `${column}.ilike.%${term}%`).join(',')
 }
 

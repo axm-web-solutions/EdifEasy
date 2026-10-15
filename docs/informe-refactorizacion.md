@@ -114,6 +114,61 @@ También se probaron **con sesión real las RPC que la app invoca** (`current_us
 > Nota de verificación: no se ejecutó `npm run typecheck` / `lint` / `test` porque el checkout no
 > tiene `node_modules`. Los cambios de TypeScript se revisaron leyendo el resultado de cada edición.
 
+### 0.2 Merge con `origin/main` (3 commits entrantes)
+
+Al hacer `git pull` llegaron tres commits del equipo (`e4f88d9`, `1013d53`, `41d4071`) que **ya
+resolvían parte de este informe**:
+
+| Hallazgo del informe | Estado tras el merge |
+| -------------------- | -------------------- |
+| **E1** (dos fuentes de verdad del esquema) | **Resuelto por ellos**: adoptaron *migraciones versionadas* (`supabase/migrations/202610*`, opción A). Mi parche se convirtió en `20261016000000_endurecimiento_y_rendimiento.sql`, con marca de tiempo posterior a la última suya para que corra al final. |
+| **E5.2** (`condominium_places` huérfana) | **Resuelto por ellos**: la tabla está declarada, tipada y en uso (geolocalización del conjunto). |
+| **P6** (agregaciones en JavaScript) | **Resuelto por ellos con otro enfoque**: `fines_summary`, `admin_fees_summary`, `expenses_summary` y `platform_overview` calculan los totales en el servidor. |
+| **C2** (superficie RPC) | **Parcial**: ellos ya revocaban `anon` en sus funciones nuevas; mi bloque lo cierra para **todo** el esquema. Verificado: `platform_overview` tampoco es invocable por `anon`. |
+| **P1** | **Sin conflicto**: mi optimizador corre después de sus migraciones, así que también optimiza las políticas que ellas crean (una de ellas, `admin_scope_fixes`, reescribe las de escritura por condominio). |
+| **E5.3** (buckets sin uso) | Sigue vigente: `invoices`, `signatures`, `report-images` y `announcements` solo aparecen en el mapa `STORAGE_BUCKETS` y en el límite por bucket. |
+
+#### Conflictos semánticos detectados y resueltos (git no los ve)
+
+El merge automático fue limpio, pero **dos cambios míos chocaban con su implementación del
+buscador** y habrían descuadrado los totales de las tarjetas:
+
+1. **`escapeSearchTerm`: yo dejaba de borrar el `%` y su `tribuia.list_search_pattern` sí lo
+   borra.** Con un término que contuviera `%`, el listado y la suma habrían dado resultados
+   distintos. **Resuelto revirtiendo mi cambio**: el frontend vuelve a borrar `%` (el comodín
+   documentado al usuario es `*`, que PostgREST traduce a `%`) y se deja un comentario que obliga a
+   mantener las dos implementaciones idénticas.
+2. **Mínimo de 2 caracteres en los listados: las funciones de resumen no lo tienen.** Con una
+   búsqueda de un carácter, el listado habría mostrado todo y la suma habría filtrado.
+   **Resuelto quitando el mínimo** de `buildSearchExpression` (documentado por qué no debe volver a
+   añadirse) y dejándolo solo en el buscador global, que no alimenta ninguna tarjeta.
+
+Por eso, el cambio de `src/services/query.ts` queda finalmente **solo en comentarios**: su
+implementación del servidor pasa a ser la fuente de verdad del buscador.
+
+#### Coherencia arreglada a mano tras el merge
+
+- **Colisión de numeración:** mi bloque de `schema.sql` se llamaba «11» y **ya existía** una
+  sección 11 (`PERMISOS`). Renumerado a **16** (subsecciones 16.1-16.7) y colocado después de sus
+  secciones 14 y 15, de modo que el optimizador de políticas corre al final.
+- **Colisión de nombre de parche:** el mío era `10-endurecimiento-y-rendimiento.sql` y ellos
+  añadieron `10-pago-multas.sql`. Renombrado a **`11-`**.
+- **Interacción con su migración:** `20261013000000_pagos_wompi.sql` **crea
+  `idx_admin_fees_apartment`** y mi sección F lo elimina por redundante (su columna líder ya la
+  cubre el índice único `admin_fees_apartment_id_period_key`, y un btree se recorre al revés para
+  el `order by period desc`). Como mi migración corre después, el estado final es determinista;
+  queda documentado en la cabecera de ambas copias, con la vía de reversión si el equipo prefiere
+  conservarlo.
+- **Puntos de integración verificados:** `leaflet` sigue importándose (mi `manualChunks` sigue
+  siendo válido), `listWithCounts` solo lo consume `useBuildings`, y su nuevo `useExportFetcher`
+  encaja con el prop `exportFetcher` de `DataTable` (que mi cambio de debounce no toca).
+
+**Estado de la base tras el merge:** 113 políticas y **0 con patrón crudo**, **17** índices GIN,
+**0** claves foráneas sin índice, `anon` limitado a **4** funciones y la vista
+`buildings_with_counts` presente. El aislamiento por rol se re-verificó y sigue idéntico al
+baseline.
+
+
 
 
 ---
