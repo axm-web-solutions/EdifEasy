@@ -1,8 +1,14 @@
 import { supabase } from '@/lib/supabase'
 import { toAppError } from '@/lib/errors'
-import { runList } from './query'
+import { filterText, runList } from './query'
 import type { ExpenseCategoryRow, ExpenseRow, TablesInsert, TablesUpdate } from '@/types/database'
-import type { ExpenseWithRelations, ListParams, ListResult } from '@/types/models'
+import type {
+  ExpenseWithRelations,
+  ExpensesSummary,
+  ListParams,
+  ListResult,
+  SummaryFilters,
+} from '@/types/models'
 
 const SELECT = `
   *,
@@ -22,6 +28,20 @@ export interface CategoryTotal {
 }
 
 export const expenseService = {
+  /** Totales de todos los gastos que cumplen los filtros (calculados en la base). */
+  async summary(condominiumId: string, filters: SummaryFilters): Promise<ExpensesSummary> {
+    const { data, error } = await supabase.rpc('expenses_summary', {
+      p_condominium: condominiumId,
+      p_status: filterText(filters.filters, 'status'),
+      p_category: filterText(filters.filters, 'category_id'),
+      p_from: filters.dateFrom,
+      p_to: filters.dateTo,
+      p_search: filters.search || null,
+    })
+    if (error) throw toAppError(error)
+    return data as unknown as ExpensesSummary
+  },
+
   async list(condominiumId: string, params: ListParams): Promise<ListResult<ExpenseWithRelations>> {
     const query = supabase
       .from('expenses')

@@ -1,8 +1,14 @@
 import { supabase } from '@/lib/supabase'
 import { toAppError } from '@/lib/errors'
-import { runList } from './query'
+import { filterText, runList } from './query'
 import type { FineRow, TablesInsert, TablesUpdate } from '@/types/database'
-import type { FineWithRelations, ListParams, ListResult } from '@/types/models'
+import type {
+  FineWithRelations,
+  FinesSummary,
+  ListParams,
+  ListResult,
+  SummaryFilters,
+} from '@/types/models'
 
 const SELECT = `
   *,
@@ -21,6 +27,20 @@ export const fineService = {
       defaultSort: { column: 'fine_date', ascending: false },
       dateColumn: 'fine_date',
     })
+  },
+
+  /** Totales de todas las multas que cumplen los filtros (calculados en la base). */
+  async summary(condominiumId: string, filters: SummaryFilters): Promise<FinesSummary> {
+    const { data, error } = await supabase.rpc('fines_summary', {
+      p_condominium: condominiumId,
+      p_status: filterText(filters.filters, 'status'),
+      p_apartment: filterText(filters.filters, 'apartment_id'),
+      p_from: filters.dateFrom,
+      p_to: filters.dateTo,
+      p_search: filters.search || null,
+    })
+    if (error) throw toAppError(error)
+    return data as unknown as FinesSummary
   },
 
   async listByApartment(apartmentId: string): Promise<FineWithRelations[]> {

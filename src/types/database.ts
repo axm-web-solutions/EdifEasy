@@ -86,7 +86,7 @@ export type IncidentStatus = 'OPEN' | 'INVESTIGATING' | 'RESOLVED' | 'CLOSED'
 export type ExpenseStatus = 'PENDING' | 'APPROVED' | 'PAID' | 'REJECTED'
 export type PurchaseStatus = 'DRAFT' | 'ORDERED' | 'RECEIVED' | 'CANCELLED'
 export type FineStatus = 'PENDING' | 'PAID' | 'CANCELLED' | 'APPEALED'
-export type PaymentKind = 'ADMIN_FEE' | 'SUBSCRIPTION'
+export type PaymentKind = 'ADMIN_FEE' | 'SUBSCRIPTION' | 'FINE'
 export type PaymentStatus = 'PENDING' | 'APPROVED' | 'DECLINED' | 'VOIDED' | 'ERROR'
 export type PlanPeriod = 'MONTHLY' | 'SEMIANNUAL' | 'ANNUAL'
 export type AdminFeeStatus = 'PENDING' | 'PAID' | 'CANCELLED'
@@ -177,9 +177,30 @@ export interface CondominiumRow {
   description: string | null
   status: CondominiumStatus
   settings: Json
+  /** Coordenadas guardadas (ver migracion de ubicacion). */
+  latitude: number | null
+  longitude: number | null
+  location_label: string | null
+  location_approximate: boolean
+  /** Direccion que se geocodifico; si cambia, hay que volver a ubicar el conjunto. */
+  location_source: string | null
+  places_updated_at: string | null
   created_by: string | null
   created_at: string
   updated_at: string
+}
+
+export interface CondominiumPlaceRow {
+  id: string
+  condominium_id: string
+  osm_id: string
+  name: string
+  category: string
+  latitude: number
+  longitude: number
+  distance_m: number
+  address: string | null
+  created_at: string
 }
 
 export interface CondominiumMemberRow {
@@ -541,6 +562,7 @@ export interface PaymentRow {
   status: PaymentStatus
   payer_id: string | null
   admin_fee_id: string | null
+  fine_id: string | null
   plan_period: PlanPeriod | null
   apartments_count: number | null
   unit_price: number | null
@@ -579,6 +601,10 @@ export interface FineRow {
   status: FineStatus
   evidence: Json
   notes: string | null
+  paid_at: string | null
+  /** WOMPI cuando se pago en linea. */
+  payment_method: string | null
+  payment_id: string | null
   created_by: string | null
   created_at: string
   updated_at: string
@@ -735,6 +761,10 @@ export interface Database {
       roles: TableDef<RoleRow, 'code' | 'name'>
       user_roles: TableDef<UserRoleRow, 'user_id' | 'role_id'>
       condominiums: TableDef<CondominiumRow, 'name'>
+      condominium_places: TableDef<
+        CondominiumPlaceRow,
+        'condominium_id' | 'osm_id' | 'name' | 'category' | 'latitude' | 'longitude' | 'distance_m'
+      >
       condominium_members: TableDef<CondominiumMemberRow, 'condominium_id' | 'user_id' | 'role_id'>
       buildings: TableDef<BuildingRow, 'condominium_id' | 'name' | 'number'>
       apartments: TableDef<ApartmentRow, 'condominium_id' | 'building_id' | 'number'>
@@ -876,6 +906,43 @@ export interface Database {
       }
       claim_my_invitations: { Args: Record<string, never>; Returns: Json }
       subscription_quote: { Args: { p_condominium: string }; Returns: Json }
+      admin_fees_summary: {
+        Args: {
+          p_condominium: string
+          p_status?: string | null
+          p_from?: string | null
+          p_to?: string | null
+          p_search?: string | null
+        }
+        Returns: Json
+      }
+      expenses_summary: {
+        Args: {
+          p_condominium: string
+          p_status?: string | null
+          p_category?: string | null
+          p_from?: string | null
+          p_to?: string | null
+          p_search?: string | null
+        }
+        Returns: Json
+      }
+      platform_overview: { Args: Record<string, never>; Returns: Json }
+      fines_summary: {
+        Args: {
+          p_condominium: string
+          p_status?: string | null
+          p_apartment?: string | null
+          p_from?: string | null
+          p_to?: string | null
+          p_search?: string | null
+        }
+        Returns: Json
+      }
+      replace_condominium_location: {
+        Args: { p_condominium: string; p_location: Json | null; p_places: Json }
+        Returns: number
+      }
       generate_admin_fees: {
         Args: { p_condominium: string; p_period: string; p_amount: number; p_due_date: string }
         Returns: number

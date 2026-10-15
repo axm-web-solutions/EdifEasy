@@ -152,3 +152,18 @@ export function renderWithProviders(
     ...renderOptions,
   })
 }
+
+/**
+ * Wrapper para `renderHook` de ViewModels: mismos proveedores que
+ * `renderWithProviders` (auth simulada por rol, React Query, router y antd).
+ */
+export function createWrapper(authValue: Partial<AuthContextValue> = {}, route = '/') {
+  const queryClient = createTestQueryClient()
+  return function Wrapper({ children }: { children: ReactNode }) {
+    return (
+      <TestProviders authValue={authValue} route={route} queryClient={queryClient}>
+        {children}
+      </TestProviders>
+    )
+  }
+}

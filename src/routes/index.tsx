@@ -73,6 +73,9 @@ const PurchasesPage = lazy(() =>
 const FinesPage = lazy(() =>
   import('@/features/fines/pages/FinesPage').then((m) => ({ default: m.FinesPage })),
 )
+const PlatformPage = lazy(() =>
+  import('@/features/platform/pages/PlatformPage').then((m) => ({ default: m.PlatformPage })),
+)
 const AdminFeesPage = lazy(() =>
   import('@/features/payments/pages/AdminFeesPage').then((m) => ({ default: m.AdminFeesPage })),
 )
@@ -219,6 +222,14 @@ export function AppRoutes() {
               }
             />
 
+            <Route
+              path="/platform"
+              element={
+                <RoleGuard roles={['SUPER_ADMIN']}>
+                  <PlatformPage />
+                </RoleGuard>
+              }
+            />
             <Route
               path="/admin-fees"
               element={

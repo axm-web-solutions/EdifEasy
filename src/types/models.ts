@@ -239,6 +239,72 @@ export interface ListParams {
   dateTo?: string | null
 }
 
+/**
+ * Filtros de un listado sin paginacion ni orden: con ellos se piden los
+ * totales agregados que acompanan a la tabla (resumenes en la base).
+ */
+export interface SummaryFilters {
+  search: string
+  filters: Record<string, FilterValue>
+  dateFrom: string | null
+  dateTo: string | null
+}
+
+/** Respuesta de `fines_summary`. */
+export interface FinesSummary {
+  pending_amount: number
+  pending_count: number
+  paid_amount: number
+  paid_count: number
+  appealed_count: number
+  total_count: number
+}
+
+/** Respuesta de `admin_fees_summary`. `pending_*` incluye las vencidas. */
+export interface AdminFeesSummary {
+  paid_amount: number
+  paid_count: number
+  pending_amount: number
+  pending_count: number
+  /** Pendientes con fecha limite antes de hoy (hora de Colombia). */
+  overdue_count: number
+  overdue_amount: number
+}
+
+/** Respuesta de `expenses_summary`. */
+export interface ExpensesSummary {
+  total_amount: number
+  pending_amount: number
+  count: number
+}
+
+/** Respuesta de `platform_overview` (solo SUPER_ADMIN). */
+export interface PlatformOverview {
+  totals: {
+    condominiums: number
+    active_condominiums: number
+    apartments: number
+    users: number
+    active_subscriptions: number
+    expired_or_none: number
+  }
+  condominiums: PlatformCondominium[]
+}
+
+export interface PlatformCondominium {
+  id: string
+  name: string
+  city: string | null
+  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED'
+  created_at: string
+  apartments: number
+  members: number
+  owners: number
+  admins: { full_name: string; email: string }[]
+  plan: { period: PlanPeriod; ends_at: string; active: boolean } | null
+  last_payment_at: string | null
+}
+
 export interface ListResult<T> {
   data: T[]
   total: number

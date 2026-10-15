@@ -8,17 +8,23 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Paleta de marca del conjunto activo: la publica BrandThemeProvider como
+        // variables CSS (valores por defecto de EdiFeasy en src/styles/index.css).
         brand: {
-          50: '#eff5ff',
-          100: '#dbe8fe',
-          200: '#bfd7fe',
-          300: '#93bbfd',
-          400: '#6096fa',
-          500: '#3b76f6',
-          600: '#2559eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
+          50: 'rgb(var(--brand-50-rgb) / <alpha-value>)',
+          100: 'rgb(var(--brand-100-rgb) / <alpha-value>)',
+          200: 'rgb(var(--brand-200-rgb) / <alpha-value>)',
+          300: 'rgb(var(--brand-300-rgb) / <alpha-value>)',
+          400: 'rgb(var(--brand-400-rgb) / <alpha-value>)',
+          500: 'rgb(var(--brand-500-rgb) / <alpha-value>)',
+          600: 'rgb(var(--brand-600-rgb) / <alpha-value>)',
+          700: 'rgb(var(--brand-700-rgb) / <alpha-value>)',
+          800: 'rgb(var(--brand-800-rgb) / <alpha-value>)',
+          900: 'rgb(var(--brand-900-rgb) / <alpha-value>)',
+          DEFAULT: 'rgb(var(--brand-rgb) / <alpha-value>)',
+          // Texto legible sobre el color de marca y version de la marca apta para texto.
+          on: 'rgb(var(--brand-on-rgb) / <alpha-value>)',
+          text: 'var(--brand-text)',
         },
         surface: '#f5f7fb',
       },

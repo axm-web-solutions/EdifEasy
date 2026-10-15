@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Controller, type Control, type FieldPath, type FieldValues } from 'react-hook-form'
 import { DatePicker, Form, Input, InputNumber, Select, Switch } from 'antd'
 import dayjs from 'dayjs'
+import { DEFAULT_BRAND_COLOR, buildBrandTheme } from '@/utils/brand'
 
 const { TextArea } = Input
 
@@ -370,14 +371,14 @@ export function ColorField<TFieldValues extends FieldValues>({
           error={fieldState.error?.message}
           className={className}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <input
               id={name}
               type="color"
-              value={(field.value as string) ?? '#2559eb'}
+              value={(field.value as string) ?? DEFAULT_BRAND_COLOR}
               onChange={(event) => field.onChange(event.target.value)}
               disabled={disabled}
-              className="h-8 w-12 cursor-pointer rounded border border-slate-200 bg-white p-1"
+              className="h-11 w-12 cursor-pointer rounded border border-slate-200 bg-white p-1"
               aria-label="Selector de color"
             />
             <Input
@@ -387,9 +388,36 @@ export function ColorField<TFieldValues extends FieldValues>({
               disabled={disabled}
               className="w-32"
             />
+            <BrandPreview color={field.value} />
           </div>
         </FieldWrapper>
       )}
     />
+  )
+}
+
+/**
+ * Vista previa de un color de marca: muestra como se ve un boton con el texto
+ * que se usara (blanco u oscuro segun contraste) y avisa si el color es claro.
+ */
+function BrandPreview({ color }: { color: unknown }) {
+  const theme = buildBrandTheme(color)
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <span
+        className="inline-flex h-8 items-center rounded-md px-3 text-sm font-medium"
+        style={{ background: theme.base, color: theme.on }}
+      >
+        Boton de ejemplo
+      </span>
+      <span className="text-sm font-medium" style={{ color: theme.text }}>
+        Enlace de ejemplo
+      </span>
+      {theme.lowContrast ? (
+        <span className="w-full text-xs text-amber-700">
+          Color claro: sobre el se usara texto oscuro para que se pueda leer.
+        </span>
+      ) : null}
+    </div>
   )
 }

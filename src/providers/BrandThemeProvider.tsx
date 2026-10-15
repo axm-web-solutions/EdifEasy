@@ -1,16 +1,18 @@
 import { useEffect, useMemo, type ReactNode } from 'react'
 import { ConfigProvider } from 'antd'
 import { useAuth } from '@/hooks/useAuth'
-import { BRAND_CSS_VAR, DEFAULT_BRAND_COLOR, resolvePrimaryColor } from '@/utils/brand'
+import { BRAND_CSS_VAR, BRAND_TONES, DEFAULT_BRAND_COLOR, buildBrandTheme } from '@/utils/brand'
+import { rgbChannels } from '@/utils/color'
 
 /**
  * Aplica la marca del condominio activo sobre el tema global.
  *
- * - Un ConfigProvider anidado re-mergé los tokens: el color primario del
- *   condominio se propaga a botones, enlaces, items seleccionados del menu,
- *   etc., sin reescribir el resto de la identidad visual.
- * - Expone el color como CSS var (`--edifeasy-brand`) para las utilidades
- *   Tailwind e inline styles que no pasan por antd.
+ * - Deriva una paleta completa (`buildBrandTheme`) con colores de texto elegidos
+ *   por contraste WCAG: si el conjunto escoge un color claro, los botones
+ *   primarios, el menu y el chat usan texto oscuro en vez de blanco ilegible.
+ * - Publica la paleta como variables CSS (`--edifeasy-brand`, `--brand-<tono>-rgb`,
+ *   `--brand-on`, `--brand-text`) que usan las clases `brand-*` de Tailwind.
+ * - Un ConfigProvider anidado lleva los mismos colores a antd.
  * - Actualiza el favicon al logo del condominio si lo tiene.
  *
  * Vive DENTRO de <AuthProvider>: depende de `currentMembership`.
@@ -18,14 +20,25 @@ import { BRAND_CSS_VAR, DEFAULT_BRAND_COLOR, resolvePrimaryColor } from '@/utils
 export function BrandThemeProvider({ children }: { children: ReactNode }) {
   const { currentMembership } = useAuth()
 
-  const primaryColor = useMemo(
-    () => resolvePrimaryColor(currentMembership?.condominium_primary_color ?? DEFAULT_BRAND_COLOR),
+  const brand = useMemo(
+    () => buildBrandTheme(currentMembership?.condominium_primary_color ?? DEFAULT_BRAND_COLOR),
     [currentMembership?.condominium_primary_color],
   )
 
   useEffect(() => {
-    document.documentElement.style.setProperty(BRAND_CSS_VAR, primaryColor)
-  }, [primaryColor])
+    const root = document.documentElement.style
+    root.setProperty(BRAND_CSS_VAR, brand.base)
+    root.setProperty('--brand-rgb', rgbChannels(brand.base))
+    root.setProperty('--brand-on', brand.on)
+    root.setProperty('--brand-on-rgb', rgbChannels(brand.on))
+    root.setProperty('--brand-text', brand.text)
+    // Con el azul de EdiFeasy se conserva la escala de :root (index.css), que es
+    // la que usan las pantallas de acceso; otro color reemplaza toda la escala.
+    for (const tone of BRAND_TONES) {
+      if (brand.base === DEFAULT_BRAND_COLOR) root.removeProperty(`--brand-${tone}-rgb`)
+      else root.setProperty(`--brand-${tone}-rgb`, rgbChannels(brand.tones[tone]))
+    }
+  }, [brand])
 
   useEffect(() => {
     const logoUrl = currentMembership?.condominium_logo_url
@@ -43,9 +56,10 @@ export function BrandThemeProvider({ children }: { children: ReactNode }) {
     <ConfigProvider
       theme={{
         inherit: true,
-        token: { colorPrimary: primaryColor, colorInfo: primaryColor },
+        token: { colorPrimary: brand.base, colorInfo: brand.base, colorLink: brand.text },
         components: {
-          Menu: { darkItemSelectedBg: primaryColor },
+          Button: { primaryColor: brand.on },
+          Menu: { darkItemSelectedBg: brand.menuBg, darkItemSelectedColor: brand.menuOn },
         },
       }}
     >

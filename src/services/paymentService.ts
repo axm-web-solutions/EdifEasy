@@ -1,9 +1,11 @@
 import { supabase } from '@/lib/supabase'
 import { toAppError } from '@/lib/errors'
-import { runList } from './query'
+import { filterText, runList } from './query'
 import type { AdminFeeRow, PaymentKind, PlanPeriod, TablesUpdate } from '@/types/database'
 import type {
   AdminFeeWithRelations,
+  AdminFeesSummary,
+  SummaryFilters,
   ListParams,
   ListResult,
   PaymentWithRelations,
@@ -65,6 +67,28 @@ export const paymentService = {
       searchColumns: ['notes'],
       defaultSort: { column: 'period', ascending: false },
       dateColumn: 'due_date',
+    })
+  },
+
+  /** Totales de todas las cuotas que cumplen los filtros (calculados en la base). */
+  async adminFeesSummary(condominiumId: string, filters: SummaryFilters): Promise<AdminFeesSummary> {
+    const { data, error } = await supabase.rpc('admin_fees_summary', {
+      p_condominium: condominiumId,
+      p_status: filterText(filters.filters, 'status'),
+      p_from: filters.dateFrom,
+      p_to: filters.dateTo,
+      p_search: filters.search || null,
+    })
+    if (error) throw toAppError(error)
+    return data as unknown as AdminFeesSummary
+  },
+
+  /** Registra un pago en efectivo o consignacion hecho por fuera de la app. */
+  async registerCashPayment(adminFeeId: string): Promise<AdminFeeRow> {
+    return paymentService.updateAdminFee(adminFeeId, {
+      status: 'PAID',
+      paid_at: new Date().toISOString(),
+      payment_method: 'CASH',
     })
   },
 
@@ -146,6 +170,15 @@ export const paymentService = {
     const data = await invokePayments({
       action: 'admin_fee',
       admin_fee_id: adminFeeId,
+      origin: window.location.origin,
+    })
+    return data.checkout_url as string
+  },
+
+  async startFineCheckout(fineId: string): Promise<string> {
+    const data = await invokePayments({
+      action: 'fine',
+      fine_id: fineId,
       origin: window.location.origin,
     })
     return data.checkout_url as string

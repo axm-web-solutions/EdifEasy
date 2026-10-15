@@ -34,6 +34,7 @@ const TOUR_LABELS: Record<string, string> = {
   fines: 'Multas',
   'admin-fees': 'Cuotas de administración',
   plans: 'Planes',
+  platform: 'Plataforma',
   expenses: 'Gastos',
   purchases: 'Compras',
   documents: 'Documentos',

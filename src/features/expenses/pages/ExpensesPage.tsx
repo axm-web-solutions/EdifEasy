@@ -24,6 +24,7 @@ import {
   useExpenseCategories,
   useExpenseMutations,
   useExpenses,
+  useExpensesSummary,
   useExpensesByCategory,
   useExpensesMonthly,
 } from '@/hooks/useExpenses'
@@ -71,6 +72,8 @@ export function ExpensesPage() {
 
   const table = useTableParams({ pageSize: 10 })
   const query = useExpenses(currentCondominiumId, table.params)
+  // Totales de todos los gastos filtrados, calculados en la base (no solo la pagina).
+  const summary = useExpensesSummary(currentCondominiumId, table.params)
   const categoriesQuery = useExpenseCategories(currentCondominiumId)
   const monthlyQuery = useExpensesMonthly(currentCondominiumId, 6)
   const byCategoryQuery = useExpensesByCategory(currentCondominiumId)
@@ -143,12 +146,10 @@ export function ExpensesPage() {
     setCategoryOpen(false)
   })
 
-  const totalPeriod = (query.data?.data ?? []).reduce((sum, row) => sum + Number(row.amount), 0)
+  const totalPeriod = summary.data?.total_amount ?? 0
   const monthTotal =
     monthlyQuery.data?.find((point) => point.period === dayjs().format('YYYY-MM'))?.total ?? 0
-  const pendingTotal = (query.data?.data ?? [])
-    .filter((row) => row.status === 'PENDING')
-    .reduce((sum, row) => sum + Number(row.amount), 0)
+  const pendingTotal = summary.data?.pending_amount ?? 0
 
   const columns: ColumnsType<ExpenseWithRelations> = [
     {
@@ -285,12 +286,12 @@ export function ExpensesPage() {
         </Col>
         <Col xs={24} sm={8}>
           <StatCard
-            title="Total pagina actual"
+            title="Total filtrado"
             value={formatCompactCurrency(totalPeriod)}
             icon={<Receipt size={20} />}
             tone="green"
-            loading={query.isLoading}
-            hint="Suma de los registros visibles con los filtros aplicados"
+            loading={summary.isLoading}
+            hint="Total de los gastos que cumplen los filtros aplicados"
           />
         </Col>
         <Col xs={24} sm={8}>
@@ -299,7 +300,7 @@ export function ExpensesPage() {
             value={formatCompactCurrency(pendingTotal)}
             icon={<TrendingUp size={20} />}
             tone="orange"
-            loading={query.isLoading}
+            loading={summary.isLoading}
           />
         </Col>
       </Row>

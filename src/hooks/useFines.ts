@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { fineService } from '@/services/fineService'
 import { queryKeys } from '@/lib/queryKeys'
+import { toSummaryFilters } from '@/services/query'
 import { notify } from '@/lib/notify'
 import type { TablesInsert, TablesUpdate } from '@/types/database'
 import type { ListParams } from '@/types/models'
@@ -9,6 +10,16 @@ export function useFines(condominiumId: string | null, params: ListParams) {
   return useQuery({
     queryKey: queryKeys.fines.list(condominiumId ?? '', params),
     queryFn: () => fineService.list(condominiumId as string, params),
+    enabled: Boolean(condominiumId),
+  })
+}
+
+/** Totales de las multas con los filtros de la tabla (sin paginar). */
+export function useFinesSummary(condominiumId: string | null, params: ListParams) {
+  const filters = toSummaryFilters(params)
+  return useQuery({
+    queryKey: queryKeys.fines.summary(condominiumId ?? '', filters),
+    queryFn: () => fineService.summary(condominiumId as string, filters),
     enabled: Boolean(condominiumId),
   })
 }
