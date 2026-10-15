@@ -11,6 +11,8 @@
  * Acciones (POST, JSON):
  *   { action: 'admin_fee', admin_fee_id, origin }
  *       Solo el propietario activo del apartamento. Responde { checkout_url }.
+ *   { action: 'fine', fine_id, origin }
+ *       Quien vive en el apartamento multado (misma regla con la que ve la multa).
  *   { action: 'subscription', condominium_id, period, origin }
  *       Solo el ADMINISTRATOR del conjunto. period: MONTHLY | SEMIANNUAL | ANNUAL.
  *   { action: 'verify', transaction_id }
@@ -94,6 +96,53 @@ Deno.serve(async (req: Request) => {
         amount,
         payer_id: user.id,
         admin_fee_id: fee.id,
+      })
+      if (insertError) throw new Error(insertError.message)
+
+      const url = await checkoutUrl({
+        reference,
+        amountInCents: Math.round(amount * 100),
+        redirectUrl: resolveRedirect(payload?.origin, RESULT_PATH),
+        email: user.email,
+      })
+      return json({ ok: true, reference, checkout_url: url })
+    }
+
+    // ---------------------------------------------------------------- multa
+    if (action === 'fine') {
+      const fineId = String(payload?.fine_id ?? '')
+      const { data: fine, error: fineError } = await admin
+        .from('fines')
+        .select('id, condominium_id, apartment_id, amount, status')
+        .eq('id', fineId)
+        .maybeSingle()
+      if (fineError) throw new Error(fineError.message)
+      if (!fine) return json({ error: 'Multa no encontrada' }, 404)
+      if (fine.status !== 'PENDING') return json({ error: 'Esta multa no esta pendiente de pago' }, 409)
+      if (Number(fine.amount) <= 0) return json({ error: 'La multa no tiene un valor a pagar' }, 400)
+
+      // Misma regla de la politica RLS de multas: propietario, arrendatario o
+      // residente con cuenta del apartamento.
+      const { data: apartmentIds, error: aptError } = await admin.rpc('user_apartment_ids', {
+        p_user: user.id,
+      })
+      if (aptError) throw new Error(aptError.message)
+      const ids = ((apartmentIds ?? []) as unknown[]).map((row: any) =>
+        typeof row === 'string' ? row : row?.user_apartment_ids,
+      )
+      if (!ids.includes(fine.apartment_id)) {
+        return json({ error: 'Solo los residentes del apartamento pueden pagar esta multa' }, 403)
+      }
+
+      const reference = newReference('MUL')
+      const amount = Number(fine.amount)
+      const { error: insertError } = await admin.from('payments').insert({
+        condominium_id: fine.condominium_id,
+        kind: 'FINE',
+        reference,
+        amount,
+        payer_id: user.id,
+        fine_id: fine.id,
       })
       if (insertError) throw new Error(insertError.message)
 

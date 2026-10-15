@@ -21,6 +21,9 @@
 --      `apply_payment_result` (esta ultima solo para la service role).
 --
 -- Seguro de re-ejecutar desde el SQL Editor (todo es idempotente).
+-- OJO: si ya aplicaste el parche 10 (multas) y vuelves a correr este, corre
+-- tambien el 10 despues: este reemplaza `apply_payment_result` por la version
+-- sin multas.
 -- Despues de aplicarlo hay que desplegar las Edge Functions `wompi-payments`
 -- y `wompi-webhook` (ver supabase/functions/README-pagos.md).
 -- ============================================================================

@@ -1142,6 +1142,26 @@ as $$
   select p.condominium_id from tribuia.purchases p where p.id = p_purchase;
 $$;
 
+create or replace function tribuia.meeting_condominium(p_meeting uuid)
+returns uuid
+language sql
+stable
+security definer
+set search_path = tribuia, public, pg_temp
+as $$
+  select m.condominium_id from tribuia.meetings m where m.id = p_meeting;
+$$;
+
+create or replace function tribuia.conversation_creator(p_conversation uuid)
+returns uuid
+language sql
+stable
+security definer
+set search_path = tribuia, public, pg_temp
+as $$
+  select c.created_by from tribuia.conversations c where c.id = p_conversation;
+$$;
+
 create or replace function tribuia.safe_uuid(p_value text)
 returns uuid
 language plpgsql
@@ -1365,7 +1385,8 @@ declare
 begin
   foreach t in array array[
     'apartments', 'residents', 'vehicles', 'pets', 'alerts', 'announcements',
-    'documents', 'requests', 'incidents', 'fines', 'meetings', 'report_images'
+    'documents', 'requests', 'incidents', 'fines', 'meetings', 'report_images',
+    'visitors'
   ]
   loop
     execute format('drop trigger if exists trg_%1$s_tenant_ref on tribuia.%1$I', t);
@@ -1483,6 +1504,10 @@ begin
 
   v_condo := tribuia.safe_uuid(v_row ->> 'condominium_id');
   v_entity := tribuia.safe_uuid(v_row ->> 'id');
+
+  if v_condo is not null and not exists (select 1 from tribuia.condominiums c where c.id = v_condo) then
+    v_condo := null;
+  end if;
 
   insert into tribuia.audit_logs (user_id, condominium_id, action, entity, entity_id, metadata)
   values (auth.uid(), v_condo, v_action, tg_table_name, v_entity,
@@ -1978,7 +2003,16 @@ create policy announcements_delete on tribuia.announcements for delete to authen
 create policy notifications_select on tribuia.notifications for select to authenticated
   using (user_id = auth.uid());
 create policy notifications_insert on tribuia.notifications for insert to authenticated
-  with check (user_id = auth.uid() or tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON']));
+  with check (
+    (
+      user_id = (select auth.uid())
+      and (condominium_id is null or tribuia.user_can_access_condominium(condominium_id))
+    )
+    or (
+      tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON'])
+      and tribuia.user_can_access_condominium(condominium_id, user_id)
+    )
+  );
 create policy notifications_update on tribuia.notifications for update to authenticated
   using (user_id = auth.uid()) with check (user_id = auth.uid());
 create policy notifications_delete on tribuia.notifications for delete to authenticated
@@ -2002,10 +2036,20 @@ create policy conversations_delete on tribuia.conversations for delete to authen
   using (tribuia.is_condominium_admin(condominium_id));
 
 create policy participants_select on tribuia.conversation_participants for select to authenticated
-  using (user_id = auth.uid() or tribuia.is_conversation_participant(conversation_id));
+  using (
+    user_id = (select auth.uid())
+    or tribuia.is_conversation_participant(conversation_id)
+    or tribuia.is_condominium_admin(tribuia.conversation_condominium(conversation_id))
+  );
 create policy participants_insert on tribuia.conversation_participants for insert to authenticated
   with check (
     tribuia.user_can_access_condominium(tribuia.conversation_condominium(conversation_id))
+    and tribuia.user_can_access_condominium(tribuia.conversation_condominium(conversation_id), user_id)
+    and (
+      tribuia.conversation_creator(conversation_id) = (select auth.uid())
+      or tribuia.is_conversation_participant(conversation_id)
+      or tribuia.is_condominium_admin(tribuia.conversation_condominium(conversation_id))
+    )
   );
 create policy participants_update on tribuia.conversation_participants for update to authenticated
   using (user_id = auth.uid()) with check (user_id = auth.uid());
@@ -2017,8 +2061,8 @@ create policy messages_select on tribuia.messages for select to authenticated
 create policy messages_insert on tribuia.messages for insert to authenticated
   with check (sender_id = auth.uid() and tribuia.is_conversation_participant(conversation_id));
 create policy messages_update on tribuia.messages for update to authenticated
-  using (sender_id = auth.uid() or tribuia.is_conversation_participant(conversation_id))
-  with check (sender_id = auth.uid() or tribuia.is_conversation_participant(conversation_id));
+  using (sender_id = (select auth.uid()) and tribuia.user_can_access_condominium(condominium_id))
+  with check (sender_id = (select auth.uid()) and tribuia.user_can_access_condominium(condominium_id));
 create policy messages_delete on tribuia.messages for delete to authenticated
   using (sender_id = auth.uid() or tribuia.is_condominium_admin(condominium_id));
 
@@ -2035,13 +2079,17 @@ create policy requests_insert on tribuia.requests for insert to authenticated
 create policy requests_update on tribuia.requests for update to authenticated
   using (
     tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SERVICE_STAFF'])
-    or assigned_to = auth.uid()
-    or created_by = auth.uid()
+    or (
+      tribuia.user_can_access_condominium(condominium_id)
+      and (assigned_to = (select auth.uid()) or created_by = (select auth.uid()))
+    )
   )
   with check (
     tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SERVICE_STAFF'])
-    or assigned_to = auth.uid()
-    or created_by = auth.uid()
+    or (
+      tribuia.user_can_access_condominium(condominium_id)
+      and (assigned_to = (select auth.uid()) or created_by = (select auth.uid()))
+    )
   );
 create policy requests_delete on tribuia.requests for delete to authenticated
   using (tribuia.is_condominium_admin(condominium_id));
@@ -2079,13 +2127,17 @@ create policy incidents_insert on tribuia.incidents for insert to authenticated
 create policy incidents_update on tribuia.incidents for update to authenticated
   using (
     tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SECURITY'])
-    or reported_by = auth.uid()
-    or assigned_to = auth.uid()
+    or (
+      tribuia.user_can_access_condominium(condominium_id)
+      and (reported_by = (select auth.uid()) or assigned_to = (select auth.uid()))
+    )
   )
   with check (
     tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SECURITY'])
-    or reported_by = auth.uid()
-    or assigned_to = auth.uid()
+    or (
+      tribuia.user_can_access_condominium(condominium_id)
+      and (reported_by = (select auth.uid()) or assigned_to = (select auth.uid()))
+    )
   );
 create policy incidents_delete on tribuia.incidents for delete to authenticated
   using (tribuia.is_condominium_admin(condominium_id));
@@ -2163,7 +2215,10 @@ create policy documents_delete on tribuia.documents for delete to authenticated
 create policy audit_logs_select on tribuia.audit_logs for select to authenticated
   using (user_id = auth.uid() or tribuia.is_condominium_admin(condominium_id) or tribuia.is_super_admin());
 create policy audit_logs_insert on tribuia.audit_logs for insert to authenticated
-  with check (user_id = auth.uid());
+  with check (
+    user_id = (select auth.uid())
+    and (condominium_id is null or tribuia.user_can_access_condominium(condominium_id))
+  );
 
 -- 7.24 meetings (actas) ------------------------------------------------------------------------------------
 -- Cualquier miembro puede ver el acta; crear/editar la gestiona la administracion.
@@ -2191,23 +2246,26 @@ create policy meeting_signatures_select on tribuia.meeting_signatures for select
   );
 create policy meeting_signatures_insert on tribuia.meeting_signatures for insert to authenticated
   with check (
-    profile_id = auth.uid()
-    or tribuia.has_role(
-         (select m.condominium_id from tribuia.meetings m where m.id = meeting_id),
-         array['ADMINISTRATOR', 'SPOKESPERSON'])
+    tribuia.has_role(tribuia.meeting_condominium(meeting_id), array['ADMINISTRATOR', 'SPOKESPERSON'])
+    or (
+      profile_id = (select auth.uid())
+      and tribuia.user_can_access_condominium(tribuia.meeting_condominium(meeting_id))
+    )
   );
 create policy meeting_signatures_update on tribuia.meeting_signatures for update to authenticated
   using (
-    profile_id = auth.uid()
-    or tribuia.has_role(
-         (select m.condominium_id from tribuia.meetings m where m.id = meeting_id),
-         array['ADMINISTRATOR', 'SPOKESPERSON'])
+    tribuia.has_role(tribuia.meeting_condominium(meeting_id), array['ADMINISTRATOR', 'SPOKESPERSON'])
+    or (
+      profile_id = (select auth.uid())
+      and tribuia.user_can_access_condominium(tribuia.meeting_condominium(meeting_id))
+    )
   )
   with check (
-    profile_id = auth.uid()
-    or tribuia.has_role(
-         (select m.condominium_id from tribuia.meetings m where m.id = meeting_id),
-         array['ADMINISTRATOR', 'SPOKESPERSON'])
+    tribuia.has_role(tribuia.meeting_condominium(meeting_id), array['ADMINISTRATOR', 'SPOKESPERSON'])
+    or (
+      profile_id = (select auth.uid())
+      and tribuia.user_can_access_condominium(tribuia.meeting_condominium(meeting_id))
+    )
   );
 create policy meeting_signatures_delete on tribuia.meeting_signatures for delete to authenticated
   using (
@@ -2643,6 +2701,10 @@ drop trigger if exists trg_registration_requests_updated_at on tribuia.registrat
 create trigger trg_registration_requests_updated_at
   before update on tribuia.registration_requests
   for each row execute function tribuia.set_updated_at();
+
+drop trigger if exists trg_registration_requests_tenant_ref on tribuia.registration_requests;
+create trigger trg_registration_requests_tenant_ref before insert or update on tribuia.registration_requests
+  for each row execute function tribuia.tg_assert_tenant_reference();
 
 drop trigger if exists trg_audit_registration_requests on tribuia.registration_requests;
 create trigger trg_audit_registration_requests
@@ -3249,6 +3311,10 @@ create trigger trg_invitations_updated_at
   before update on tribuia.condominium_invitations
   for each row execute function tribuia.set_updated_at();
 
+drop trigger if exists trg_condominium_invitations_tenant_ref on tribuia.condominium_invitations;
+create trigger trg_condominium_invitations_tenant_ref before insert or update on tribuia.condominium_invitations
+  for each row execute function tribuia.tg_assert_tenant_reference();
+
 drop trigger if exists trg_audit_invitations on tribuia.condominium_invitations;
 create trigger trg_audit_invitations
   after insert or update or delete on tribuia.condominium_invitations
@@ -3609,7 +3675,7 @@ create table if not exists tribuia.payments (
   currency              text not null default 'COP',
   status                tribuia.payment_status not null default 'PENDING',
   payer_id              uuid references tribuia.profiles (id) on delete set null,
-  admin_fee_id          uuid references tribuia.admin_fees (id) on delete set null,
+  admin_fee_id          uuid references tribuia.admin_fees (id),
   plan_period           tribuia.plan_period,
   apartments_count      integer,
   unit_price            numeric(14, 2),
@@ -3654,6 +3720,11 @@ drop trigger if exists trg_admin_fees_updated_at on tribuia.admin_fees;
 create trigger trg_admin_fees_updated_at
   before update on tribuia.admin_fees
   for each row execute function tribuia.set_updated_at();
+
+-- Integridad de referencias multi-tenant (apartamento del mismo condominio).
+drop trigger if exists trg_admin_fees_tenant_ref on tribuia.admin_fees;
+create trigger trg_admin_fees_tenant_ref before insert or update on tribuia.admin_fees
+  for each row execute function tribuia.tg_assert_tenant_reference();
 
 drop trigger if exists trg_payments_updated_at on tribuia.payments;
 create trigger trg_payments_updated_at
@@ -3880,6 +3951,741 @@ revoke all on function tribuia.apply_payment_result(text, text, text, bigint, te
 grant execute on function tribuia.apply_payment_result(text, text, text, bigint, text, text, text, jsonb) to service_role;
 grant execute on function tribuia.subscription_quote(uuid) to authenticated, service_role;
 grant execute on function tribuia.generate_admin_fees(uuid, date, numeric, date) to authenticated;
+
+-- ============================================================================
+-- PAGO DE MULTAS CON WOMPI (parche 10)
+-- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- A. ENUM
+-- ----------------------------------------------------------------------------
+alter type tribuia.payment_kind add value if not exists 'FINE';
+
+-- ----------------------------------------------------------------------------
+-- B. PAGOS: referencia a la multa
+-- ----------------------------------------------------------------------------
+alter table tribuia.payments
+  add column if not exists fine_id uuid references tribuia.fines (id);
+
+create index if not exists idx_payments_fine on tribuia.payments (fine_id);
+
+-- payments.admin_fee_id / fine_id eran ON DELETE SET NULL, lo que choca con
+-- payments_target_check y abortaba el borrado del conjunto (y de bloques,
+-- apartamentos, cuotas o multas con intentos de pago). Con NO ACTION la
+-- verificacion ocurre al final de la sentencia: borrar el condominio completo
+-- (que borra tambien sus pagos) funciona, y borrar una cuota o multa con pagos
+-- se rechaza con un error de FK claro (se debe anular, no borrar).
+do $$
+begin
+  if exists (
+    select 1 from pg_constraint
+    where conname = 'payments_admin_fee_id_fkey' and conrelid = 'tribuia.payments'::regclass
+      and confdeltype <> 'a'
+  ) then
+    alter table tribuia.payments drop constraint payments_admin_fee_id_fkey;
+    alter table tribuia.payments add constraint payments_admin_fee_id_fkey
+      foreign key (admin_fee_id) references tribuia.admin_fees (id);
+  end if;
+
+  if exists (
+    select 1 from pg_constraint
+    where conname = 'payments_fine_id_fkey' and conrelid = 'tribuia.payments'::regclass
+      and confdeltype <> 'a'
+  ) then
+    alter table tribuia.payments drop constraint payments_fine_id_fkey;
+    alter table tribuia.payments add constraint payments_fine_id_fkey
+      foreign key (fine_id) references tribuia.fines (id);
+  end if;
+end
+$$;
+
+-- Cada tipo de pago apunta a lo que paga. Se compara `kind::text` porque el
+-- valor 'FINE' recien agregado no puede usarse como literal en esta transaccion.
+alter table tribuia.payments drop constraint if exists payments_check;
+alter table tribuia.payments drop constraint if exists payments_target_check;
+alter table tribuia.payments add constraint payments_target_check check (
+  (kind::text = 'ADMIN_FEE' and admin_fee_id is not null)
+  or (kind::text = 'SUBSCRIPTION' and plan_period is not null)
+  or (kind::text = 'FINE' and fine_id is not null)
+);
+
+-- ----------------------------------------------------------------------------
+-- C. MULTAS: datos del pago
+-- ----------------------------------------------------------------------------
+alter table tribuia.fines add column if not exists paid_at timestamptz;
+alter table tribuia.fines add column if not exists payment_method text;
+alter table tribuia.fines
+  add column if not exists payment_id uuid references tribuia.payments (id) on delete set null;
+
+-- ----------------------------------------------------------------------------
+-- D. APLICAR RESULTADO (reemplaza la version del parche 09)
+-- ----------------------------------------------------------------------------
+-- Aplica el resultado de una transaccion de Wompi. Idempotente: un pago ya
+-- aprobado no se vuelve a procesar. Verifica que el monto cobrado coincida con
+-- el registrado. Solo la invoca la service role (Edge Functions).
+create or replace function tribuia.apply_payment_result(
+  p_reference       text,
+  p_transaction_id  text,
+  p_status          text,
+  p_amount_in_cents bigint,
+  p_currency        text,
+  p_method          text,
+  p_message         text,
+  p_payload         jsonb
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = tribuia, public, pg_temp
+as $$
+declare
+  v_payment tribuia.payments%rowtype;
+  v_status  tribuia.payment_status;
+  v_start   date;
+  v_months  integer;
+begin
+  select * into v_payment from tribuia.payments where reference = p_reference for update;
+  if not found then
+    raise exception 'Pago no encontrado: %', p_reference;
+  end if;
+
+  if v_payment.status = 'APPROVED' then
+    return jsonb_build_object('id', v_payment.id, 'status', v_payment.status, 'kind', v_payment.kind);
+  end if;
+
+  v_status := case p_status
+    when 'APPROVED' then 'APPROVED'
+    when 'DECLINED' then 'DECLINED'
+    when 'VOIDED'   then 'VOIDED'
+    when 'ERROR'    then 'ERROR'
+    else 'PENDING'
+  end::tribuia.payment_status;
+
+  -- Proteccion contra montos manipulados: lo cobrado debe ser lo registrado.
+  if v_status = 'APPROVED'
+     and (p_amount_in_cents <> round(v_payment.amount * 100) or coalesce(p_currency, 'COP') <> v_payment.currency) then
+    v_status := 'ERROR';
+    p_message := 'El monto cobrado no coincide con el valor del pago';
+  end if;
+
+  update tribuia.payments
+     set status = v_status,
+         wompi_transaction_id = coalesce(p_transaction_id, wompi_transaction_id),
+         payment_method = coalesce(p_method, payment_method),
+         status_message = p_message,
+         paid_at = case when v_status = 'APPROVED' then now() else paid_at end,
+         raw = coalesce(p_payload, '{}'::jsonb)
+   where id = v_payment.id;
+
+  if v_status = 'APPROVED' then
+    -- Se compara como texto: 'FINE' se agrega al enum en este mismo script.
+    if v_payment.kind::text = 'ADMIN_FEE' then
+      update tribuia.admin_fees
+         set status = 'PAID', paid_at = now(), payment_method = 'WOMPI', payment_id = v_payment.id
+       where id = v_payment.admin_fee_id;
+    elsif v_payment.kind::text = 'FINE' then
+      update tribuia.fines
+         set status = 'PAID', paid_at = now(), payment_method = 'WOMPI', payment_id = v_payment.id
+       where id = v_payment.fine_id;
+    else
+      -- El nuevo periodo empieza hoy o cuando termine el plan vigente.
+      select greatest(current_date, coalesce(max(ends_at), current_date)) into v_start
+        from tribuia.subscriptions where condominium_id = v_payment.condominium_id;
+
+      v_months := case v_payment.plan_period
+        when 'MONTHLY' then 1 when 'SEMIANNUAL' then 6 else 12 end;
+
+      insert into tribuia.subscriptions
+        (condominium_id, plan_period, apartments_count, unit_price, amount, starts_at, ends_at, payment_id)
+      values
+        (v_payment.condominium_id, v_payment.plan_period, v_payment.apartments_count,
+         v_payment.unit_price, v_payment.amount, v_start,
+         (v_start + make_interval(months => v_months))::date, v_payment.id);
+    end if;
+  end if;
+
+  return jsonb_build_object('id', v_payment.id, 'status', v_status, 'kind', v_payment.kind);
+end;
+$$;
+
+revoke all on function tribuia.apply_payment_result(text, text, text, bigint, text, text, text, jsonb) from public, anon, authenticated;
+grant execute on function tribuia.apply_payment_result(text, text, text, bigint, text, text, text, jsonb) to service_role;
+
+-- ============================================================================
+-- UBICACION DEL CONDOMINIO Y LUGARES CERCANOS GUARDADOS
+-- (migracion 20261014100000_ubicacion_condominios)
+-- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- A. COORDENADAS DEL CONDOMINIO
+-- ----------------------------------------------------------------------------
+alter table tribuia.condominiums add column if not exists latitude numeric(9, 6);
+alter table tribuia.condominiums add column if not exists longitude numeric(9, 6);
+-- Direccion tal como la resolvio el mapa.
+alter table tribuia.condominiums add column if not exists location_label text;
+-- true si no se encontro la direccion exacta y se uso la ciudad.
+alter table tribuia.condominiums add column if not exists location_approximate boolean not null default false;
+-- Texto de direccion que se geocodifico: si la direccion cambia, se vuelve a ubicar.
+alter table tribuia.condominiums add column if not exists location_source text;
+alter table tribuia.condominiums add column if not exists places_updated_at timestamptz;
+
+-- ----------------------------------------------------------------------------
+-- B. LUGARES CERCANOS
+-- ----------------------------------------------------------------------------
+create table if not exists tribuia.condominium_places (
+  id              uuid primary key default gen_random_uuid(),
+  condominium_id  uuid not null references tribuia.condominiums (id) on delete cascade,
+  osm_id          text not null,
+  name            text not null,
+  category        text not null,
+  latitude        numeric(9, 6) not null,
+  longitude       numeric(9, 6) not null,
+  distance_m      integer not null,
+  address         text,
+  created_at      timestamptz not null default now(),
+  unique (condominium_id, osm_id)
+);
+
+create index if not exists idx_condominium_places_condominium
+  on tribuia.condominium_places (condominium_id, distance_m);
+
+alter table tribuia.condominium_places enable row level security;
+
+drop policy if exists condominium_places_select on tribuia.condominium_places;
+create policy condominium_places_select on tribuia.condominium_places for select to authenticated
+  using (tribuia.user_can_access_condominium(condominium_id));
+
+-- Sin politicas de escritura: solo se escribe con `replace_condominium_location`.
+grant select on tribuia.condominium_places to authenticated;
+grant all on tribuia.condominium_places to service_role;
+
+-- ----------------------------------------------------------------------------
+-- C. GUARDAR UBICACION Y LUGARES (atomico)
+-- ----------------------------------------------------------------------------
+-- p_location: { latitude, longitude, label, approximate, source } o null si no
+--             cambio la ubicacion (solo se refrescan los lugares).
+-- p_places:   [{ osm_id, name, category, latitude, longitude, distance_m, address }]
+create or replace function tribuia.replace_condominium_location(
+  p_condominium uuid,
+  p_location jsonb,
+  p_places jsonb
+)
+returns integer
+language plpgsql
+security definer
+set search_path = tribuia, public, pg_temp
+as $$
+declare
+  v_count integer;
+begin
+  if not tribuia.is_condominium_admin(p_condominium) then
+    raise exception 'Solo la administracion del conjunto puede actualizar su ubicacion'
+      using errcode = '42501';
+  end if;
+
+  if p_location is not null then
+    update tribuia.condominiums
+       set latitude = (p_location ->> 'latitude')::numeric,
+           longitude = (p_location ->> 'longitude')::numeric,
+           location_label = p_location ->> 'label',
+           location_approximate = coalesce((p_location ->> 'approximate')::boolean, false),
+           location_source = p_location ->> 'source'
+     where id = p_condominium;
+  end if;
+
+  delete from tribuia.condominium_places where condominium_id = p_condominium;
+
+  insert into tribuia.condominium_places
+    (condominium_id, osm_id, name, category, latitude, longitude, distance_m, address)
+  select p_condominium,
+         p.osm_id, left(p.name, 200), p.category, p.latitude, p.longitude, p.distance_m,
+         left(p.address, 300)
+    from jsonb_to_recordset(coalesce(p_places, '[]'::jsonb)) as p(
+      osm_id text, name text, category text, latitude numeric, longitude numeric,
+      distance_m integer, address text
+    )
+   where p.osm_id is not null and p.name is not null
+  on conflict (condominium_id, osm_id) do nothing;
+
+  get diagnostics v_count = row_count;
+
+  update tribuia.condominiums set places_updated_at = now() where id = p_condominium;
+
+  return v_count;
+end;
+$$;
+
+revoke all on function tribuia.replace_condominium_location(uuid, jsonb, jsonb) from public, anon;
+grant execute on function tribuia.replace_condominium_location(uuid, jsonb, jsonb) to authenticated;
+
+-- ============================================================================
+-- 14. ALCANCE POR CONDOMINIO (migracion 20261014120000_admin_scope_fixes)
+-- ============================================================================
+
+-- A. Columnas de tenant inmutables para usuarios finales --------------------
+-- tg_argv = columnas que no pueden cambiar en un UPDATE. auth.uid() nulo es la
+-- service role, el SQL Editor o un trigger de sistema: no se restringe.
+create or replace function tribuia.tg_lock_tenant_columns()
+returns trigger
+language plpgsql
+set search_path = tribuia, public, pg_temp
+as $$
+declare
+  v_old jsonb := to_jsonb(old);
+  v_new jsonb := to_jsonb(new);
+  v_col text;
+begin
+  if auth.uid() is null then
+    return new;
+  end if;
+
+  -- Primero se comparan las columnas (barato); is_super_admin solo si cambiaron.
+  foreach v_col in array tg_argv loop
+    if (v_new -> v_col) is distinct from (v_old -> v_col) and not tribuia.is_super_admin() then
+      raise exception 'No se puede cambiar % de un registro de %', v_col, tg_table_name
+        using errcode = '42501';
+    end if;
+  end loop;
+
+  return new;
+end;
+$$;
+
+do $$
+declare
+  spec record;
+begin
+  for spec in
+    select * from (values
+      ('condominium_members',       'condominium_id'),
+      ('buildings',                 'condominium_id'),
+      ('apartments',                'condominium_id'),
+      ('residents',                 'condominium_id'),
+      ('vehicles',                  'condominium_id'),
+      ('pets',                      'condominium_id'),
+      ('visitors',                  'condominium_id'),
+      ('alerts',                    'condominium_id'),
+      ('announcements',             'condominium_id'),
+      ('notifications',             'condominium_id'),
+      ('conversations',             'condominium_id'),
+      ('messages',                  'condominium_id,conversation_id'),
+      ('requests',                  'condominium_id'),
+      ('incidents',                 'condominium_id'),
+      ('expense_categories',        'condominium_id'),
+      ('expenses',                  'condominium_id'),
+      ('purchases',                 'condominium_id'),
+      ('fines',                     'condominium_id'),
+      ('document_categories',       'condominium_id'),
+      ('documents',                 'condominium_id'),
+      ('audit_logs',                'condominium_id'),
+      ('meetings',                  'condominium_id'),
+      ('reports',                   'condominium_id'),
+      ('registration_requests',     'condominium_id'),
+      ('condominium_invitations',   'condominium_id'),
+      ('admin_fees',                'condominium_id'),
+      ('conversation_participants', 'conversation_id'),
+      ('request_comments',          'request_id'),
+      ('meeting_signatures',        'meeting_id'),
+      ('report_images',             'report_id'),
+      ('purchase_items',            'purchase_id')
+    ) as t(tbl, cols)
+  loop
+    execute format('drop trigger if exists trg_%1$s_lock_tenant on tribuia.%1$I', spec.tbl);
+    execute format(
+      'create trigger trg_%1$s_lock_tenant before update on tribuia.%1$I
+       for each row execute function tribuia.tg_lock_tenant_columns(%2$s)',
+      spec.tbl,
+      (select string_agg(quote_literal(c), ', ') from unnest(string_to_array(spec.cols, ',')) c));
+  end loop;
+end
+$$;
+
+-- B. Roles globales fuera de membresias e invitaciones ---------------------
+create or replace function tribuia.tg_reject_global_role()
+returns trigger
+language plpgsql
+security definer
+set search_path = tribuia, public, pg_temp
+as $$
+begin
+  if exists (select 1 from tribuia.roles r where r.id = new.role_id and r.is_global) then
+    raise exception 'Un rol global (SUPER_ADMIN) no se asigna por condominio'
+      using errcode = '22023';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_condominium_members_global_role on tribuia.condominium_members;
+create trigger trg_condominium_members_global_role
+  before insert or update of role_id on tribuia.condominium_members
+  for each row execute function tribuia.tg_reject_global_role();
+
+drop trigger if exists trg_invitations_global_role on tribuia.condominium_invitations;
+create trigger trg_invitations_global_role
+  before insert or update of role_id on tribuia.condominium_invitations
+  for each row execute function tribuia.tg_reject_global_role();
+
+-- C. profiles: correo y estado no los cambia el propio usuario --------------
+-- `claim_my_invitations` y `add_member_by_email` confian en profiles.email: si
+-- el usuario pudiera cambiarlo, reclamaria invitaciones de otra persona (por
+-- ejemplo, una de ADMINISTRATOR en otro conjunto).
+create or replace function tribuia.tg_profiles_guard()
+returns trigger
+language plpgsql
+security definer
+set search_path = tribuia, public, pg_temp
+as $$
+begin
+  if auth.uid() is null or tribuia.is_super_admin() then
+    return new;
+  end if;
+
+  if lower(new.email) is distinct from lower(old.email)
+     and lower(new.email) is distinct from (select lower(u.email) from auth.users u where u.id = new.id) then
+    raise exception 'El correo se cambia desde la cuenta de acceso, no desde el perfil'
+      using errcode = '42501';
+  end if;
+
+  if new.status is distinct from old.status then
+    raise exception 'Solo un super administrador cambia el estado de un perfil'
+      using errcode = '42501';
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_profiles_guard on tribuia.profiles;
+create trigger trg_profiles_guard
+  before update on tribuia.profiles
+  for each row execute function tribuia.tg_profiles_guard();
+
+-- Funciones de trigger: no se invocan por RPC.
+revoke execute on function tribuia.tg_lock_tenant_columns() from public, anon, authenticated;
+revoke execute on function tribuia.tg_reject_global_role() from public, anon, authenticated;
+revoke execute on function tribuia.tg_profiles_guard() from public, anon, authenticated;
+
+-- ============================================================================
+-- 15. RESUMENES Y PANEL DE PLATAFORMA (migracion 20261015000000_resumenes_y_plataforma)
+-- ============================================================================
+-- Totales de las tarjetas de multas, cuotas y gastos calculados en el servidor
+-- con los mismos filtros de los listados, y platform_overview para SUPER_ADMIN.
+
+-- ----------------------------------------------------------------------------
+-- 1. Indices para los resumenes (filtro por condominio + rango de fechas)
+-- ----------------------------------------------------------------------------
+create index if not exists idx_fines_condominium_date on tribuia.fines (condominium_id, fine_date desc);
+create index if not exists idx_admin_fees_condominium_due on tribuia.admin_fees (condominium_id, due_date desc);
+-- expenses ya tiene idx_expenses_condominium (condominium_id, expense_date desc).
+-- Ultimo pago aprobado por condominio (platform_overview).
+create index if not exists idx_payments_condominium_paid on tribuia.payments (condominium_id, paid_at desc)
+  where status = 'APPROVED';
+
+-- ----------------------------------------------------------------------------
+-- 2. Patron de busqueda equivalente al del frontend
+-- ----------------------------------------------------------------------------
+-- Devuelve null si no hay termino util (sin filtro de busqueda).
+create or replace function tribuia.list_search_pattern(p_search text)
+returns text
+language sql
+immutable
+set search_path = tribuia, public, pg_temp
+as $$
+  select case when t = '' then null else '%' || replace(t, '*', '%') || '%' end
+  from (
+    select regexp_replace(regexp_replace(coalesce(p_search, ''), '[,()%]', ' ', 'g'), '^\s+|\s+$', '', 'g') as t
+  ) s;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- 3. Resumen de multas
+-- ----------------------------------------------------------------------------
+-- Visibilidad igual a la politica fines_select: administracion y vocero ven el
+-- conjunto completo; el resto solo las multas de sus apartamentos.
+create or replace function tribuia.fines_summary(
+  p_condominium uuid,
+  p_status      text default null,
+  p_apartment   uuid default null,
+  p_from        date default null,
+  p_to          date default null,
+  p_search      text default null
+)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = tribuia, public, pg_temp
+as $$
+declare
+  v_uid     uuid := (select auth.uid());
+  v_all     boolean;
+  v_pattern text := tribuia.list_search_pattern(p_search);
+  v_result  jsonb;
+begin
+  v_all := tribuia.has_role(p_condominium, array['ADMINISTRATOR', 'SPOKESPERSON'], v_uid);
+
+  if not v_all and not (
+    tribuia.user_can_access_condominium(p_condominium, v_uid)
+    or exists (
+      select 1 from tribuia.apartments a
+       where a.condominium_id = p_condominium
+         and a.id in (select tribuia.user_apartment_ids(v_uid))
+    )
+  ) then
+    raise exception 'No tienes acceso a este condominio' using errcode = '42501';
+  end if;
+
+  select jsonb_build_object(
+           'pending_amount', coalesce(sum(f.amount) filter (where f.status = 'PENDING'), 0),
+           'pending_count',  count(*) filter (where f.status = 'PENDING'),
+           'paid_amount',    coalesce(sum(f.amount) filter (where f.status = 'PAID'), 0),
+           'paid_count',     count(*) filter (where f.status = 'PAID'),
+           'appealed_count', count(*) filter (where f.status = 'APPEALED'),
+           'total_count',    count(*)
+         )
+    into v_result
+    from tribuia.fines f
+   where f.condominium_id = p_condominium
+     and (v_all or f.apartment_id in (select tribuia.user_apartment_ids(v_uid)))
+     and (p_status is null or f.status::text = p_status)
+     and (p_apartment is null or f.apartment_id = p_apartment)
+     and (p_from is null or f.fine_date >= p_from)
+     and (p_to is null or f.fine_date <= p_to)
+     and (v_pattern is null
+          or f.reason ilike v_pattern
+          or f.description ilike v_pattern
+          or f.notes ilike v_pattern);
+
+  return v_result;
+end;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- 4. Resumen de cuotas de administracion (solo administracion)
+-- ----------------------------------------------------------------------------
+-- Vencida = PENDING con due_date anterior a hoy (hora de Colombia, igual que el
+-- navegador del usuario). pending_* incluye las vencidas.
+create or replace function tribuia.admin_fees_summary(
+  p_condominium uuid,
+  p_status      text default null,
+  p_from        date default null,
+  p_to          date default null,
+  p_search      text default null
+)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = tribuia, public, pg_temp
+as $$
+declare
+  v_today   date := (now() at time zone 'America/Bogota')::date;
+  v_pattern text := tribuia.list_search_pattern(p_search);
+  v_result  jsonb;
+begin
+  if not tribuia.is_condominium_admin(p_condominium, (select auth.uid())) then
+    raise exception 'No tienes permisos sobre este condominio' using errcode = '42501';
+  end if;
+
+  select jsonb_build_object(
+           'paid_amount',    coalesce(sum(f.amount) filter (where f.status = 'PAID'), 0),
+           'paid_count',     count(*) filter (where f.status = 'PAID'),
+           'pending_amount', coalesce(sum(f.amount) filter (where f.status = 'PENDING'), 0),
+           'pending_count',  count(*) filter (where f.status = 'PENDING'),
+           'overdue_count',  count(*) filter (where f.status = 'PENDING' and f.due_date < v_today),
+           'overdue_amount', coalesce(sum(f.amount) filter (where f.status = 'PENDING' and f.due_date < v_today), 0)
+         )
+    into v_result
+    from tribuia.admin_fees f
+   where f.condominium_id = p_condominium
+     and (p_status is null or f.status::text = p_status)
+     and (p_from is null or f.due_date >= p_from)
+     and (p_to is null or f.due_date <= p_to)
+     and (v_pattern is null or f.notes ilike v_pattern);
+
+  return v_result;
+end;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- 5. Resumen de gastos
+-- ----------------------------------------------------------------------------
+-- Acceso igual a la politica expenses_select (can_view_finance).
+-- total_amount suma todas las filas filtradas (cualquier estado).
+create or replace function tribuia.expenses_summary(
+  p_condominium uuid,
+  p_status      text default null,
+  p_category    uuid default null,
+  p_from        date default null,
+  p_to          date default null,
+  p_search      text default null
+)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = tribuia, public, pg_temp
+as $$
+declare
+  v_pattern text := tribuia.list_search_pattern(p_search);
+  v_result  jsonb;
+begin
+  if not tribuia.can_view_finance(p_condominium, (select auth.uid())) then
+    raise exception 'No tienes permisos sobre este condominio' using errcode = '42501';
+  end if;
+
+  select jsonb_build_object(
+           'total_amount',   coalesce(sum(e.amount), 0),
+           'pending_amount', coalesce(sum(e.amount) filter (where e.status = 'PENDING'), 0),
+           'count',          count(*)
+         )
+    into v_result
+    from tribuia.expenses e
+   where e.condominium_id = p_condominium
+     and (p_status is null or e.status::text = p_status)
+     and (p_category is null or e.category_id = p_category)
+     and (p_from is null or e.expense_date >= p_from)
+     and (p_to is null or e.expense_date <= p_to)
+     and (v_pattern is null
+          or e.concept ilike v_pattern
+          or e.provider ilike v_pattern
+          or e.invoice_number ilike v_pattern
+          or e.description ilike v_pattern);
+
+  return v_result;
+end;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- 6. Panel de plataforma (solo SUPER_ADMIN)
+-- ----------------------------------------------------------------------------
+-- plan: ultimo periodo pagado (mayor ends_at); activo si ends_at >= hoy, igual
+-- que PlansPage. last_payment_at: ultimo pago APROBADO del conjunto (cuotas,
+-- multas o plan). Agregados con GROUP BY (sin subconsultas por fila).
+create or replace function tribuia.platform_overview()
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = tribuia, public, pg_temp
+as $$
+declare
+  v_today  date := (now() at time zone 'America/Bogota')::date;
+  v_result jsonb;
+begin
+  if not tribuia.is_super_admin((select auth.uid())) then
+    raise exception 'Solo un super administrador puede ver el panel de plataforma'
+      using errcode = '42501';
+  end if;
+
+  with
+  apts as (
+    select a.condominium_id, count(*) as n
+      from tribuia.apartments a
+     group by a.condominium_id
+  ),
+  mem as (
+    select m.condominium_id, count(distinct m.user_id) as n
+      from tribuia.condominium_members m
+     where m.status = 'ACTIVE'
+     group by m.condominium_id
+  ),
+  own as (
+    select a.condominium_id, count(distinct o.profile_id) as n
+      from tribuia.apartment_owners o
+      join tribuia.apartments a on a.id = o.apartment_id
+     where o.is_active
+     group by a.condominium_id
+  ),
+  adm as (
+    select x.condominium_id,
+           jsonb_agg(jsonb_build_object('full_name', x.full_name, 'email', x.email)
+                     order by x.full_name, x.email) as list
+      from (
+        select distinct m.condominium_id, p.full_name, p.email
+          from tribuia.condominium_members m
+          join tribuia.roles r on r.id = m.role_id
+          join tribuia.profiles p on p.id = m.user_id
+         where m.status = 'ACTIVE' and r.code = 'ADMINISTRATOR'
+      ) x
+     group by x.condominium_id
+  ),
+  sub as (
+    select distinct on (s.condominium_id)
+           s.condominium_id, s.plan_period, s.ends_at
+      from tribuia.subscriptions s
+     order by s.condominium_id, s.ends_at desc, s.created_at desc
+  ),
+  pay as (
+    select p.condominium_id, max(p.paid_at) as last_paid
+      from tribuia.payments p
+     where p.status = 'APPROVED'
+     group by p.condominium_id
+  ),
+  cr as (
+    select c.id, c.name, c.city, c.status, c.created_at,
+           coalesce(apts.n, 0) as apartments,
+           coalesce(mem.n, 0)  as members,
+           coalesce(own.n, 0)  as owners,
+           coalesce(adm.list, '[]'::jsonb) as admins,
+           sub.plan_period, sub.ends_at,
+           (sub.ends_at is not null and sub.ends_at >= v_today) as plan_active,
+           pay.last_paid
+      from tribuia.condominiums c
+      left join apts on apts.condominium_id = c.id
+      left join mem  on mem.condominium_id  = c.id
+      left join own  on own.condominium_id  = c.id
+      left join adm  on adm.condominium_id  = c.id
+      left join sub  on sub.condominium_id  = c.id
+      left join pay  on pay.condominium_id  = c.id
+  )
+  select jsonb_build_object(
+           'totals', jsonb_build_object(
+             'condominiums',         (select count(*) from cr),
+             'active_condominiums',  (select count(*) from cr where status = 'ACTIVE'),
+             'apartments',           (select count(*) from tribuia.apartments),
+             'users',                (select count(*) from tribuia.profiles),
+             'active_subscriptions', (select count(*) from cr where plan_active),
+             'expired_or_none',      (select count(*) from cr where not plan_active)
+           ),
+           'condominiums', coalesce((
+             select jsonb_agg(jsonb_build_object(
+                      'id',         r.id,
+                      'name',       r.name,
+                      'city',       r.city,
+                      'status',     r.status,
+                      'created_at', r.created_at,
+                      'apartments', r.apartments,
+                      'members',    r.members,
+                      'owners',     r.owners,
+                      'admins',     r.admins,
+                      'plan',       case when r.ends_at is null then null else jsonb_build_object(
+                                      'period',  r.plan_period,
+                                      'ends_at', r.ends_at,
+                                      'active',  r.plan_active) end,
+                      'last_payment_at', r.last_paid
+                    ) order by r.name, r.id)
+               from cr r
+           ), '[]'::jsonb)
+         )
+    into v_result;
+
+  return v_result;
+end;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- 7. Permisos: solo usuarios autenticados (el esquema concede a anon por defecto)
+-- ----------------------------------------------------------------------------
+revoke execute on function tribuia.fines_summary(uuid, text, uuid, date, date, text) from public, anon;
+revoke execute on function tribuia.admin_fees_summary(uuid, text, date, date, text) from public, anon;
+revoke execute on function tribuia.expenses_summary(uuid, text, uuid, date, date, text) from public, anon;
+revoke execute on function tribuia.platform_overview() from public, anon;
+grant execute on function tribuia.fines_summary(uuid, text, uuid, date, date, text) to authenticated;
+grant execute on function tribuia.admin_fees_summary(uuid, text, date, date, text) to authenticated;
+grant execute on function tribuia.expenses_summary(uuid, text, uuid, date, date, text) to authenticated;
+grant execute on function tribuia.platform_overview() to authenticated;
 
 -- ----------------------------------------------------------------------------
 -- Refresca el cache de esquema de PostgREST.

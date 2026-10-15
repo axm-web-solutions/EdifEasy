@@ -60,7 +60,7 @@ export async function sha256Hex(text: string): Promise<string> {
 }
 
 /** Referencia unica del pago, legible en el panel de Wompi. */
-export function newReference(prefix: 'ADM' | 'PLAN'): string {
+export function newReference(prefix: 'ADM' | 'PLAN' | 'MUL'): string {
   const random = crypto.getRandomValues(new Uint32Array(1))[0].toString(36).toUpperCase()
   return `EDF-${prefix}-${Date.now().toString(36).toUpperCase()}-${random}`
 }
