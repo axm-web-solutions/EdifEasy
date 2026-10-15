@@ -4,9 +4,14 @@
  * - Nominatim convierte la direccion registrada del condominio en coordenadas.
  * - Overpass consulta los comercios y servicios reales alrededor de ese punto.
  *
- * Ambos servicios son publicos y no requieren API key; los resultados se
- * cachean con React Query para no repetir consultas en cada visita.
+ * Son servicios publicos con limites estrictos (Nominatim: 1 consulta por
+ * segundo para toda la aplicacion), asi que NO se consultan en cada visita:
+ * la sesion de un administrador ubica el conjunto y guarda los lugares en la
+ * base (`replace_condominium_location`); el resto de usuarios lee de la base.
  */
+import { supabase } from '@/lib/supabase'
+import { toAppError } from '@/lib/errors'
+import type { CondominiumRow } from '@/types/database'
 
 export interface GeoPoint {
   lat: number
@@ -61,7 +66,7 @@ const OVERPASS_URLS = [
   'https://overpass.kumi.systems/api/interpreter',
 ]
 const OVERPASS_TIMEOUT_MS = 20000
-const PER_CATEGORY_LIMIT = 80
+const PER_CATEGORY_LIMIT = 120
 
 /** Filtros de OpenStreetMap que alimentan cada categoria. */
 const OVERPASS_SELECTORS: Record<PlaceCategory, string[]> = {
@@ -122,7 +127,74 @@ function buildAddress(tags: Record<string, string>): string | null {
   return street || null
 }
 
+/** Radio con el que se guardan los lugares; la vista filtra radios menores. */
+export const NEARBY_FETCH_RADIUS = 2000
+/** Cada cuanto se refrescan los lugares guardados. */
+export const PLACES_MAX_AGE_DAYS = 7
+
+/** Texto de direccion que se geocodifica; sirve para detectar cambios de direccion. */
+export function locationSourceKey(
+  condominium: Pick<CondominiumRow, 'address' | 'city' | 'country'>,
+): string {
+  return [condominium.address, condominium.city, condominium.country].filter(Boolean).join(', ')
+}
+
 export const placesService = {
+  /** Lugares guardados para el condominio, del mas cercano al mas lejano. */
+  async listCached(condominiumId: string): Promise<NearbyPlace[]> {
+    const { data, error } = await supabase
+      .from('condominium_places')
+      .select('osm_id, name, category, latitude, longitude, distance_m, address')
+      .eq('condominium_id', condominiumId)
+      .order('distance_m', { ascending: true })
+    if (error) throw toAppError(error)
+    return data
+      .filter((row) => row.category in PLACE_CATEGORIES)
+      .map((row) => ({
+        id: row.osm_id,
+        name: row.name,
+        category: row.category as PlaceCategory,
+        lat: Number(row.latitude),
+        lon: Number(row.longitude),
+        distance: row.distance_m,
+        address: row.address,
+      }))
+  },
+
+  /**
+   * Guarda (atomicamente) la ubicacion del conjunto, si cambio, y reemplaza sus
+   * lugares cercanos. Solo la administracion del conjunto puede hacerlo.
+   */
+  async saveLocation(
+    condominiumId: string,
+    location: (GeoPoint & { source: string }) | null,
+    places: NearbyPlace[],
+  ): Promise<number> {
+    const { data, error } = await supabase.rpc('replace_condominium_location', {
+      p_condominium: condominiumId,
+      p_location: location
+        ? {
+            latitude: Number(location.lat.toFixed(6)),
+            longitude: Number(location.lon.toFixed(6)),
+            label: location.label,
+            approximate: location.approximate,
+            source: location.source,
+          }
+        : null,
+      p_places: places.map((place) => ({
+        osm_id: place.id,
+        name: place.name,
+        category: place.category,
+        latitude: Number(place.lat.toFixed(6)),
+        longitude: Number(place.lon.toFixed(6)),
+        distance_m: Math.round(place.distance),
+        address: place.address,
+      })),
+    })
+    if (error) throw toAppError(error)
+    return data
+  },
+
   /**
    * Geocodifica la direccion del condominio. Si la direccion exacta no existe
    * en el mapa se intenta con la ciudad para al menos ubicar la zona.

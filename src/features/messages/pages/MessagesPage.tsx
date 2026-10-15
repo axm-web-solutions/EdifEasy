@@ -297,12 +297,12 @@ export function MessagesPage() {
                             </Avatar>
                             <div
                               className={`rounded-xl px-3 py-2 ${
-                                mine ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-800'
+                                mine ? 'bg-brand text-brand-on' : 'bg-slate-100 text-slate-800'
                               }`}
                             >
                               <p className="m-0 whitespace-pre-wrap text-sm">{message.body}</p>
                               <span
-                                className={`text-[10px] ${mine ? 'text-blue-100' : 'text-slate-500'}`}
+                                className={`text-[10px] ${mine ? 'text-brand-on/80' : 'text-slate-500'}`}
                               >
                                 {formatDateTime(message.created_at)}
                               </span>

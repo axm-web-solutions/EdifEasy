@@ -1,6 +1,6 @@
 import type { PostgrestError } from '@supabase/supabase-js'
 import { toAppError } from '@/lib/errors'
-import type { ListParams, ListResult } from '@/types/models'
+import type { ListParams, ListResult, SummaryFilters } from '@/types/models'
 
 /**
  * Utilidades compartidas por todos los servicios: paginacion, busqueda,
@@ -136,5 +136,18 @@ export async function runList<T>(
   }
 }
 
+/** Filtros de la tabla que aplican a los totales (sin pagina ni orden). */
+export function toSummaryFilters(params: ListParams): SummaryFilters {
+  return {
+    search: params.search?.trim() ?? '',
+    filters: params.filters ?? {},
+    dateFrom: params.dateFrom ?? null,
+    dateTo: params.dateTo ?? null,
+  }
+}
 
-
+/** Valor de un filtro de igualdad como texto, o null si no aplica. */
+export function filterText(filters: SummaryFilters['filters'], key: string): string | null {
+  const value = filters[key]
+  return typeof value === 'string' && value !== '' ? value : null
+}

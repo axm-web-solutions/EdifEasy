@@ -1,4 +1,4 @@
-import type { ListParams } from '@/types/models'
+import type { ListParams, SummaryFilters } from '@/types/models'
 
 /** Claves de cache centralizadas para TanStack Query. */
 export const queryKeys = {
@@ -114,6 +114,8 @@ export const queryKeys = {
     monthly: (condominiumId: string, months: number) =>
       ['expenses', condominiumId, 'monthly', months] as const,
     byCategory: (condominiumId: string) => ['expenses', condominiumId, 'by-category'] as const,
+    summary: (condominiumId: string, filters: SummaryFilters) =>
+      ['expenses', condominiumId, 'summary', filters] as const,
   },
 
   purchases: {
@@ -126,11 +128,14 @@ export const queryKeys = {
     list: (condominiumId: string, params: ListParams) =>
       ['admin-fees', condominiumId, 'list', params] as const,
     mine: (condominiumId: string) => ['admin-fees', condominiumId, 'mine'] as const,
+    summary: (condominiumId: string, filters: SummaryFilters) =>
+      ['admin-fees', condominiumId, 'summary', filters] as const,
   },
 
   payments: {
     list: (condominiumId: string, kind: string) => ['payments', condominiumId, kind] as const,
     quote: (condominiumId: string) => ['payments', condominiumId, 'quote'] as const,
+    verify: (transactionId: string) => ['payments', 'verify', transactionId] as const,
   },
 
   fines: {
@@ -138,6 +143,8 @@ export const queryKeys = {
       ['fines', condominiumId, 'list', params] as const,
     byApartment: (apartmentId: string) => ['fines', 'by-apartment', apartmentId] as const,
     detail: (id: string) => ['fines', 'detail', id] as const,
+    summary: (condominiumId: string, filters: SummaryFilters) =>
+      ['fines', condominiumId, 'summary', filters] as const,
   },
 
   documents: {
@@ -162,9 +169,12 @@ export const queryKeys = {
 
   search: (condominiumId: string, term: string) => ['global-search', condominiumId, term] as const,
 
+  platform: {
+    overview: ['platform', 'overview'] as const,
+  },
+
   places: {
-    geocode: (location: string) => ['places', 'geocode', location] as const,
-    nearby: (lat: number, lon: number, radius: number) =>
-      ['places', 'nearby', lat, lon, radius] as const,
+    /** Lugares cercanos guardados en la base para un condominio. */
+    cached: (condominiumId: string) => ['places', 'cached', condominiumId] as const,
   },
 } as const

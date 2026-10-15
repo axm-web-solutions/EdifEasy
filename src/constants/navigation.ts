@@ -21,6 +21,14 @@ export interface NavItem {
  * en el condominio seleccionado.
  */
 export const NAVIGATION: NavItem[] = [
+  {
+    key: 'platform',
+    label: 'Plataforma',
+    path: '/platform',
+    icon: 'Globe',
+    roles: ['SUPER_ADMIN'],
+  },
+
   { key: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: 'LayoutDashboard' },
 
   {

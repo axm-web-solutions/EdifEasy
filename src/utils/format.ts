@@ -84,3 +84,13 @@ export function emptyToNull<T extends Record<string, unknown>>(input: T): T {
   }
   return output
 }
+
+/** Etiqueta unica de apartamento en toda la app: "Torre 1 · Apto 101". */
+export function apartmentLabel(
+  apartment: { number: string; building?: { name: string } | null } | null | undefined,
+): string {
+  if (!apartment) return '—'
+  return apartment.building?.name
+    ? `${apartment.building.name} · Apto ${apartment.number}`
+    : `Apto ${apartment.number}`
+}

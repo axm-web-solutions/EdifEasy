@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { expenseService } from '@/services/expenseService'
 import { queryKeys } from '@/lib/queryKeys'
+import { toSummaryFilters } from '@/services/query'
 import { notify } from '@/lib/notify'
 import type { TablesInsert, TablesUpdate } from '@/types/database'
 import type { ListParams } from '@/types/models'
@@ -9,6 +10,16 @@ export function useExpenses(condominiumId: string | null, params: ListParams) {
   return useQuery({
     queryKey: queryKeys.expenses.list(condominiumId ?? '', params),
     queryFn: () => expenseService.list(condominiumId as string, params),
+    enabled: Boolean(condominiumId),
+  })
+}
+
+/** Totales de los gastos con los filtros de la tabla (sin paginar). */
+export function useExpensesSummary(condominiumId: string | null, params: ListParams) {
+  const filters = toSummaryFilters(params)
+  return useQuery({
+    queryKey: queryKeys.expenses.summary(condominiumId ?? '', filters),
+    queryFn: () => expenseService.summary(condominiumId as string, filters),
     enabled: Boolean(condominiumId),
   })
 }

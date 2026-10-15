@@ -552,6 +552,32 @@ export const TOURS: TourConfig[] = [
     ],
   },
   {
+    id: 'platform',
+    once: true,
+    steps: [
+      {
+        element: '[data-tour="page-header"]',
+        popover: {
+          title: 'Plataforma',
+          description:
+            'Vista del super administrador con todos los conjuntos: tamaño, administradores y estado del plan.',
+          side: 'bottom',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="data-table"]',
+        popover: {
+          title: 'Conjuntos',
+          description:
+            'Busca por nombre, ciudad o administrador y filtra por estado o plan. Con "Administrar" entras al conjunto para configurarlo.',
+          side: 'top',
+          align: 'start',
+        },
+      },
+    ],
+  },
+  {
     id: 'admin-fees',
     once: true,
     steps: [
@@ -844,6 +870,7 @@ const ROUTE_TOURS: Record<string, string> = {
   '/incidents': 'incidents',
   '/fines': 'fines',
   '/admin-fees': 'admin-fees',
+  '/platform': 'platform',
   '/plans': 'plans',
   '/expenses': 'expenses',
   '/purchases': 'purchases',

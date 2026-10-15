@@ -3,6 +3,23 @@
 @tailwind utilities;
 
 :root {
+  /* Marca por defecto (azul EdiFeasy). BrandThemeProvider la reemplaza con la
+     paleta del conjunto activo; las pantallas de acceso usan estos valores. */
+  --edifeasy-brand: #2559eb;
+  --brand-rgb: 37 89 235;
+  --brand-on: #ffffff;
+  --brand-on-rgb: 255 255 255;
+  --brand-text: #2559eb;
+  --brand-50-rgb: 239 245 255;
+  --brand-100-rgb: 219 232 254;
+  --brand-200-rgb: 191 215 254;
+  --brand-300-rgb: 147 187 253;
+  --brand-400-rgb: 96 150 250;
+  --brand-500-rgb: 59 118 246;
+  --brand-600-rgb: 37 89 235;
+  --brand-700-rgb: 29 78 216;
+  --brand-800-rgb: 30 64 175;
+  --brand-900-rgb: 30 58 138;
   --edifeasy-surface: #f5f7fb;
   --edifeasy-border: #e2e8f0;
   /* Zonas seguras de iOS (notch y barra inferior). Valen 0 en el resto. */
@@ -159,6 +176,12 @@ body {
   /* Objetivos tactiles: minimo 44px de alto (guia de Apple y Material). */
   .ant-btn:not(.ant-btn-sm):not(.ant-btn-link):not(.ant-btn-text) {
     min-height: 44px;
+  }
+  /* Los botones pequenos son las acciones de cada tarjeta en movil
+     (MobileRecordList): tambien necesitan un area tactil de 44px. */
+  .ant-btn-sm:not(.ant-btn-link):not(.ant-btn-text) {
+    min-height: 44px;
+    min-width: 44px;
   }
   .ant-input-affix-wrapper,
   .ant-input,
@@ -359,6 +382,9 @@ body {
 .edifeasy-driver-popover .driver-btn-done {
   background: var(--edifeasy-brand, #2559eb);
   border-color: var(--edifeasy-brand, #2559eb);
+  /* Texto blanco u oscuro segun el contraste con la marca del conjunto. */
+  color: var(--brand-on, #ffffff);
+  text-shadow: none;
 }
 
 .edifeasy-driver-popover .driver-btn-primary:hover,

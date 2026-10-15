@@ -10,6 +10,7 @@ import {
   FileQuestion,
   FolderOpen,
   Gavel,
+  Globe,
   History,
   Home,
   IdCard,
@@ -31,6 +32,7 @@ import {
 
 const ICONS: Record<string, LucideIcon> = {
   LayoutDashboard,
+  Globe,
   CreditCard,
   BadgeCheck,
   Home,
