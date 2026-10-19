@@ -43,6 +43,23 @@ export const NAVIGATION: NavItem[] = [
 
   { key: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: 'LayoutDashboard' },
 
+  // Propietarios y arrendatarios ya tienen el feed como dashboard.
+  {
+    key: 'feed',
+    label: 'Feed',
+    path: '/feed',
+    icon: 'Newspaper',
+    roles: ['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY', 'SERVICE_STAFF'],
+  },
+
+  {
+    key: 'marketplace',
+    module: 'marketplace',
+    label: 'Marketplace',
+    path: '/marketplace',
+    icon: 'Store',
+  },
+
   {
     key: 'my-apartment',
     label: 'Mi apartamento',

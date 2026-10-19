@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import dayjs from 'dayjs'
 import { useAuth } from '@/hooks/useAuth'
 import { useCondominium } from '@/hooks/useCondominiums'
 import { useCondominiumPlaces, useRefreshCondominiumLocation } from '@/hooks/usePlaces'
 import {
   PLACE_CATEGORIES,
-  PLACES_MAX_AGE_DAYS,
   locationSourceKey,
+  placesAreStale,
   type NearbyPlace,
   type PlaceCategory,
 } from '@/services/placesService'
@@ -78,9 +77,7 @@ export function useNearbyPlacesViewModel(condominiumId: string | null) {
   const addressChanged = Boolean(
     condominium && point && condominium.location_source !== locationSourceKey(condominium),
   )
-  const placesStale =
-    !condominium?.places_updated_at ||
-    dayjs().diff(dayjs(condominium.places_updated_at), 'day') >= PLACES_MAX_AGE_DAYS
+  const placesStale = placesAreStale(condominium?.places_updated_at ?? null)
   const needsRefresh = Boolean(
     condominium && hasAddress && (!point || addressChanged || placesStale),
   )
@@ -94,8 +91,13 @@ export function useNearbyPlacesViewModel(condominiumId: string | null) {
     refresh.mutate({ condominium, regeocode: !point || addressChanged })
   }, [canRefresh, condominium, needsRefresh, point, addressChanged, refresh])
 
+  // Los servicios (plomeros, taxis...) viven en el marketplace, no en el mapa.
   const placesInRadius = useMemo(
-    () => (placesQuery.data ?? []).filter((place) => place.distance <= radius),
+    () =>
+      (placesQuery.data ?? []).filter(
+        (place) =>
+          place.distance <= radius && PLACE_CATEGORIES[place.category].group !== 'service',
+      ),
     [placesQuery.data, radius],
   )
   const visiblePlaces = useMemo(

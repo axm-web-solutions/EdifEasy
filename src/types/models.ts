@@ -83,6 +83,12 @@ export interface AnnouncementWithRelations extends AnnouncementRow {
   author: ProfileRef | null
 }
 
+/** Publicacion del feed: comunicado con el destino resuelto (bloque o rol). */
+export interface FeedPost extends AnnouncementWithRelations {
+  building: { id: string; name: string } | null
+  audience_role: { id: string; code: string; name: string } | null
+}
+
 export interface RequestWithRelations extends RequestRow {
   author: ProfileRef | null
   assignee: ProfileRef | null

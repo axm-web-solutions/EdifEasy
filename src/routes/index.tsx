@@ -81,6 +81,19 @@ const PlatformPage = lazy(() =>
 const RoleModulesPage = lazy(() =>
   import('@/features/platform/pages/RoleModulesPage').then((m) => ({ default: m.RoleModulesPage })),
 )
+const CreateFromRutPage = lazy(() =>
+  import('@/features/platform/pages/CreateFromRutPage').then((m) => ({
+    default: m.CreateFromRutPage,
+  })),
+)
+const FeedPage = lazy(() =>
+  import('@/features/feed/pages/FeedPage').then((m) => ({ default: m.FeedPage })),
+)
+const MarketplacePage = lazy(() =>
+  import('@/features/marketplace/pages/MarketplacePage').then((m) => ({
+    default: m.MarketplacePage,
+  })),
+)
 const AdminFeesPage = lazy(() =>
   import('@/features/payments/pages/AdminFeesPage').then((m) => ({ default: m.AdminFeesPage })),
 )
@@ -221,6 +234,16 @@ export function AppRoutes() {
                 </RoleGuard>
               }
             />
+            {/* Feed: home de residentes (/dashboard) y pagina propia para el resto. */}
+            <Route path="/feed" element={<FeedPage />} />
+            <Route
+              path="/marketplace"
+              element={
+                <RoleGuard module="marketplace">
+                  <MarketplacePage />
+                </RoleGuard>
+              }
+            />
             <Route
               path="/messages"
               element={
@@ -276,6 +299,14 @@ export function AppRoutes() {
               element={
                 <RoleGuard roles={['SUPER_ADMIN']}>
                   <PlatformPage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/platform/new"
+              element={
+                <RoleGuard roles={['SUPER_ADMIN']}>
+                  <CreateFromRutPage />
                 </RoleGuard>
               }
             />

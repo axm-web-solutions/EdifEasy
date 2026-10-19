@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { announcementService } from '@/services/announcementService'
 import { queryKeys } from '@/lib/queryKeys'
 import { notify } from '@/lib/notify'
@@ -13,14 +13,18 @@ export function useAnnouncements(condominiumId: string | null, params: ListParam
   })
 }
 
-export function usePublishedAnnouncements(condominiumId: string | null, limit = 5) {
-  return useQuery({
-    queryKey: queryKeys.announcements.published(condominiumId ?? ''),
-    queryFn: () => announcementService.listPublished(condominiumId as string, limit),
+
+/** Feed paginado ("Cargar mas"). */
+export function useFeed(condominiumId: string | null, pageSize = 10) {
+  return useInfiniteQuery({
+    queryKey: queryKeys.announcements.feed(condominiumId ?? ''),
+    queryFn: ({ pageParam }) =>
+      announcementService.listFeed(condominiumId as string, pageParam, pageSize),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, pages) => (lastPage.hasMore ? pages.length : undefined),
     enabled: Boolean(condominiumId),
   })
 }
-
 
 export function useAnnouncementMutations() {
   const queryClient = useQueryClient()

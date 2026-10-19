@@ -200,7 +200,29 @@ export type CondominiumPlaceRow = {
   longitude: number
   distance_m: number
   address: string | null
+  phone: string | null
+  website: string | null
   created_at: string
+}
+
+export type CommunityContactKind = 'EMERGENCY' | 'SERVICE'
+
+/** Directorio del conjunto: emergencias propias y servicios del marketplace. */
+export type CommunityContactRow = {
+  id: string
+  condominium_id: string
+  kind: CommunityContactKind
+  category: string
+  name: string
+  phone: string | null
+  whatsapp: string | null
+  description: string | null
+  address: string | null
+  sort_order: number
+  is_active: boolean
+  created_by: string | null
+  created_at: string
+  updated_at: string
 }
 
 export type CondominiumMemberRow = {
@@ -370,6 +392,8 @@ export type AnnouncementRow = {
   audience: AudienceType
   audience_role_id: string | null
   status: AnnouncementStatus
+  /** Publicacion fijada arriba del feed. */
+  pinned: boolean
   published_at: string
   expires_at: string | null
   created_by: string | null
@@ -787,6 +811,10 @@ export interface Database {
       visitors: TableDef<VisitorRow, 'condominium_id' | 'apartment_id' | 'full_name'>
       alerts: TableDef<AlertRow, 'condominium_id' | 'title' | 'description'>
       announcements: TableDef<AnnouncementRow, 'condominium_id' | 'title' | 'content'>
+      community_contacts: TableDef<
+        CommunityContactRow,
+        'condominium_id' | 'kind' | 'category' | 'name'
+      >
       notifications: TableDef<NotificationRow, 'user_id' | 'title'>
       conversations: TableDef<ConversationRow, 'condominium_id'>
       conversation_participants: TableDef<ConversationParticipantRow, 'conversation_id' | 'user_id'>
@@ -965,6 +993,11 @@ export interface Database {
       }
       replace_condominium_location: {
         Args: { p_condominium: string; p_location: Json | null; p_places: Json }
+        Returns: number
+      }
+      provision_condominium: { Args: { p_payload: Json }; Returns: Json }
+      attach_provisioned_accounts: {
+        Args: { p_condominium: string; p_admin: string | null; p_owners: Json }
         Returns: number
       }
       generate_admin_fees: {

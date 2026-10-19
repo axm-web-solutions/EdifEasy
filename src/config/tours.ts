@@ -68,50 +68,40 @@ export const TOURS: TourConfig[] = [
       {
         element: '[data-tour="page-header"]',
         popover: {
-          title: 'Tu Dashboard',
+          title: 'Tu inicio',
           description:
-            'Hola. Este es tu panel personal donde verás la información relevante para ti como residente.',
+            'Hola. Este es tu inicio: aquí ves lo que publica la administración y lo importante del conjunto.',
           side: 'bottom',
           align: 'start',
         },
       },
       {
-        element: '[data-tour="apartment-card"]',
+        element: '[data-tour="feed-posts"]',
         popover: {
-          title: 'Mi apartamento',
+          title: 'Publicaciones',
           description:
-            'Aquí verás los detalles de tu apartamento: bloque, piso, área, habitaciones y más. Haz clic en "Ver detalle" para ver la ficha completa.',
+            'Los anuncios de la administración para todo el conjunto o para tu torre o grupo. Las publicaciones fijadas aparecen primero.',
           side: 'bottom',
           align: 'start',
         },
       },
       {
-        element: '[data-tour="stat-card"]',
+        element: '[data-tour="emergency-card"]',
         popover: {
-          title: 'Resumen personal',
+          title: 'Emergencias',
           description:
-            'Estas tarjetas muestran tus alertas, comunicados, solicitudes, mensajes sin leer, multas pendientes, documentos, vehículos y mascotas.',
-          side: 'bottom',
+            'Toca un número para llamar: 123, Policía, Bomberos, Cruz Roja, los números del conjunto y la policía, hospitales y bomberos más cercanos.',
+          side: 'left',
           align: 'start',
         },
       },
       {
-        element: '[data-tour="alerts-card"]',
+        element: '[data-tour="quick-access"]',
         popover: {
-          title: 'Alertas y comunicados',
+          title: 'Lo tuyo',
           description:
-            'Aquí encontrarás las alertas activas del condominio y los comunicados recientes de la administración.',
-          side: 'top',
-          align: 'start',
-        },
-      },
-      {
-        element: '[data-tour="nearby-map"]',
-        popover: {
-          title: 'Ubicación y alrededores',
-          description:
-            'Mapa con la ubicación del condominio y los comercios cercanos: centros comerciales, supermercados, restaurantes, droguerías y más. Filtra por categoría, cambia el radio y toca un lugar para verlo en el mapa.',
-          side: 'top',
+            'Accesos rápidos a tu apartamento, alertas, multas, solicitudes, mensajes y al marketplace de servicios cercanos.',
+          side: 'left',
           align: 'start',
         },
       },
@@ -867,6 +857,70 @@ export const TOURS: TourConfig[] = [
       },
     ],
   },
+  {
+    id: 'feed',
+    steps: [
+      {
+        element: '[data-tour="feed-composer"]',
+        popover: {
+          title: 'Publicar en el feed',
+          description:
+            'Escribe un anuncio y elige quién lo ve: todo el conjunto, una torre o un grupo (propietarios, arrendatarios...). Puedes fijarlo arriba.',
+          side: 'bottom',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="emergency-card"]',
+        popover: {
+          title: 'Números de emergencia',
+          description:
+            'Los residentes ven aquí las líneas nacionales y las estaciones cercanas. Agrega el cuadrante de policía y la portería con el botón "Número".',
+          side: 'left',
+          align: 'start',
+        },
+      },
+    ],
+  },
+  {
+    id: 'marketplace',
+    steps: [
+      {
+        element: '[data-tour="page-header"]',
+        popover: {
+          title: 'Marketplace',
+          description:
+            'Servicios y comercios cerca del conjunto con llamada, WhatsApp y cómo llegar. Los "Recomendados" los agrega la administración.',
+          side: 'bottom',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="marketplace-filters"]',
+        popover: {
+          title: 'Buscar y filtrar',
+          description: 'Busca por nombre o filtra por categoría: aseo, plomeros, carpinteros, taxis, domicilios...',
+          side: 'bottom',
+          align: 'start',
+        },
+      },
+    ],
+  },
+  {
+    id: 'platform-new',
+    steps: [
+      {
+        element: '[data-tour="rut-upload"]',
+        popover: {
+          title: 'Alta desde el RUT',
+          description:
+            'Sube el PDF del RUT del conjunto: se llenan los datos y el representante legal queda como administrador. Luego indicas torres y apartamentos o casas.',
+          side: 'bottom',
+          align: 'start',
+        },
+      },
+    ],
+  },
 ]
 
 /**
@@ -898,6 +952,9 @@ const ROUTE_TOURS: Record<string, string> = {
   '/admin-fees': 'admin-fees',
   '/platform': 'platform',
   '/platform/modules': 'platform-modules',
+  '/platform/new': 'platform-new',
+  '/feed': 'feed',
+  '/marketplace': 'marketplace',
   '/plans': 'plans',
   '/expenses': 'expenses',
   '/purchases': 'purchases',

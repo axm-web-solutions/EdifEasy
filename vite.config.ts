@@ -35,6 +35,8 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,woff2}'],
+        // pdf.js solo lo usa el super admin (alta desde el RUT): se baja bajo demanda.
+        globIgnores: ['**/assets/pdf-*.js', '**/assets/pdf.worker*'],
         navigateFallbackDenylist: [/^\/api/],
         cleanupOutdatedCaches: true,
       },

@@ -44,6 +44,10 @@ enabled = true
 [functions.wompi-payments]
 verify_jwt = true
 
+# Alta de conjuntos desde el RUT: solo SUPER_ADMIN (se verifica dentro).
+[functions.provision-condominium]
+verify_jwt = true
+
 # Wompi no envia JWT de Supabase; la autenticidad se valida con el checksum.
 [functions.wompi-webhook]
 verify_jwt = false

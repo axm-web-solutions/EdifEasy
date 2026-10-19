@@ -73,6 +73,32 @@ export const announcementSchema = z
     }
   })
 
+/** Publicacion rapida desde el feed: siempre publicada de inmediato. */
+export const feedPostSchema = z
+  .object({
+    title: z.string().trim().min(3, 'El titulo debe tener al menos 3 caracteres').max(150),
+    content: z.string().trim().min(2, 'Escribe el mensaje').max(8000),
+    image_url: z.string().url('URL invalida').optional().or(z.literal('')),
+    audience: z.enum(['CONDOMINIUM', 'BUILDING', 'ROLE']),
+    building_id: optionalUuid,
+    audience_role_id: optionalUuid,
+    pinned: z.boolean(),
+  })
+  .superRefine((values, ctx) => {
+    if (values.audience === 'BUILDING' && !values.building_id) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['building_id'], message: 'Selecciona un bloque' })
+    }
+    if (values.audience === 'ROLE' && !values.audience_role_id) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['audience_role_id'],
+        message: 'Selecciona un grupo',
+      })
+    }
+  })
+
+export type FeedPostFormValues = z.infer<typeof feedPostSchema>
+
 export const conversationSchema = z.object({
   subject: z.string().min(3, 'El asunto debe tener al menos 3 caracteres').max(150),
   participant_ids: z.array(z.string().uuid()).min(1, 'Selecciona al menos un destinatario'),

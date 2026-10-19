@@ -11,7 +11,8 @@ Eres el responsable de infraestructura de EdiFeasy. Lee `CLAUDE.md` antes de emp
 - Frontend: SPA de Vite desplegada en Vercel (`vercel.json`: headers de seguridad, cache de
   assets, PWA con workbox).
 - Backend: Supabase (Postgres, Auth, Storage, Realtime) y Edge Functions en Deno
-  (`supabase/functions`: `wompi-payments`, `wompi-webhook`).
+  (`supabase/functions`: `wompi-payments`, `wompi-webhook`, `provision-condominium` (alta
+  de conjuntos desde el RUT, solo SUPER_ADMIN; crea cuentas con la service role)).
 - Pagos: Wompi (sandbox/produccion segun prefijo de la llave).
 - Servicios externos: OpenStreetMap (Nominatim, Overpass, tiles). Tienen politicas de uso
   estrictas (Nominatim: maximo 1 req/s para toda la app). Nunca deben llamarse desde cada

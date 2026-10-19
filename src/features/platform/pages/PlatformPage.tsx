@@ -1,6 +1,7 @@
 import { Button, Col, Row, Tag } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { BadgeCheck, Building2, DoorOpen, LogIn, Users } from 'lucide-react'
+import { BadgeCheck, Building2, DoorOpen, FilePlus2, LogIn, Users } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { StatCard } from '@/components/ui/StatCard'
 import { DataTable } from '@/components/ui/DataTable'
@@ -134,6 +135,13 @@ export function PlatformPage() {
         title="Plataforma"
         subtitle="Todos los conjuntos de EdiFeasy: tamano, administracion y estado del plan."
         dataTour="page-header"
+        actions={
+          <Link to="/platform/new">
+            <Button type="primary" icon={<FilePlus2 size={16} />}>
+              Nuevo conjunto desde RUT
+            </Button>
+          </Link>
+        }
       />
 
       <Row gutter={[16, 16]} className="mb-4">

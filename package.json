@@ -30,6 +30,7 @@
     "driver.js": "^1.10.1",
     "leaflet": "1.9.4",
     "lucide-react": "0.454.0",
+    "pdfjs-dist": "5.7.284",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-hook-form": "7.90.0",

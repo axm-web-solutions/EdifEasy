@@ -23,6 +23,7 @@ export interface GeoPoint {
 }
 
 export type PlaceCategory =
+  // Alrededores (mapa del dashboard)
   | 'mall'
   | 'supermarket'
   | 'restaurant'
@@ -33,6 +34,27 @@ export type PlaceCategory =
   | 'education'
   | 'park'
   | 'gym'
+  // Emergencias
+  | 'hospital'
+  | 'police'
+  | 'fire_station'
+  // Servicios (marketplace)
+  | 'cleaning'
+  | 'laundry'
+  | 'carpenter'
+  | 'plumber'
+  | 'electrician'
+  | 'locksmith'
+  | 'hardware'
+  | 'mechanic'
+  | 'veterinary'
+  | 'taxi'
+
+/**
+ * nearby: comercios del mapa · emergency: tarjeta de emergencias (tambien en el
+ * mapa) · service: solo en el marketplace.
+ */
+export type PlaceGroup = 'nearby' | 'emergency' | 'service'
 
 export interface NearbyPlace {
   id: string
@@ -43,19 +65,44 @@ export interface NearbyPlace {
   /** Distancia en metros desde el condominio. */
   distance: number
   address: string | null
+  phone: string | null
+  website: string | null
 }
 
-export const PLACE_CATEGORIES: Record<PlaceCategory, { label: string; hex: string }> = {
-  mall: { label: 'Centros comerciales', hex: '#7c3aed' },
-  supermarket: { label: 'Supermercados', hex: '#16a34a' },
-  restaurant: { label: 'Restaurantes', hex: '#ea580c' },
-  cafe: { label: 'Cafeterias', hex: '#a16207' },
-  pharmacy: { label: 'Droguerias', hex: '#db2777' },
-  health: { label: 'Salud', hex: '#dc2626' },
-  bank: { label: 'Bancos y cajeros', hex: '#2563eb' },
-  education: { label: 'Educacion', hex: '#0891b2' },
-  park: { label: 'Parques', hex: '#65a30d' },
-  gym: { label: 'Gimnasios', hex: '#475569' },
+export const PLACE_CATEGORIES: Record<
+  PlaceCategory,
+  { label: string; hex: string; group: PlaceGroup }
+> = {
+  mall: { label: 'Centros comerciales', hex: '#7c3aed', group: 'nearby' },
+  supermarket: { label: 'Supermercados', hex: '#16a34a', group: 'nearby' },
+  restaurant: { label: 'Restaurantes', hex: '#ea580c', group: 'nearby' },
+  cafe: { label: 'Cafeterias', hex: '#a16207', group: 'nearby' },
+  pharmacy: { label: 'Droguerias', hex: '#db2777', group: 'nearby' },
+  health: { label: 'Salud', hex: '#e11d48', group: 'nearby' },
+  bank: { label: 'Bancos y cajeros', hex: '#2563eb', group: 'nearby' },
+  education: { label: 'Educacion', hex: '#0891b2', group: 'nearby' },
+  park: { label: 'Parques', hex: '#65a30d', group: 'nearby' },
+  gym: { label: 'Gimnasios', hex: '#475569', group: 'nearby' },
+  hospital: { label: 'Hospitales y urgencias', hex: '#dc2626', group: 'emergency' },
+  police: { label: 'Policia', hex: '#1e3a8a', group: 'emergency' },
+  fire_station: { label: 'Bomberos', hex: '#b91c1c', group: 'emergency' },
+  cleaning: { label: 'Aseo y limpieza', hex: '#0d9488', group: 'service' },
+  laundry: { label: 'Lavanderias', hex: '#0284c7', group: 'service' },
+  carpenter: { label: 'Carpinteros', hex: '#92400e', group: 'service' },
+  plumber: { label: 'Plomeros', hex: '#1d4ed8', group: 'service' },
+  electrician: { label: 'Electricistas', hex: '#ca8a04', group: 'service' },
+  locksmith: { label: 'Cerrajeros', hex: '#57534e', group: 'service' },
+  hardware: { label: 'Ferreterias', hex: '#c2410c', group: 'service' },
+  mechanic: { label: 'Talleres', hex: '#334155', group: 'service' },
+  veterinary: { label: 'Veterinarias', hex: '#7e22ce', group: 'service' },
+  taxi: { label: 'Taxis', hex: '#eab308', group: 'service' },
+}
+
+/** Nombre por defecto de los lugares de emergencia sin nombre en el mapa. */
+const UNNAMED_EMERGENCY: Partial<Record<PlaceCategory, string>> = {
+  hospital: 'Hospital',
+  police: 'Estacion de policia',
+  fire_station: 'Estacion de bomberos',
 }
 
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search'
@@ -76,11 +123,24 @@ const OVERPASS_SELECTORS: Record<PlaceCategory, string[]> = {
   restaurant: ['nwr["amenity"~"^(restaurant|fast_food)$"]'],
   cafe: ['nwr["amenity"="cafe"]', 'nwr["shop"="bakery"]'],
   pharmacy: ['nwr["amenity"="pharmacy"]', 'nwr["shop"="chemist"]'],
-  health: ['nwr["amenity"~"^(hospital|clinic|doctors|dentist)$"]'],
+  health: ['nwr["amenity"~"^(clinic|doctors|dentist)$"]'],
   bank: ['nwr["amenity"~"^(bank|atm)$"]'],
   education: ['nwr["amenity"~"^(school|university|college|kindergarten)$"]'],
   park: ['nwr["leisure"="park"]'],
   gym: ['nwr["leisure"="fitness_centre"]'],
+  hospital: ['nwr["amenity"="hospital"]'],
+  police: ['nwr["amenity"="police"]'],
+  fire_station: ['nwr["amenity"="fire_station"]'],
+  cleaning: ['nwr["craft"="cleaning"]', 'nwr["shop"="cleaning"]', 'nwr["office"="cleaning"]'],
+  laundry: ['nwr["shop"~"^(laundry|dry_cleaning)$"]'],
+  carpenter: ['nwr["craft"~"^(carpenter|cabinet_maker)$"]'],
+  plumber: ['nwr["craft"="plumber"]'],
+  electrician: ['nwr["craft"="electrician"]'],
+  locksmith: ['nwr["craft"="locksmith"]', 'nwr["shop"="locksmith"]'],
+  hardware: ['nwr["shop"~"^(hardware|doityourself|paint)$"]'],
+  mechanic: ['nwr["shop"~"^(car_repair|tyres|motorcycle_repair)$"]'],
+  veterinary: ['nwr["amenity"="veterinary"]'],
+  taxi: ['nwr["amenity"="taxi"]'],
 }
 
 async function searchNominatim(query: string, signal?: AbortSignal) {
@@ -98,12 +158,26 @@ async function searchNominatim(query: string, signal?: AbortSignal) {
 
 /** Clasifica un elemento de OSM en una de las categorias que mostramos. */
 function categorize(tags: Record<string, string>): PlaceCategory | null {
+  if (tags.amenity === 'hospital') return 'hospital'
+  if (tags.amenity === 'police') return 'police'
+  if (tags.amenity === 'fire_station') return 'fire_station'
+  if (tags.amenity === 'taxi') return 'taxi'
+  if (tags.amenity === 'veterinary') return 'veterinary'
+  if (tags.craft === 'cleaning' || tags.shop === 'cleaning' || tags.office === 'cleaning')
+    return 'cleaning'
+  if (tags.shop === 'laundry' || tags.shop === 'dry_cleaning') return 'laundry'
+  if (tags.craft === 'carpenter' || tags.craft === 'cabinet_maker') return 'carpenter'
+  if (tags.craft === 'plumber') return 'plumber'
+  if (tags.craft === 'electrician') return 'electrician'
+  if (tags.craft === 'locksmith' || tags.shop === 'locksmith') return 'locksmith'
+  if (['hardware', 'doityourself', 'paint'].includes(tags.shop)) return 'hardware'
+  if (['car_repair', 'tyres', 'motorcycle_repair'].includes(tags.shop)) return 'mechanic'
   if (tags.shop === 'mall' || tags.shop === 'department_store') return 'mall'
   if (tags.shop === 'supermarket' || tags.shop === 'convenience') return 'supermarket'
   if (tags.amenity === 'restaurant' || tags.amenity === 'fast_food') return 'restaurant'
   if (tags.amenity === 'cafe' || tags.shop === 'bakery') return 'cafe'
   if (tags.amenity === 'pharmacy' || tags.shop === 'chemist') return 'pharmacy'
-  if (['hospital', 'clinic', 'doctors', 'dentist'].includes(tags.amenity)) return 'health'
+  if (['clinic', 'doctors', 'dentist'].includes(tags.amenity)) return 'health'
   if (tags.amenity === 'bank' || tags.amenity === 'atm') return 'bank'
   if (['school', 'university', 'college', 'kindergarten'].includes(tags.amenity)) return 'education'
   if (tags.leisure === 'park') return 'park'
@@ -126,6 +200,23 @@ function buildAddress(tags: Record<string, string>): string | null {
   if (tags['addr:full']) return tags['addr:full']
   const street = [tags['addr:street'], tags['addr:housenumber']].filter(Boolean).join(' # ')
   return street || null
+}
+
+/** Primer telefono util de las etiquetas de OSM (pueden traer varios con ';'). */
+function pickPhone(tags: Record<string, string>): string | null {
+  const raw =
+    tags.phone ??
+    tags['contact:phone'] ??
+    tags['contact:mobile'] ??
+    tags.mobile ??
+    tags['contact:whatsapp']
+  const first = raw?.split(/[;,]/)[0]?.trim()
+  return first ? first.slice(0, 60) : null
+}
+
+function pickWebsite(tags: Record<string, string>): string | null {
+  const raw = tags.website ?? tags['contact:website']
+  return raw && /^https?:\/\//i.test(raw) ? raw.slice(0, 300) : null
 }
 
 interface OverpassElement {
@@ -153,10 +244,21 @@ function toPlaces(
     const category = categorize(tags)
     const lat = element.lat ?? element.center?.lat
     const lon = element.lon ?? element.center?.lon
-    if (!category || lat === undefined || lon === undefined || !tags.name) continue
+    const name = tags.name ?? (category ? UNNAMED_EMERGENCY[category] : undefined)
+    if (!category || lat === undefined || lon === undefined || !name) continue
     const distance = distanceInMeters(center, { lat, lon })
     if (distance > radius) continue
-    places.push({ id, name: tags.name, category, lat, lon, distance, address: buildAddress(tags) })
+    places.push({
+      id,
+      name,
+      category,
+      lat,
+      lon,
+      distance,
+      address: buildAddress(tags),
+      phone: pickPhone(tags),
+      website: pickWebsite(tags),
+    })
   }
   return places.sort((a, b) => a.distance - b.distance)
 }
@@ -164,7 +266,19 @@ function toPlaces(
 /** Radio con el que se guardan los lugares; la vista filtra radios menores. */
 export const NEARBY_FETCH_RADIUS = 2000
 /** Cada cuanto se refrescan los lugares guardados. */
-export const PLACES_MAX_AGE_DAYS = 7
+const PLACES_MAX_AGE_DAYS = 7
+/**
+ * Lugares guardados antes de esta fecha no traen las categorias de emergencia
+ * y servicios (ni telefonos): se vuelven a consultar aunque no tengan 7 dias.
+ */
+const PLACES_CATALOG_SINCE = Date.parse('2026-10-18T00:00:00Z')
+
+/** true si los lugares guardados hay que volver a consultarlos. */
+export function placesAreStale(updatedAt: string | null, now = Date.now()): boolean {
+  if (!updatedAt) return true
+  const time = Date.parse(updatedAt)
+  return time < PLACES_CATALOG_SINCE || now - time >= PLACES_MAX_AGE_DAYS * 86_400_000
+}
 
 /** Texto de direccion que se geocodifica; sirve para detectar cambios de direccion. */
 export function locationSourceKey(
@@ -178,7 +292,7 @@ export const placesService = {
   async listCached(condominiumId: string): Promise<NearbyPlace[]> {
     const { data, error } = await supabase
       .from('condominium_places')
-      .select('osm_id, name, category, latitude, longitude, distance_m, address')
+      .select('osm_id, name, category, latitude, longitude, distance_m, address, phone, website')
       .eq('condominium_id', condominiumId)
       .order('distance_m', { ascending: true })
     if (error) throw toAppError(error)
@@ -192,6 +306,8 @@ export const placesService = {
         lon: Number(row.longitude),
         distance: row.distance_m,
         address: row.address,
+        phone: row.phone,
+        website: row.website,
       }))
   },
 
@@ -241,6 +357,8 @@ export const placesService = {
         longitude: Number(place.lon.toFixed(6)),
         distance_m: Math.round(place.distance),
         address: place.address,
+        phone: place.phone,
+        website: place.website,
       })),
     })
     if (error) throw toAppError(error)
@@ -292,8 +410,12 @@ export const placesService = {
     const bbox = `(${center.lat - dLat},${center.lon - dLon},${center.lat + dLat},${center.lon + dLon})`
     // Una salida por categoria con su propio cupo: asi los restaurantes, que
     // suelen ser cientos, no dejan por fuera a los centros comerciales o parques.
-    const groups = Object.values(OVERPASS_SELECTORS).map((selectors) => {
-      const union = selectors.map((selector) => `${selector}["name"]${bbox};`).join('')
+    // Los lugares de emergencia se aceptan sin nombre (reciben uno generico).
+    const groups = (Object.keys(OVERPASS_SELECTORS) as PlaceCategory[]).map((category) => {
+      const nameFilter = UNNAMED_EMERGENCY[category] ? '' : '["name"]'
+      const union = OVERPASS_SELECTORS[category]
+        .map((selector) => `${selector}${nameFilter}${bbox};`)
+        .join('')
       return `(${union});out center tags ${PER_CATEGORY_LIMIT};`
     })
     const query = ['[out:json][timeout:25];', ...groups].join('\n')

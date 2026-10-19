@@ -22,6 +22,7 @@ export type ModuleKey =
   | 'purchases'
   | 'documents'
   | 'reports'
+  | 'marketplace'
 
 export interface ModuleMeta {
   key: ModuleKey
@@ -51,6 +52,11 @@ export const MODULES: ModuleMeta[] = [
   { key: 'purchases', label: 'Compras', description: 'Ordenes de compra e insumos' },
   { key: 'documents', label: 'Documentos', description: 'Reglamentos, actas y archivos' },
   { key: 'reports', label: 'Reportes', description: 'Indicadores y graficas' },
+  {
+    key: 'marketplace',
+    label: 'Marketplace',
+    description: 'Servicios y comercios cercanos (aseo, plomeros, taxis...)',
+  },
 ]
 
 /** Roles cuya visibilidad de modulos se configura (SUPER_ADMIN siempre ve todo). */

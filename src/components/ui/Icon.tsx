@@ -18,7 +18,9 @@ import {
   Megaphone,
   MessageCircle,
   MessagesSquare,
+  Newspaper,
   Receipt,
+  Store,
   Settings,
   ShieldAlert,
   ShoppingCart,
@@ -33,6 +35,8 @@ import {
 
 const ICONS: Record<string, LucideIcon> = {
   LayoutDashboard,
+  Newspaper,
+  Store,
   Globe,
   CreditCard,
   BadgeCheck,

@@ -75,7 +75,7 @@ export const queryKeys = {
   announcements: {
     list: (condominiumId: string, params: ListParams) =>
       ['announcements', condominiumId, 'list', params] as const,
-    published: (condominiumId: string) => ['announcements', condominiumId, 'published'] as const,
+    feed: (condominiumId: string) => ['announcements', condominiumId, 'feed'] as const,
     detail: (id: string) => ['announcements', 'detail', id] as const,
   },
 
@@ -183,5 +183,10 @@ export const queryKeys = {
   places: {
     /** Lugares cercanos guardados en la base para un condominio. */
     cached: (condominiumId: string) => ['places', 'cached', condominiumId] as const,
+  },
+
+  directory: {
+    /** Numeros de emergencia y servicios que agrega la administracion. */
+    list: (condominiumId: string) => ['directory', condominiumId] as const,
   },
 } as const
