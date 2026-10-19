@@ -31,6 +31,8 @@ const place = (overrides: Partial<NearbyPlace>): NearbyPlace => ({
   address: null,
   phone: null,
   website: null,
+  whatsapp: null,
+  openingHours: null,
   ...overrides,
 })
 

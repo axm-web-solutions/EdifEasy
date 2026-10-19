@@ -27,7 +27,14 @@ const AUDIENCE_OPTIONS = [
 ]
 
 /** Roles a los que se puede dirigir una publicacion. */
-const TARGETABLE_ROLES = ['OWNER', 'TENANT', 'SPOKESPERSON', 'SECURITY', 'SERVICE_STAFF', 'ADMINISTRATOR']
+const TARGETABLE_ROLES = [
+  'OWNER',
+  'TENANT',
+  'SPOKESPERSON',
+  'SECURITY',
+  'SERVICE_STAFF',
+  'ADMINISTRATOR',
+]
 
 /**
  * Feed del inicio: publicaciones de la administracion (comunicados) dirigidas a
@@ -107,6 +114,7 @@ export function useFeedViewModel() {
     composer: canPost
       ? {
           open: composerOpen,
+          condominiumId: currentCondominiumId,
           setOpen: setComposerOpen,
           control: form.control,
           audience,

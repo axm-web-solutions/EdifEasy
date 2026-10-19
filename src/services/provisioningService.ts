@@ -29,23 +29,43 @@ export interface ProvisionResult {
   accounts: { unit: string; email: string; password: string | null; existing: boolean }[]
 }
 
-export const provisioningService = {
-  async provision(input: ProvisionInput): Promise<ProvisionResult> {
-    const { data, error } = await supabase.functions.invoke<ProvisionResult & { error?: string }>(
-      'provision-condominium',
-      { body: input },
-    )
-    if (error) {
-      let message =
-        'No se pudo conectar con el servicio de alta. Verifica que la Edge Function `provision-condominium` este desplegada.'
-      const context = (error as { context?: unknown }).context
-      if (context instanceof Response) {
-        const parsed = (await context.json().catch(() => null)) as { error?: string } | null
-        if (parsed?.error) message = parsed.error
-      }
-      throw new Error(message)
+export interface ExistingAccountsResult {
+  condominium_id: string
+  condominium_name: string
+  admin: null
+  accounts: ProvisionResult['accounts']
+}
+
+async function invokeProvision<T>(body: Record<string, unknown>): Promise<T> {
+  const { data, error } = await supabase.functions.invoke<T & { error?: string }>(
+    'provision-condominium',
+    { body },
+  )
+  if (error) {
+    let message =
+      'No se pudo conectar con el servicio de alta. Verifica que la Edge Function `provision-condominium` este desplegada.'
+    const context = (error as { context?: unknown }).context
+    if (context instanceof Response) {
+      const parsed = (await context.json().catch(() => null)) as { error?: string } | null
+      if (parsed?.error) message = parsed.error
     }
-    if (!data || data.error) throw new Error(data?.error ?? 'Respuesta vacia del servicio de alta')
-    return data
+    throw new Error(message)
+  }
+  if (!data || data.error) throw new Error(data?.error ?? 'Respuesta vacia del servicio de alta')
+  return data
+}
+
+export const provisioningService = {
+  /** Cuentas de propietario para las unidades sin propietario de un conjunto ya creado. */
+  provisionExisting(condominiumId: string, emailSlug: string): Promise<ExistingAccountsResult> {
+    return invokeProvision<ExistingAccountsResult>({
+      mode: 'existing',
+      condominium_id: condominiumId,
+      email_slug: emailSlug,
+    })
+  },
+
+  provision(input: ProvisionInput): Promise<ProvisionResult> {
+    return invokeProvision<ProvisionResult>(input as unknown as Record<string, unknown>)
   },
 }

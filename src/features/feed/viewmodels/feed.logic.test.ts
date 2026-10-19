@@ -39,12 +39,17 @@ const post = (overrides: Partial<FeedPost> = {}): FeedPost =>
 describe('audienceLabel', () => {
   it('todo el conjunto', () => expect(audienceLabel(post())).toBe('Todo el conjunto'))
   it('bloque por nombre', () =>
-    expect(audienceLabel(post({ audience: 'BUILDING', building: { id: 'b', name: 'Torre 2' } }))).toBe(
-      'Torre 2',
-    ))
+    expect(
+      audienceLabel(post({ audience: 'BUILDING', building: { id: 'b', name: 'Torre 2' } })),
+    ).toBe('Torre 2'))
   it('rol en plural', () =>
     expect(
-      audienceLabel(post({ audience: 'ROLE', audience_role: { id: 'r', code: 'TENANT', name: 'Arrendatario' } })),
+      audienceLabel(
+        post({
+          audience: 'ROLE',
+          audience_role: { id: 'r', code: 'TENANT', name: 'Arrendatario' },
+        }),
+      ),
     ).toBe('Arrendatarios'))
 })
 
@@ -111,6 +116,8 @@ const place = (overrides: Partial<NearbyPlace>): NearbyPlace => ({
   address: null,
   phone: null,
   website: null,
+  whatsapp: null,
+  openingHours: null,
   ...overrides,
 })
 

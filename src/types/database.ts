@@ -202,6 +202,8 @@ export type CondominiumPlaceRow = {
   address: string | null
   phone: string | null
   website: string | null
+  whatsapp: string | null
+  opening_hours: string | null
   created_at: string
 }
 

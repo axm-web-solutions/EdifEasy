@@ -3,6 +3,7 @@ import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import dayjs from 'dayjs'
 import { FormDrawer } from '@/components/ui/FormDrawer'
+import { ImageUploadField } from '@/components/forms/ImageUploadField'
 import { DateField, SelectField, TextAreaField, TextField } from '@/components/forms/fields'
 import { announcementSchema, type AnnouncementFormValues } from '@/schemas/communication'
 import { ANNOUNCEMENT_STATUS, AUDIENCE_TYPE, toOptions } from '@/constants/enums'
@@ -77,8 +78,8 @@ export function AnnouncementForm({
       content: values.content,
       image_url: values.image_url || null,
       audience: values.audience,
-      building_id: values.audience === 'BUILDING' ? (values.building_id || null) : null,
-      audience_role_id: values.audience === 'ROLE' ? (values.audience_role_id || null) : null,
+      building_id: values.audience === 'BUILDING' ? values.building_id || null : null,
+      audience_role_id: values.audience === 'ROLE' ? values.audience_role_id || null : null,
       status: values.status,
       published_at: values.published_at,
       expires_at: values.expires_at || null,
@@ -106,7 +107,13 @@ export function AnnouncementForm({
           rows={8}
           maxLength={8000}
         />
-        <TextField control={control} name="image_url" label="Imagen (URL)" placeholder="https://..." />
+        <ImageUploadField
+          control={control}
+          name="image_url"
+          label="Imagen (opcional)"
+          condominiumId={condominiumId}
+          entity="announcements"
+        />
 
         <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
           <SelectField
@@ -153,7 +160,13 @@ export function AnnouncementForm({
         ) : null}
 
         <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
-          <DateField control={control} name="published_at" label="Fecha de publicacion" showTime required />
+          <DateField
+            control={control}
+            name="published_at"
+            label="Fecha de publicacion"
+            showTime
+            required
+          />
           <DateField control={control} name="expires_at" label="Fecha de expiracion" showTime />
         </div>
       </form>

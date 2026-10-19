@@ -1,6 +1,15 @@
 import { Alert, Card, Skeleton } from 'antd'
 import { Link } from 'react-router-dom'
-import { CalendarClock, ChevronRight, FileQuestion, Gavel, Home, MessageCircle, Siren, Store } from 'lucide-react'
+import {
+  CalendarClock,
+  ChevronRight,
+  FileQuestion,
+  Gavel,
+  Home,
+  MessageCircle,
+  Siren,
+  Store,
+} from 'lucide-react'
 import type { ReactNode } from 'react'
 import type {
   QuickAccessKey,
@@ -64,7 +73,9 @@ export function QuickAccessCard({ vm }: { vm: ResidentSummaryViewModel }) {
                 <span className="min-w-0 flex-1 text-sm font-medium">{item.title}</span>
                 <span className="text-right">
                   <span className="block text-sm font-semibold text-slate-900">{item.value}</span>
-                  {item.footer ? <span className="block text-[11px] text-slate-500">{item.footer}</span> : null}
+                  {item.footer ? (
+                    <span className="block text-[11px] text-slate-500">{item.footer}</span>
+                  ) : null}
                 </span>
                 <ChevronRight size={16} className="text-slate-400" />
               </Link>

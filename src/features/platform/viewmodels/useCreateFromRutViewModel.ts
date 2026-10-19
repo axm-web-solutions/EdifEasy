@@ -53,7 +53,9 @@ export type CreateFromRutStep = 'upload' | 'review' | 'done'
 /** Igual al limite de `provision_condominium`. */
 const MAX_UNITS = 3000
 
-function toLayout(values: Pick<ProvisionFormValues, 'kind' | 'houses' | 'towers' | 'floors' | 'units_per_floor'>): UnitLayout {
+function toLayout(
+  values: Pick<ProvisionFormValues, 'kind' | 'houses' | 'towers' | 'floors' | 'units_per_floor'>,
+): UnitLayout {
   return values.kind === 'HOUSES'
     ? { kind: 'HOUSES', houses: Math.max(0, Number(values.houses) || 0) }
     : {
@@ -76,7 +78,10 @@ export function useCreateFromRutViewModel() {
 
   const [step, setStep] = useState<CreateFromRutStep>('upload')
   const [fileName, setFileName] = useState<string | null>(null)
-  const [readNotice, setReadNotice] = useState<{ type: 'success' | 'warning'; text: string } | null>(null)
+  const [readNotice, setReadNotice] = useState<{
+    type: 'success' | 'warning'
+    text: string
+  } | null>(null)
   const [result, setResult] = useState<ProvisionResult | null>(null)
 
   const form = useForm<ProvisionFormValues>({

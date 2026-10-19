@@ -1,6 +1,7 @@
 import { Button, Card } from 'antd'
 import { PenSquare } from 'lucide-react'
 import { SelectField, SwitchField, TextAreaField, TextField } from '@/components/forms/fields'
+import { ImageUploadField } from '@/components/forms/ImageUploadField'
 import type { FeedViewModel } from '../viewmodels/useFeedViewModel'
 
 type Composer = NonNullable<FeedViewModel['composer']>
@@ -30,7 +31,13 @@ export function FeedComposer({ composer }: { composer: Composer }) {
       title={<span className="text-sm font-semibold">Nueva publicacion</span>}
     >
       <form onSubmit={composer.submit} noValidate>
-        <TextField control={composer.control} name="title" label="Titulo" required maxLength={150} />
+        <TextField
+          control={composer.control}
+          name="title"
+          label="Titulo"
+          required
+          maxLength={150}
+        />
         <TextAreaField
           control={composer.control}
           name="content"
@@ -68,11 +75,12 @@ export function FeedComposer({ composer }: { composer: Composer }) {
             />
           ) : null}
         </div>
-        <TextField
+        <ImageUploadField
           control={composer.control}
           name="image_url"
           label="Imagen (opcional)"
-          placeholder="https://..."
+          condominiumId={composer.condominiumId}
+          entity="announcements"
         />
         <SwitchField control={composer.control} name="pinned" label="Fijar arriba del feed" />
         <div className="flex flex-wrap justify-end gap-2">

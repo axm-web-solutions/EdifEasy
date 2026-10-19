@@ -8,6 +8,7 @@ import type { RoleCode } from '@/types/database'
 import type { PermissionKey } from '@/constants/roles'
 import type { ModuleKey } from '@/constants/modules'
 import { useModuleAccess } from '@/hooks/useModules'
+import { useMyAcceptances } from '@/hooks/useLegal'
 
 function FullPageLoader({ tip = 'Cargando...' }: { tip?: string }) {
   return (
@@ -23,14 +24,18 @@ function FullPageLoader({ tip = 'Cargando...' }: { tip?: string }) {
 export function ProtectedRoute() {
   const { session, initializing, loadingContext, memberships, isSuperAdmin } = useAuth()
   const location = useLocation()
+  // Las aceptaciones legales se piden en paralelo con el contexto: un solo cargador.
+  const acceptances = useMyAcceptances(session?.user.id ?? null)
 
-  if (initializing) return <FullPageLoader tip="Verificando sesion..." />
+  // Mismo texto en todas las fases de carga: se ve como un solo cargador continuo.
+  if (initializing) return <FullPageLoader tip="Cargando tu informacion..." />
 
   if (!session) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />
   }
 
-  if (loadingContext) return <FullPageLoader tip="Cargando tu informacion..." />
+  if (loadingContext || acceptances.isLoading)
+    return <FullPageLoader tip="Cargando tu informacion..." />
 
   if (memberships.length === 0 && !isSuperAdmin) {
     return (

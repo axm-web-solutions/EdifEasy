@@ -69,14 +69,18 @@ function wrapper(canManage: boolean) {
 describe('useNearbyPlacesViewModel', () => {
   beforeEach(() => {
     current = condominium
-    geocode.mockReset().mockResolvedValue({ lat: 4.55, lon: -75.65, label: 'Horeb', approximate: false })
+    geocode
+      .mockReset()
+      .mockResolvedValue({ lat: 4.55, lon: -75.65, label: 'Horeb', approximate: false })
     nearby.mockReset().mockResolvedValue([])
     saveLocation.mockReset().mockResolvedValue(0)
     saveCoordinates.mockReset().mockResolvedValue(undefined)
   })
 
   it('un residente nunca consulta OpenStreetMap: ve "ubicacion pendiente"', async () => {
-    const { result } = renderHook(() => useNearbyPlacesViewModel('condo-1'), { wrapper: wrapper(false) })
+    const { result } = renderHook(() => useNearbyPlacesViewModel('condo-1'), {
+      wrapper: wrapper(false),
+    })
 
     await waitFor(() => expect(result.current.status).toBe('pending-location'))
     expect(geocode).not.toHaveBeenCalled()
@@ -89,7 +93,9 @@ describe('useNearbyPlacesViewModel', () => {
     await waitFor(() => expect(saveLocation).toHaveBeenCalledTimes(1))
     expect(geocode).toHaveBeenCalledTimes(1)
     // Las coordenadas se guardan antes de consultar los lugares (el mapa aparece ya).
-    expect(saveCoordinates.mock.invocationCallOrder[0]).toBeLessThan(nearby.mock.invocationCallOrder[0])
+    expect(saveCoordinates.mock.invocationCallOrder[0]).toBeLessThan(
+      nearby.mock.invocationCallOrder[0],
+    )
     expect(nearby).toHaveBeenCalledWith(expect.objectContaining({ lat: 4.55, lon: -75.65 }), 2000)
     expect(saveLocation.mock.calls[0][1]).toMatchObject({ source: 'Horeb, Armenia, Colombia' })
   })
@@ -102,7 +108,9 @@ describe('useNearbyPlacesViewModel', () => {
       location_source: 'Horeb, Armenia, Colombia',
       places_updated_at: new Date().toISOString(),
     }
-    const { result } = renderHook(() => useNearbyPlacesViewModel('condo-1'), { wrapper: wrapper(true) })
+    const { result } = renderHook(() => useNearbyPlacesViewModel('condo-1'), {
+      wrapper: wrapper(true),
+    })
 
     await waitFor(() => expect(result.current.status).toBe('ready'))
     expect(geocode).not.toHaveBeenCalled()

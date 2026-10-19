@@ -25,3 +25,16 @@ export function useProvisionCondominium() {
     },
   })
 }
+
+/** Cuentas de propietarios para un conjunto que ya existe. */
+export function useProvisionExistingAccounts() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ condominiumId, emailSlug }: { condominiumId: string; emailSlug: string }) =>
+      provisioningService.provisionExisting(condominiumId, emailSlug),
+    onSuccess: (data) => {
+      notify.success(`Se crearon ${data.accounts.length} cuenta(s) de propietario`)
+      void queryClient.invalidateQueries({ queryKey: ['platform'] })
+    },
+  })
+}

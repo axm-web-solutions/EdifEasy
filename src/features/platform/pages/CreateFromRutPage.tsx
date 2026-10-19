@@ -43,7 +43,9 @@ export function CreateFromRutPage() {
             <div className="flex flex-col items-center gap-2 px-4 py-6">
               <UploadCloud size={36} className="text-brand-text" />
               <p className="m-0 text-base font-semibold text-slate-800">
-                {vm.reading ? 'Leyendo el RUT...' : 'Arrastra aqui el RUT en PDF o haz clic para elegirlo'}
+                {vm.reading
+                  ? 'Leyendo el RUT...'
+                  : 'Arrastra aqui el RUT en PDF o haz clic para elegirlo'}
               </p>
               <p className="m-0 max-w-md text-sm text-slate-500">
                 El archivo se lee en tu navegador y no se guarda. No se almacena el documento de
@@ -54,7 +56,9 @@ export function CreateFromRutPage() {
               ) : null}
             </div>
           </Upload.Dragger>
-          {vm.readError ? <Alert type="error" showIcon className="mt-4" message={vm.readError} /> : null}
+          {vm.readError ? (
+            <Alert type="error" showIcon className="mt-4" message={vm.readError} />
+          ) : null}
           <div className="mt-4 text-center">
             <Button type="link" onClick={vm.fillManually}>
               No tengo el PDF: llenar a mano
@@ -65,12 +69,23 @@ export function CreateFromRutPage() {
 
       {vm.step === 'review' ? (
         <form onSubmit={vm.submit} noValidate className="space-y-4">
-          {vm.readNotice ? <Alert type={vm.readNotice.type} showIcon message={vm.readNotice.text} /> : null}
+          {vm.readNotice ? (
+            <Alert type={vm.readNotice.type} showIcon message={vm.readNotice.text} />
+          ) : null}
 
-          <Card className="surface-card" title={<span className="text-sm font-semibold">Conjunto</span>}>
+          <Card
+            className="surface-card"
+            title={<span className="text-sm font-semibold">Conjunto</span>}
+          >
             <div className="grid grid-cols-1 gap-x-4 md:grid-cols-2">
               <TextField control={vm.control} name="name" label="Nombre" required maxLength={150} />
-              <TextField control={vm.control} name="nit" label="NIT" required placeholder="900518186-0" />
+              <TextField
+                control={vm.control}
+                name="nit"
+                label="NIT"
+                required
+                placeholder="900518186-0"
+              />
               <TextField control={vm.control} name="address" label="Direccion" required />
               <TextField control={vm.control} name="city" label="Ciudad o municipio" required />
               <TextField control={vm.control} name="department" label="Departamento" />
@@ -81,7 +96,9 @@ export function CreateFromRutPage() {
 
           <Card
             className="surface-card"
-            title={<span className="text-sm font-semibold">Administrador (representante legal)</span>}
+            title={
+              <span className="text-sm font-semibold">Administrador (representante legal)</span>
+            }
           >
             <div className="grid grid-cols-1 gap-x-4 md:grid-cols-2">
               <TextField control={vm.control} name="admin_name" label="Nombre completo" required />
@@ -95,15 +112,45 @@ export function CreateFromRutPage() {
             </div>
           </Card>
 
-          <Card className="surface-card" title={<span className="text-sm font-semibold">Unidades</span>}>
+          <Card
+            className="surface-card"
+            title={<span className="text-sm font-semibold">Unidades</span>}
+          >
             <div className="grid grid-cols-1 gap-x-4 md:grid-cols-4">
-              <SelectField control={vm.control} name="kind" label="Tipo" required options={vm.kindOptions} />
+              <SelectField
+                control={vm.control}
+                name="kind"
+                label="Tipo"
+                required
+                options={vm.kindOptions}
+              />
               {vm.kind === 'HOUSES' ? (
-                <NumberField control={vm.control} name="houses" label="Numero de casas" required min={1} max={2000} />
+                <NumberField
+                  control={vm.control}
+                  name="houses"
+                  label="Numero de casas"
+                  required
+                  min={1}
+                  max={2000}
+                />
               ) : (
                 <>
-                  <NumberField control={vm.control} name="towers" label="Torres" required min={1} max={60} />
-                  <NumberField control={vm.control} name="floors" label="Pisos por torre" required min={1} max={60} />
+                  <NumberField
+                    control={vm.control}
+                    name="towers"
+                    label="Torres"
+                    required
+                    min={1}
+                    max={60}
+                  />
+                  <NumberField
+                    control={vm.control}
+                    name="floors"
+                    label="Pisos por torre"
+                    required
+                    min={1}
+                    max={60}
+                  />
                   <NumberField
                     control={vm.control}
                     name="units_per_floor"
@@ -136,12 +183,15 @@ export function CreateFromRutPage() {
             ) : vm.unitTotal > 0 ? (
               <div className="rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
                 <p className="m-0 font-medium">
-                  Se crearan {formatNumber(vm.unitTotal)} unidad(es), cada una con su cuenta de propietario:
+                  Se crearan {formatNumber(vm.unitTotal)} unidad(es), cada una con su cuenta de
+                  propietario:
                 </p>
                 <ul className="m-0 mt-2 list-none space-y-1 p-0">
                   {vm.sampleUnits.map((unit, index) => (
                     <li key={unit.email} className="flex flex-wrap gap-x-2">
-                      {index === 2 && vm.unitTotal > 3 ? <span className="w-full text-slate-400">...</span> : null}
+                      {index === 2 && vm.unitTotal > 3 ? (
+                        <span className="w-full text-slate-400">...</span>
+                      ) : null}
                       <span className="font-medium">{unit.label}</span>
                       <span className="break-all text-slate-500">{unit.email}</span>
                     </li>

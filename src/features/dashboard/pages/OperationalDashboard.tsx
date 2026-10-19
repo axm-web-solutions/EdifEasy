@@ -120,7 +120,8 @@ export function OperationalDashboard() {
                       }
                       description={
                         <span className="text-xs text-slate-500">
-                          {incident.location ?? 'Sin ubicacion'} · {formatRelative(incident.occurred_at)}
+                          {incident.location ?? 'Sin ubicacion'} ·{' '}
+                          {formatRelative(incident.occurred_at)}
                         </span>
                       }
                     />
@@ -128,7 +129,10 @@ export function OperationalDashboard() {
                 )}
               />
             ) : (
-              <EmptyState title="Sin incidentes" description="No hay incidentes recientes registrados." />
+              <EmptyState
+                title="Sin incidentes"
+                description="No hay incidentes recientes registrados."
+              />
             )}
           </Card>
         </Col>
@@ -202,7 +206,9 @@ export function OperationalDashboard() {
                         </Tag>
                       </div>
                       <p className="m-0 text-sm font-medium text-slate-800">{alert.title}</p>
-                      <p className="m-0 mt-1 text-xs text-slate-500 line-clamp-3">{alert.description}</p>
+                      <p className="m-0 mt-1 text-xs text-slate-500 line-clamp-3">
+                        {alert.description}
+                      </p>
                     </Card>
                   </List.Item>
                 )}

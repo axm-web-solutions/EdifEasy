@@ -51,6 +51,7 @@ const EMERGENCY_CONTACT_CATEGORIES: DirectoryCategory[] = [
  */
 export const SERVICE_CONTACT_CATEGORIES: DirectoryCategory[] = [
   { value: 'cleaning', label: 'Aseo y limpieza' },
+  { value: 'domestic', label: 'Empleadas del servicio' },
   { value: 'carpenter', label: 'Carpinteros' },
   { value: 'plumber', label: 'Plomeros' },
   { value: 'electrician', label: 'Electricistas' },

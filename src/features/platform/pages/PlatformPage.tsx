@@ -1,6 +1,8 @@
 import { Button, Col, Row, Tag } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { BadgeCheck, Building2, DoorOpen, FilePlus2, LogIn, Users } from 'lucide-react'
+import { BadgeCheck, Building2, DoorOpen, FilePlus2, LogIn, UserPlus, Users } from 'lucide-react'
+import { OwnerAccountsModal } from '../components/OwnerAccountsModal'
+import { useOwnerAccountsViewModel } from '../viewmodels/useOwnerAccountsViewModel'
 import { Link } from 'react-router-dom'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { StatCard } from '@/components/ui/StatCard'
@@ -30,7 +32,10 @@ const EXPORT_COLUMNS: ExportColumn<PlatformCondominium>[] = [
   { key: 'ends', header: 'Vence', value: (row) => (row.plan ? formatDate(row.plan.ends_at) : '') },
 ]
 
-function columns(vm: PlatformViewModel): ColumnsType<PlatformCondominium> {
+function columns(
+  vm: PlatformViewModel,
+  onAccounts: (row: PlatformCondominium) => void,
+): ColumnsType<PlatformCondominium> {
   return [
     {
       title: 'Conjunto',
@@ -114,11 +119,16 @@ function columns(vm: PlatformViewModel): ColumnsType<PlatformCondominium> {
       title: 'Acciones',
       key: 'actions',
       fixed: 'right',
-      width: 130,
+      width: 150,
       render: (_, row) => (
-        <Button size="small" icon={<LogIn size={14} />} onClick={() => vm.open(row)}>
-          Administrar
-        </Button>
+        <div className="flex flex-col gap-1">
+          <Button size="small" icon={<LogIn size={14} />} onClick={() => vm.open(row)}>
+            Administrar
+          </Button>
+          <Button size="small" icon={<UserPlus size={14} />} onClick={() => onAccounts(row)}>
+            Propietarios
+          </Button>
+        </div>
       ),
     },
   ]
@@ -127,6 +137,7 @@ function columns(vm: PlatformViewModel): ColumnsType<PlatformCondominium> {
 /** Panel de plataforma del super administrador: todos los conjuntos en un solo lugar. */
 export function PlatformPage() {
   const vm = usePlatformViewModel()
+  const ownerAccounts = useOwnerAccountsViewModel()
   const { stats, table } = vm
 
   return (
@@ -186,7 +197,7 @@ export function PlatformPage() {
       </Row>
 
       <DataTable<PlatformCondominium>
-        columns={columns(vm)}
+        columns={columns(vm, (row) => ownerAccounts.start({ id: row.id, name: row.name }))}
         data={table.rows}
         total={table.total}
         loading={table.loading}
@@ -209,6 +220,8 @@ export function PlatformPage() {
         scrollX={1300}
         dataTour="data-table"
       />
+
+      <OwnerAccountsModal vm={ownerAccounts} />
     </>
   )
 }

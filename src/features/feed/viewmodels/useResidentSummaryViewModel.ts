@@ -7,12 +7,7 @@ import type { ModuleKey } from '@/constants/modules'
 import { formatCompactCurrency, formatNumber } from '@/utils/format'
 
 export type QuickAccessKey =
-  | 'alerts'
-  | 'requests'
-  | 'reservations'
-  | 'messages'
-  | 'fines'
-  | 'apartment'
+  'alerts' | 'requests' | 'reservations' | 'messages' | 'fines' | 'apartment'
 
 interface QuickAccess {
   key: QuickAccessKey

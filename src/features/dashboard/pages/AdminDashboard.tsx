@@ -19,14 +19,16 @@ import { EmptyState } from '@/components/ui/states'
 import { useAuth } from '@/hooks/useAuth'
 import { useAdminDashboard, useRecentActivity } from '@/hooks/useDashboard'
 import { useExpensesByCategory, useExpensesMonthly } from '@/hooks/useExpenses'
-import {
-  useFinesByStatus,
-  useIncidentsByType,
-  useRequestsByStatus,
-} from '@/hooks/useReports'
+import { useFinesByStatus, useIncidentsByType, useRequestsByStatus } from '@/hooks/useReports'
 import { useActiveAlerts } from '@/hooks/useAlerts'
 import { NearbyPlacesCard } from '../components/NearbyPlacesCard'
-import { FINE_STATUS, INCIDENT_TYPE, PRIORITY_LEVEL, REQUEST_STATUS, ALERT_TYPE } from '@/constants/enums'
+import {
+  FINE_STATUS,
+  INCIDENT_TYPE,
+  PRIORITY_LEVEL,
+  REQUEST_STATUS,
+  ALERT_TYPE,
+} from '@/constants/enums'
 import { formatCompactCurrency, formatDateTime, formatNumber } from '@/utils/format'
 import type { RequestStatus, IncidentType, FineStatus } from '@/types/database'
 
@@ -293,14 +295,19 @@ export function AdminDashboard() {
                         </div>
                       }
                       description={
-                        <span className="text-xs text-slate-500 line-clamp-2">{alert.description}</span>
+                        <span className="text-xs text-slate-500 line-clamp-2">
+                          {alert.description}
+                        </span>
                       }
                     />
                   </List.Item>
                 )}
               />
             ) : (
-              <EmptyState title="Sin alertas activas" description="El condominio no tiene alertas vigentes." />
+              <EmptyState
+                title="Sin alertas activas"
+                description="El condominio no tiene alertas vigentes."
+              />
             )}
           </Card>
         </Col>

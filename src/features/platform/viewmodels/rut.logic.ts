@@ -76,7 +76,10 @@ function rightBoundary(items: RutTextItem[], label: RutTextItem): number {
  * sueltos, que son codigos DANE junto al nombre (p. ej. "Circasia 1 9 0").
  */
 function joinValue(parts: RutTextItem[]): string {
-  const texts = parts.sort((a, b) => a.x - b.x).map((part) => part.text.trim()).filter(Boolean)
+  const texts = parts
+    .sort((a, b) => a.x - b.x)
+    .map((part) => part.text.trim())
+    .filter(Boolean)
   if (texts.length === 0) return ''
   if (texts.every((text) => text.length === 1)) return texts.join('')
   return texts
@@ -115,12 +118,7 @@ function valueRight(items: RutTextItem[], label: RutTextItem): string {
   )
 }
 
-function field(
-  items: RutTextItem[],
-  code: number,
-  mode: 'below' | 'right',
-  page?: number,
-): string {
+function field(items: RutTextItem[], code: number, mode: 'below' | 'right', page?: number): string {
   const label = findLabel(items, code, page)
   if (!label) return ''
   const first = mode === 'below' ? valueBelow(items, label) : valueRight(items, label)
@@ -282,7 +280,10 @@ export function planUnits(layout: UnitLayout, slug: string): PlannedUnit[] {
     for (let floor = 1; floor <= layout.floors; floor++)
       for (let unit = 1; unit <= layout.unitsPerFloor; unit++) {
         const number = `${floor}${String(unit).padStart(2, '0')}`
-        units.push({ label: `Torre ${tower} · Apto ${number}`, email: unitEmail(slug, number, tower) })
+        units.push({
+          label: `Torre ${tower} · Apto ${number}`,
+          email: unitEmail(slug, number, tower),
+        })
       }
   return units
 }

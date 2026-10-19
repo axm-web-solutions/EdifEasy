@@ -10,6 +10,10 @@ import {
   type PlaceCategory,
 } from '@/services/placesService'
 import { getErrorMessage } from '@/lib/errors'
+import { useDirectory } from '@/hooks/useDirectory'
+import { directoryCategoryLabel } from '@/constants/directory'
+import { formatPhone, telHref, whatsappHref } from '@/utils/phone'
+import { toPlaceInfo } from './nearby.logic'
 
 const RADIUS_OPTIONS = [
   { label: '500 m', value: 500 },
@@ -53,6 +57,8 @@ export function useNearbyPlacesViewModel(condominiumId: string | null) {
 
   const [radius, setRadius] = useState(1000)
   const [hidden, setHidden] = useState<Set<PlaceCategory>>(new Set())
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const directoryQuery = useDirectory(condominiumId)
 
   const condominiumQuery = useCondominium(condominiumId)
   const placesQuery = useCondominiumPlaces(condominiumId)
@@ -91,13 +97,9 @@ export function useNearbyPlacesViewModel(condominiumId: string | null) {
     refresh.mutate({ condominium, regeocode: !point || addressChanged })
   }, [canRefresh, condominium, needsRefresh, point, addressChanged, refresh])
 
-  // Los servicios (plomeros, taxis...) viven en el marketplace, no en el mapa.
+  // Comercios, emergencias y servicios (plomeros, carpinteros, aseo...) dentro del radio.
   const placesInRadius = useMemo(
-    () =>
-      (placesQuery.data ?? []).filter(
-        (place) =>
-          place.distance <= radius && PLACE_CATEGORIES[place.category].group !== 'service',
-      ),
+    () => (placesQuery.data ?? []).filter((place) => place.distance <= radius),
     [placesQuery.data, radius],
   )
   const visiblePlaces = useMemo(
@@ -118,6 +120,29 @@ export function useNearbyPlacesViewModel(condominiumId: string | null) {
         active: !hidden.has(category),
       }))
   }, [placesInRadius, hidden])
+
+  const selectedPlace = useMemo(
+    () => (placesQuery.data ?? []).find((place) => place.id === selectedId) ?? null,
+    [placesQuery.data, selectedId],
+  )
+  const recommended = useMemo(
+    () =>
+      (directoryQuery.data ?? [])
+        .filter((contact) => contact.kind === 'SERVICE' && contact.is_active)
+        .map((contact) => ({
+          id: contact.id,
+          name: contact.name,
+          category: directoryCategoryLabel('SERVICE', contact.category),
+          description: contact.description,
+          phoneLabel: formatPhone(contact.phone ?? contact.whatsapp),
+          callHref: telHref(contact.phone),
+          whatsappHref: whatsappHref(
+            contact.whatsapp ?? contact.phone,
+            'Hola, te encontre en EdiFeasy.',
+          ),
+        })),
+    [directoryQuery.data],
+  )
 
   let status: NearbyPlacesStatus
   if (condominiumQuery.isLoading || placesQuery.isLoading) status = 'loading'
@@ -151,7 +176,17 @@ export function useNearbyPlacesViewModel(condominiumId: string | null) {
         return next
       }),
     visiblePlaces,
-    listedPlaces: visiblePlaces.slice(0, LIST_LIMIT) as NearbyPlace[],
+    listedPlaces: visiblePlaces.slice(0, LIST_LIMIT).map((place) => ({
+      place,
+      hasPhone: Boolean(place.phone),
+      hasWhatsapp: Boolean(whatsappHref(place.whatsapp ?? place.phone)),
+    })),
+    /** Ficha del lugar elegido en la lista o en el mapa. */
+    selectedPlace: selectedPlace ? toPlaceInfo(selectedPlace) : null,
+    selectPlace: (id: string | null) => setSelectedId(id),
+    placeInfo: (place: NearbyPlace) => toPlaceInfo(place),
+    /** Servicios que recomienda la administracion (no tienen ubicacion en el mapa). */
+    recommended,
     hiddenFromList: Math.max(0, visiblePlaces.length - LIST_LIMIT),
     placesError: placesQuery.isError,
     retryPlaces: () => void placesQuery.refetch(),

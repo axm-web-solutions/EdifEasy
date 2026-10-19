@@ -92,7 +92,7 @@ export function buildMarketItems(
       distanceLabel: formatDistance(place.distance),
       phoneLabel: formatPhone(place.phone),
       callHref: telHref(place.phone),
-      whatsappHref: whatsappHref(place.phone),
+      whatsappHref: whatsappHref(place.whatsapp ?? place.phone),
       directionsHref: directionsHref(place),
       website: place.website,
       hidden: false,

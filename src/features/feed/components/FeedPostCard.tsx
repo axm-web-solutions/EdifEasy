@@ -50,7 +50,9 @@ export function FeedPostCard({ post, onTogglePin, onRemove }: FeedPostCardProps)
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <span className="truncate text-sm font-semibold text-slate-800">{post.authorName}</span>
+              <span className="truncate text-sm font-semibold text-slate-800">
+                {post.authorName}
+              </span>
               {post.pinned ? (
                 <Tag bordered={false} color="gold" className="!m-0 inline-flex items-center gap-1">
                   <Pin size={12} /> Fijada
@@ -70,7 +72,12 @@ export function FeedPostCard({ post, onTogglePin, onRemove }: FeedPostCardProps)
           </div>
           {actions.length > 0 ? (
             <Dropdown menu={{ items: actions }} trigger={['click']} placement="bottomRight">
-              <Button type="text" size="small" aria-label="Opciones de la publicacion" icon={<MoreHorizontal size={16} />} />
+              <Button
+                type="text"
+                size="small"
+                aria-label="Opciones de la publicacion"
+                icon={<MoreHorizontal size={16} />}
+              />
             </Dropdown>
           ) : null}
         </header>

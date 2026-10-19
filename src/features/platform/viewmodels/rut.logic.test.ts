@@ -18,7 +18,13 @@ import {
  * la ciudad, el nombre del funcionario de la DIAN (casilla 984) y bloques de
  * representantes vacios.
  */
-const item = (page: number, x: number, y: number, text: string, width = text.length * 4): RutTextItem => ({
+const item = (
+  page: number,
+  x: number,
+  y: number,
+  text: string,
+  width = text.length * 4,
+): RutTextItem => ({
   page,
   x,
   y,
@@ -124,7 +130,9 @@ describe('parseRut', () => {
 
 describe('titleCase', () => {
   it('respeta conectores, P.H. y numeros romanos', () => {
-    expect(titleCase('EDIFICIO TORRES DEL PARQUE II P.H.')).toBe('Edificio Torres del Parque II P.H.')
+    expect(titleCase('EDIFICIO TORRES DEL PARQUE II P.H.')).toBe(
+      'Edificio Torres del Parque II P.H.',
+    )
   })
 })
 
@@ -165,7 +173,12 @@ describe('CREDENTIAL_COLUMNS', () => {
   it('clave temporal o aviso de cuenta existente', () => {
     const csv = toCsv(
       [
-        { unit: 'Casa 01', role: 'Propietario', email: '01.pinos@ventofast.com', password: 'Abc123xyz' },
+        {
+          unit: 'Casa 01',
+          role: 'Propietario',
+          email: '01.pinos@ventofast.com',
+          password: 'Abc123xyz',
+        },
         { unit: 'Administracion', role: 'Administrador', email: 'a@b.co', password: null },
       ],
       CREDENTIAL_COLUMNS,

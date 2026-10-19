@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { ImageUploadField } from '@/components/forms/ImageUploadField'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { FormDrawer } from '@/components/ui/FormDrawer'
@@ -66,7 +67,11 @@ export function CondominiumForm({
     const { primary_color, ...rest } = values
     onSubmit({
       ...(emptyToNull(rest) as TablesInsert<'condominiums'>),
-      settings: mergeSetting(condominium?.settings, 'primaryColor', resolvePrimaryColor(primary_color)),
+      settings: mergeSetting(
+        condominium?.settings,
+        'primaryColor',
+        resolvePrimaryColor(primary_color),
+      ),
     })
   })
 
@@ -111,11 +116,18 @@ export function CondominiumForm({
         </p>
         <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
           <ColorField control={control} name="primary_color" label="Color principal" />
-          <TextField
+          <ImageUploadField
             control={control}
             name="logo_url"
-            label="URL del logo"
-            placeholder="https://..."
+            label="Logo"
+            condominiumId={condominium?.id ?? null}
+            entity="logo"
+            shape="square"
+            help={
+              condominium
+                ? 'PNG con fondo transparente se ve mejor.'
+                : 'Guarda el conjunto primero para subir el logo.'
+            }
           />
         </div>
         <TextAreaField control={control} name="description" label="Descripcion" maxLength={1000} />

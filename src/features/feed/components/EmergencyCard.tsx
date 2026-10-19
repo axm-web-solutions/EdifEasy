@@ -1,5 +1,15 @@
 import { Button, Card, Skeleton, Tooltip } from 'antd'
-import { Ambulance, Flame, MessageCircle, Navigation, Pencil, Phone, Plus, Shield, Siren } from 'lucide-react'
+import {
+  Ambulance,
+  Flame,
+  MessageCircle,
+  Navigation,
+  Pencil,
+  Phone,
+  Plus,
+  Shield,
+  Siren,
+} from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { EmergencyLine } from '@/constants/directory'
 import type { CommunityContactRow } from '@/types/database'
@@ -22,13 +32,7 @@ const TONE_CLASS: Record<EmergencyLine['tone'], string> = {
   other: 'bg-slate-50 text-slate-800 ring-1 ring-slate-200 hover:bg-slate-100',
 }
 
-function ContactRow({
-  contact,
-  onEdit,
-}: {
-  contact: EmergencyContactView
-  onEdit?: () => void
-}) {
+function ContactRow({ contact, onEdit }: { contact: EmergencyContactView; onEdit?: () => void }) {
   return (
     <li className="flex items-center gap-3 py-2">
       <div className="min-w-0 flex-1">
@@ -41,7 +45,13 @@ function ContactRow({
       <div className="flex shrink-0 items-center gap-1">
         {onEdit ? (
           <Tooltip title="Editar">
-            <Button type="text" size="small" aria-label={`Editar ${contact.name}`} icon={<Pencil size={14} />} onClick={onEdit} />
+            <Button
+              type="text"
+              size="small"
+              aria-label={`Editar ${contact.name}`}
+              icon={<Pencil size={14} />}
+              onClick={onEdit}
+            />
           </Tooltip>
         ) : null}
         {contact.whatsappHref ? (

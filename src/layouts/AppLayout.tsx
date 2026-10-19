@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { Drawer, Grid, Layout } from 'antd'
 import { Outlet } from 'react-router-dom'
 import { Sidebar } from '@/components/layout/Sidebar'
@@ -8,6 +8,8 @@ import { useAlertsRealtime } from '@/hooks/useAlerts'
 import { useNotificationsRealtime } from '@/hooks/useNotifications'
 import { GlobalSearch } from '@/components/layout/GlobalSearch'
 import { TourAutoStart } from '@/components/tour/TourAutoStart'
+import { PageSkeleton } from '@/components/ui/states'
+import { preloadPages } from '@/routes/lazyPage'
 
 const { Header, Sider, Content } = Layout
 const { useBreakpoint } = Grid
@@ -19,7 +21,11 @@ function Brand({ collapsed }: { collapsed: boolean }) {
 
   return (
     <div className={`flex h-16 items-center gap-2 ${collapsed ? 'justify-center px-0' : 'px-4'}`}>
-      <img src={logoSrc} alt={name} className="h-8 w-8 shrink-0 rounded bg-white/10 object-contain p-0.5" />
+      <img
+        src={logoSrc}
+        alt={name}
+        className="h-8 w-8 shrink-0 rounded bg-white/10 object-contain p-0.5"
+      />
       {!collapsed ? (
         <div className="min-w-0">
           <p className="m-0 truncate text-base font-semibold text-white">{name}</p>
@@ -40,6 +46,9 @@ export function AppLayout() {
   // Suscripciones Realtime activas mientras el usuario navega la aplicacion.
   useAlertsRealtime(currentCondominiumId)
   useNotificationsRealtime()
+
+  // Con la sesion abierta se precargan las demas pantallas en segundo plano.
+  useEffect(() => preloadPages(), [])
 
   return (
     <Layout className="min-h-screen">
@@ -84,7 +93,10 @@ export function AppLayout() {
 
         <Content className="app-shell-content">
           <TourAutoStart />
-          <Outlet />
+          {/* El cargador queda dentro del contenido: menu y barra superior no desaparecen. */}
+          <Suspense fallback={<PageSkeleton />}>
+            <Outlet />
+          </Suspense>
         </Content>
       </Layout>
     </Layout>

@@ -17,7 +17,9 @@ const ROLE_AUDIENCE: Record<string, string> = {
   SERVICE_STAFF: 'Personal de servicio',
 }
 
-export function audienceLabel(post: Pick<FeedPost, 'audience' | 'building' | 'audience_role'>): string {
+export function audienceLabel(
+  post: Pick<FeedPost, 'audience' | 'building' | 'audience_role'>,
+): string {
   switch (post.audience) {
     case 'BUILDING':
       return post.building?.name ?? 'Un bloque'

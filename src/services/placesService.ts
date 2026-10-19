@@ -48,6 +48,7 @@ export type PlaceCategory =
   | 'painter'
   | 'appliance_repair'
   | 'gardening'
+  | 'domestic'
   | 'hardware'
   | 'mechanic'
   | 'veterinary'
@@ -70,6 +71,9 @@ export interface NearbyPlace {
   address: string | null
   phone: string | null
   website: string | null
+  whatsapp: string | null
+  /** Horario en formato de OpenStreetMap (p. ej. "Mo-Fr 08:00-18:00"). */
+  openingHours: string | null
 }
 
 export const PLACE_CATEGORIES: Record<
@@ -98,6 +102,7 @@ export const PLACE_CATEGORIES: Record<
   painter: { label: 'Pintores', hex: '#be185d', group: 'service' },
   appliance_repair: { label: 'Tecnicos de electrodomesticos', hex: '#4338ca', group: 'service' },
   gardening: { label: 'Jardineria', hex: '#15803d', group: 'service' },
+  domestic: { label: 'Servicio domestico y empleo', hex: '#9333ea', group: 'service' },
   hardware: { label: 'Ferreterias', hex: '#c2410c', group: 'service' },
   mechanic: { label: 'Talleres', hex: '#334155', group: 'service' },
   veterinary: { label: 'Veterinarias', hex: '#7e22ce', group: 'service' },
@@ -146,6 +151,7 @@ const OVERPASS_SELECTORS: Record<PlaceCategory, string[]> = {
   painter: ['nwr["craft"="painter"]'],
   appliance_repair: ['nwr["craft"~"^(electronics_repair|appliance_repair|hvac)$"]'],
   gardening: ['nwr["craft"="gardener"]', 'nwr["shop"="garden_centre"]'],
+  domestic: ['nwr["office"="employment_agency"]'],
   hardware: ['nwr["shop"~"^(hardware|doityourself|paint)$"]'],
   mechanic: ['nwr["shop"~"^(car_repair|tyres|motorcycle_repair)$"]'],
   veterinary: ['nwr["amenity"="veterinary"]'],
@@ -180,8 +186,10 @@ function categorize(tags: Record<string, string>): PlaceCategory | null {
   if (tags.craft === 'electrician') return 'electrician'
   if (tags.craft === 'locksmith' || tags.shop === 'locksmith') return 'locksmith'
   if (tags.craft === 'painter') return 'painter'
-  if (['electronics_repair', 'appliance_repair', 'hvac'].includes(tags.craft)) return 'appliance_repair'
+  if (['electronics_repair', 'appliance_repair', 'hvac'].includes(tags.craft))
+    return 'appliance_repair'
   if (tags.craft === 'gardener' || tags.shop === 'garden_centre') return 'gardening'
+  if (tags.office === 'employment_agency') return 'domestic'
   if (['hardware', 'doityourself', 'paint'].includes(tags.shop)) return 'hardware'
   if (['car_repair', 'tyres', 'motorcycle_repair'].includes(tags.shop)) return 'mechanic'
   if (tags.shop === 'mall' || tags.shop === 'department_store') return 'mall'
@@ -222,6 +230,12 @@ function pickPhone(tags: Record<string, string>): string | null {
     tags['contact:mobile'] ??
     tags.mobile ??
     tags['contact:whatsapp']
+  const first = raw?.split(/[;,]/)[0]?.trim()
+  return first ? first.slice(0, 60) : null
+}
+
+function pickWhatsapp(tags: Record<string, string>): string | null {
+  const raw = tags['contact:whatsapp'] ?? tags.whatsapp
   const first = raw?.split(/[;,]/)[0]?.trim()
   return first ? first.slice(0, 60) : null
 }
@@ -270,6 +284,8 @@ function toPlaces(
       address: buildAddress(tags),
       phone: pickPhone(tags),
       website: pickWebsite(tags),
+      whatsapp: pickWhatsapp(tags),
+      openingHours: tags.opening_hours?.slice(0, 200) ?? null,
     })
   }
   return places.sort((a, b) => a.distance - b.distance)
@@ -304,7 +320,9 @@ export const placesService = {
   async listCached(condominiumId: string): Promise<NearbyPlace[]> {
     const { data, error } = await supabase
       .from('condominium_places')
-      .select('osm_id, name, category, latitude, longitude, distance_m, address, phone, website')
+      .select(
+        'osm_id, name, category, latitude, longitude, distance_m, address, phone, website, whatsapp, opening_hours',
+      )
       .eq('condominium_id', condominiumId)
       .order('distance_m', { ascending: true })
     if (error) throw toAppError(error)
@@ -320,6 +338,8 @@ export const placesService = {
         address: row.address,
         phone: row.phone,
         website: row.website,
+        whatsapp: row.whatsapp,
+        openingHours: row.opening_hours,
       }))
   },
 
@@ -371,6 +391,8 @@ export const placesService = {
         address: place.address,
         phone: place.phone,
         website: place.website,
+        whatsapp: place.whatsapp,
+        opening_hours: place.openingHours,
       })),
     })
     if (error) throw toAppError(error)
