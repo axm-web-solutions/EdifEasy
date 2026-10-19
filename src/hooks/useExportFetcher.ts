@@ -2,7 +2,7 @@ import { useCallback } from 'react'
 import type { ListParams, ListResult } from '@/types/models'
 
 /** Filas que se exportan como maximo (la exportacion ignora la paginacion). */
-export const EXPORT_LIMIT = 1000
+const EXPORT_LIMIT = 1000
 
 /**
  * Funcion de exportacion para `DataTable`: vuelve a pedir el listado con los

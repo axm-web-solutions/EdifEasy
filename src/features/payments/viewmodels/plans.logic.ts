@@ -5,7 +5,7 @@ import type { SubscriptionRow } from '@/types/database'
  * Umbral de la tarifa por tamano del conjunto. El precio real lo calcula la
  * base (`subscription_quote`); esto solo explica la tarifa en pantalla.
  */
-export const LARGE_CONDOMINIUM_FROM = 80
+const LARGE_CONDOMINIUM_FROM = 80
 
 export type PlanState = 'active' | 'expired' | 'none'
 

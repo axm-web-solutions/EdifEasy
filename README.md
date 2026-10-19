@@ -391,17 +391,13 @@ En la aplicacion esto se traduce en:
 
 ---
 
-## 12. Edge Function (opcional)
+## 12. Invitaciones
 
-`invite-member` permite invitar usuarios que **todavia no tienen cuenta** (requiere la
-service role key, por eso vive en el servidor).
-
-```bash
-supabase functions deploy invite-member
-```
-
-Sin desplegarla, el modulo de Usuarios sigue funcionando: vincula por correo a usuarios ya
-registrados mediante el RPC `add_member_by_email`.
+Los usuarios que **todavia no tienen cuenta** se invitan con el RPC `create_invitation`
+(panel de invitaciones en Usuarios). Cuando la persona crea su cuenta con ese correo,
+`claim_my_invitations` la vincula al condominio con el rol invitado. Los usuarios ya
+registrados se vinculan directamente con `add_member_by_email`. No se requiere ninguna
+Edge Function para esto.
 
 ---
 
@@ -667,7 +663,7 @@ Estas quedan fuera del codigo y dependen de tu proyecto:
    `installSentryTransport` (ver `src/lib/logger.ts`).
 2. **Correo transaccional**: configura un SMTP propio en Supabase para produccion
    (el SMTP por defecto tiene limites bajos).
-3. **Edge Function `invite-member`**: desplegarla si quieres invitar usuarios nuevos por correo.
+3. **Edge Functions de pagos** (`wompi-payments`, `wompi-webhook`): ver `supabase/functions/README-pagos.md`.
 4. **Exportacion a Excel/PDF**: la arquitectura ya esta lista en `src/utils/export.ts`;
    basta instalar `xlsx` o `jspdf` y marcar el exportador como `available`.
 5. **Dominio propio** en Vercel y su registro en las Redirect URLs de Supabase.

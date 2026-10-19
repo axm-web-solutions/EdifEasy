@@ -5,12 +5,12 @@
 
 export type Rgb = [number, number, number]
 
-export function hexToRgb(hex: string): Rgb {
+function hexToRgb(hex: string): Rgb {
   const value = hex.replace('#', '')
   return [0, 2, 4].map((index) => parseInt(value.slice(index, index + 2), 16)) as Rgb
 }
 
-export function rgbToHex([r, g, b]: Rgb): string {
+function rgbToHex([r, g, b]: Rgb): string {
   return `#${[r, g, b]
     .map((channel) => Math.round(Math.min(255, Math.max(0, channel))).toString(16).padStart(2, '0'))
     .join('')}`
@@ -24,7 +24,7 @@ export function mix(color: string, target: string, amount: number): string {
 }
 
 /** Luminancia relativa segun WCAG 2.x. */
-export function relativeLuminance(hex: string): number {
+function relativeLuminance(hex: string): number {
   const [r, g, b] = hexToRgb(hex).map((channel) => {
     const value = channel / 255
     return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4

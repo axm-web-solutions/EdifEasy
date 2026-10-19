@@ -65,7 +65,8 @@ const OVERPASS_URLS = [
   'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
   'https://overpass.kumi.systems/api/interpreter',
 ]
-const OVERPASS_TIMEOUT_MS = 20000
+// La consulta en paralelo se cancela si nadie responde en 3 veces este tiempo.
+const OVERPASS_TIMEOUT_MS = 12000
 const PER_CATEGORY_LIMIT = 120
 
 /** Filtros de OpenStreetMap que alimentan cada categoria. */
@@ -127,6 +128,39 @@ function buildAddress(tags: Record<string, string>): string | null {
   return street || null
 }
 
+interface OverpassElement {
+  type: string
+  id: number
+  lat?: number
+  lon?: number
+  center?: { lat: number; lon: number }
+  tags?: Record<string, string>
+}
+
+/** Elementos de Overpass -> lugares con categoria, dentro del radio y ordenados por cercania. */
+function toPlaces(
+  elements: OverpassElement[],
+  center: { lat: number; lon: number },
+  radius: number,
+): NearbyPlace[] {
+  const places: NearbyPlace[] = []
+  const seen = new Set<string>()
+  for (const element of elements) {
+    const id = `${element.type}/${element.id}`
+    if (seen.has(id)) continue
+    seen.add(id)
+    const tags = element.tags ?? {}
+    const category = categorize(tags)
+    const lat = element.lat ?? element.center?.lat
+    const lon = element.lon ?? element.center?.lon
+    if (!category || lat === undefined || lon === undefined || !tags.name) continue
+    const distance = distanceInMeters(center, { lat, lon })
+    if (distance > radius) continue
+    places.push({ id, name: tags.name, category, lat, lon, distance, address: buildAddress(tags) })
+  }
+  return places.sort((a, b) => a.distance - b.distance)
+}
+
 /** Radio con el que se guardan los lugares; la vista filtra radios menores. */
 export const NEARBY_FETCH_RADIUS = 2000
 /** Cada cuanto se refrescan los lugares guardados. */
@@ -159,6 +193,24 @@ export const placesService = {
         distance: row.distance_m,
         address: row.address,
       }))
+  },
+
+  /**
+   * Guarda solo las coordenadas del conjunto, sin tocar sus lugares: asi el mapa
+   * aparece en cuanto se ubica la direccion, aunque Overpass tarde o falle.
+   */
+  async saveCoordinates(condominiumId: string, location: GeoPoint & { source: string }) {
+    const { error } = await supabase
+      .from('condominiums')
+      .update({
+        latitude: Number(location.lat.toFixed(6)),
+        longitude: Number(location.lon.toFixed(6)),
+        location_label: location.label,
+        location_approximate: location.approximate,
+        location_source: location.source,
+      })
+      .eq('id', condominiumId)
+    if (error) throw toAppError(error)
   },
 
   /**
@@ -246,64 +298,38 @@ export const placesService = {
     })
     const query = ['[out:json][timeout:25];', ...groups].join('\n')
 
-    let lastError: unknown = null
-    for (const url of OVERPASS_URLS) {
-      const controller = new AbortController()
-      const abort = () => controller.abort()
-      signal?.addEventListener('abort', abort)
-      const timer = setTimeout(abort, OVERPASS_TIMEOUT_MS)
-      try {
-        const response = await fetch(url, {
-          method: 'POST',
-          body: new URLSearchParams({ data: query }),
-          signal: controller.signal,
-        })
-        if (!response.ok) throw new Error(`Overpass respondio ${response.status}`)
-        const json = (await response.json()) as {
-          elements: {
-            type: string
-            id: number
-            lat?: number
-            lon?: number
-            center?: { lat: number; lon: number }
-            tags?: Record<string, string>
-          }[]
-        }
+    // Se consultan todos los servidores a la vez y gana el primero que responda;
+    // al llegar una respuesta valida se cancelan los demas. Solo ocurre una vez
+    // por conjunto cada PLACES_MAX_AGE_DAYS, asi que la carga extra es minima.
+    const controllers = OVERPASS_URLS.map(() => new AbortController())
+    const abortAll = () => controllers.forEach((controller) => controller.abort())
+    signal?.addEventListener('abort', abortAll)
+    const timer = setTimeout(abortAll, OVERPASS_TIMEOUT_MS * 3)
 
-        const places: NearbyPlace[] = []
-        const seen = new Set<string>()
-        for (const element of json.elements) {
-          const id = `${element.type}/${element.id}`
-          if (seen.has(id)) continue
-          seen.add(id)
-          const tags = element.tags ?? {}
-          const category = categorize(tags)
-          const lat = element.lat ?? element.center?.lat
-          const lon = element.lon ?? element.center?.lon
-          if (!category || lat === undefined || lon === undefined || !tags.name) continue
-          const distance = distanceInMeters(center, { lat, lon })
-          if (distance > radius) continue
-          places.push({
-            id,
-            name: tags.name,
-            category,
-            lat,
-            lon,
-            distance,
-            address: buildAddress(tags),
-          })
-        }
-        return places.sort((a, b) => a.distance - b.distance)
-      } catch (error) {
-        if (signal?.aborted) throw error
-        lastError = error
-      } finally {
-        clearTimeout(timer)
-        signal?.removeEventListener('abort', abort)
-      }
+    const ask = async (url: string, controller: AbortController): Promise<OverpassElement[]> => {
+      const response = await fetch(url, {
+        method: 'POST',
+        body: new URLSearchParams({ data: query }),
+        signal: controller.signal,
+      })
+      if (!response.ok) throw new Error(`Overpass respondio ${response.status}`)
+      const json = (await response.json()) as { elements?: OverpassElement[] }
+      if (!Array.isArray(json.elements)) throw new Error('Respuesta invalida de Overpass')
+      return json.elements
     }
-    throw lastError instanceof Error
-      ? lastError
-      : new Error('No se pudieron cargar los lugares cercanos')
+
+    try {
+      const elements = await Promise.any(
+        OVERPASS_URLS.map((url, index) => ask(url, controllers[index])),
+      )
+      return toPlaces(elements, center, radius)
+    } catch (error) {
+      if (signal?.aborted) throw error
+      throw new Error('No se pudieron cargar los lugares cercanos')
+    } finally {
+      clearTimeout(timer)
+      abortAll()
+      signal?.removeEventListener('abort', abortAll)
+    }
   },
 }

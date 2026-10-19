@@ -8,7 +8,7 @@ const PAYMENT_METHOD_LABEL: Record<string, string> = {
 }
 
 /** Dia del mes por defecto como fecha limite de pago. */
-export const DEFAULT_DUE_DAY = 10
+const DEFAULT_DUE_DAY = 10
 
 /** "2026-10-01" -> "octubre de 2026" */
 export function formatPeriod(period: string): string {

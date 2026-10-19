@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { userService, type InviteMemberInput } from '@/services/userService'
+import { userService } from '@/services/userService'
 import { queryKeys } from '@/lib/queryKeys'
 import { notify } from '@/lib/notify'
 import type { RoleCode, TablesUpdate } from '@/types/database'
@@ -51,16 +51,6 @@ export function useMemberMutations() {
     },
   })
 
-  const invite = useMutation({
-    mutationFn: (input: InviteMemberInput) => userService.inviteMember(input),
-    onSuccess: (result) => {
-      notify.success(
-        result.invited ? 'Invitacion enviada por correo' : 'Usuario vinculado al condominio',
-      )
-      invalidate()
-    },
-  })
-
   const update = useMutation({
     mutationFn: ({ id, values }: { id: string; values: TablesUpdate<'condominium_members'> }) =>
       userService.updateMember(id, values),
@@ -78,5 +68,5 @@ export function useMemberMutations() {
     },
   })
 
-  return { addByEmail, invite, update, remove }
+  return { addByEmail, update, remove }
 }

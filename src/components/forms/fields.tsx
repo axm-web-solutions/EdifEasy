@@ -199,7 +199,7 @@ export function NumberField<TFieldValues extends FieldValues>({
             max={max}
             step={step}
             precision={precision}
-            addonBefore={addonBefore}
+            prefix={addonBefore}
             placeholder={placeholder}
             disabled={disabled}
           />

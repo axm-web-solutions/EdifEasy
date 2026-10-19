@@ -109,7 +109,7 @@ describe('InvitationsPanel', () => {
       email: 'vocero@conjunto.com',
       user_exists: false,
     })
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
 
     renderWithProviders(<InvitationsPanel condominiumId={CONDOMINIUM_ID} />)
 
@@ -133,7 +133,7 @@ describe('InvitationsPanel', () => {
   it('no llama al servidor si el correo es invalido', async () => {
     vi.spyOn(invitationService, 'list').mockResolvedValue([])
     const create = vi.spyOn(invitationService, 'create')
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
 
     renderWithProviders(<InvitationsPanel condominiumId={CONDOMINIUM_ID} />)
 

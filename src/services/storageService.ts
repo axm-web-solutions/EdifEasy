@@ -12,11 +12,11 @@ import type { AttachmentMeta } from '@/types/models'
 const BUCKET_MAX_SIZE: Record<StorageBucket, number> = {
   documents: 25 * 1024 * 1024,
   avatars: 2 * 1024 * 1024,
-  incidentEvidence: 25 * 1024 * 1024,
+  'incident-evidence': 25 * 1024 * 1024,
   invoices: 25 * 1024 * 1024,
   announcements: 25 * 1024 * 1024,
   signatures: 5 * 1024 * 1024,
-  reportImages: 25 * 1024 * 1024,
+  'report-images': 25 * 1024 * 1024,
 }
 
 const ALLOWED_MIME = new Set([

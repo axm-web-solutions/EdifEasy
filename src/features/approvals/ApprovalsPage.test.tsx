@@ -54,7 +54,7 @@ describe('ApprovalsPage', () => {
   it('exige un motivo para poder rechazar', async () => {
     vi.spyOn(registrationService, 'forReview').mockResolvedValue([PENDING])
     const reject = vi.spyOn(registrationService, 'reject').mockResolvedValue(undefined)
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
 
     renderWithProviders(<ApprovalsPage />)
 

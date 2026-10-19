@@ -21,9 +21,6 @@ const PAYMENT_SELECT = `
   payer:profiles(id, full_name, email)
 `
 
-/** Path al que Wompi devuelve al usuario (ver la Edge Function `wompi-payments`). */
-export const PAYMENT_RESULT_PATH = '/payments/result'
-
 interface FunctionResponse {
   ok?: boolean
   error?: string

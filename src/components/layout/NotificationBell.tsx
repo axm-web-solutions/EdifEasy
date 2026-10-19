@@ -112,7 +112,7 @@ export function NotificationBell() {
       onOpenChange={setOpen}
       trigger={['click']}
       placement="bottomRight"
-      dropdownRender={() => panel}
+      popupRender={() => panel}
     >
       <Button type="text" aria-label="Notificaciones">
         <Badge count={unread} size="small" overflowCount={99}>

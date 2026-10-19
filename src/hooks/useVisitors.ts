@@ -13,14 +13,6 @@ export function useVisitors(condominiumId: string | null, params: ListParams) {
   })
 }
 
-export function useRecentVisitors(condominiumId: string | null, limit = 10) {
-  return useQuery({
-    queryKey: queryKeys.visitors.recent(condominiumId ?? ''),
-    queryFn: () => visitorService.listRecent(condominiumId as string, limit),
-    enabled: Boolean(condominiumId),
-  })
-}
-
 export function useVisitorMutations() {
   const queryClient = useQueryClient()
   const invalidate = () => {

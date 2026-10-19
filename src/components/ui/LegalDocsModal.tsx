@@ -90,4 +90,3 @@ export function LegalDocsModal({ open, initialSection, onClose }: LegalDocsModal
   )
 }
 
-export default LegalDocsModal

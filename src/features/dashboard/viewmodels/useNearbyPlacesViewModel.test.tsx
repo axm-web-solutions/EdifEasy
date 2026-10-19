@@ -34,6 +34,7 @@ let current: CondominiumRow = condominium
 const geocode = vi.fn()
 const nearby = vi.fn()
 const saveLocation = vi.fn()
+const saveCoordinates = vi.fn()
 
 vi.mock('@/services/condominiumService', () => ({
   condominiumService: { getById: vi.fn(async () => current) },
@@ -48,6 +49,7 @@ vi.mock('@/services/placesService', async (importOriginal) => {
       geocode: (...args: unknown[]) => geocode(...args),
       nearby: (...args: unknown[]) => nearby(...args),
       saveLocation: (...args: unknown[]) => saveLocation(...args),
+      saveCoordinates: (...args: unknown[]) => saveCoordinates(...args),
     },
   }
 })
@@ -70,6 +72,7 @@ describe('useNearbyPlacesViewModel', () => {
     geocode.mockReset().mockResolvedValue({ lat: 4.55, lon: -75.65, label: 'Horeb', approximate: false })
     nearby.mockReset().mockResolvedValue([])
     saveLocation.mockReset().mockResolvedValue(0)
+    saveCoordinates.mockReset().mockResolvedValue(undefined)
   })
 
   it('un residente nunca consulta OpenStreetMap: ve "ubicacion pendiente"', async () => {
@@ -85,6 +88,8 @@ describe('useNearbyPlacesViewModel', () => {
 
     await waitFor(() => expect(saveLocation).toHaveBeenCalledTimes(1))
     expect(geocode).toHaveBeenCalledTimes(1)
+    // Las coordenadas se guardan antes de consultar los lugares (el mapa aparece ya).
+    expect(saveCoordinates.mock.invocationCallOrder[0]).toBeLessThan(nearby.mock.invocationCallOrder[0])
     expect(nearby).toHaveBeenCalledWith(expect.objectContaining({ lat: 4.55, lon: -75.65 }), 2000)
     expect(saveLocation.mock.calls[0][1]).toMatchObject({ source: 'Horeb, Armenia, Colombia' })
   })

@@ -12,14 +12,14 @@ import {
 } from '@/services/placesService'
 import { getErrorMessage } from '@/lib/errors'
 
-export const RADIUS_OPTIONS = [
+const RADIUS_OPTIONS = [
   { label: '500 m', value: 500 },
   { label: '1 km', value: 1000 },
   { label: '2 km', value: 2000 },
 ]
 
 /** Cuantos lugares se listan como maximo (el mapa los muestra todos). */
-export const LIST_LIMIT = 60
+const LIST_LIMIT = 60
 
 /**
  * Estados de la tarjeta:

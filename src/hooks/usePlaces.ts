@@ -49,8 +49,15 @@ export function useRefreshCondominiumLocation() {
         if (!point) return 'not-found'
         location = { ...point, source }
         center = point
+        // Fase 1: el mapa aparece ya, mientras se consultan los lugares (puede tardar).
+        await placesService.saveCoordinates(condominium.id, location)
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.condominiums.detail(condominium.id),
+        })
       }
 
+      // Fase 2: lugares cercanos. Si falla, el conjunto queda ubicado y se reintenta
+      // en la siguiente visita (places_updated_at sigue vacio).
       const places = await placesService.nearby(center, NEARBY_FETCH_RADIUS)
       await placesService.saveLocation(condominium.id, location, places)
       return 'saved'

@@ -7,16 +7,6 @@ import type { ListParams, ListResult, MemberWithRelations } from '@/types/models
 const MEMBER_SELECT =
   '*, profile:profiles(id, full_name, email, avatar_url, phone), role:roles(id, code, name, level)'
 
-export interface InviteMemberInput {
-  condominiumId: string
-  email: string
-  fullName: string
-  roleCode: RoleCode
-  phone?: string | null
-  documentNumber?: string | null
-  position?: string | null
-}
-
 export const userService = {
   /** Miembros del condominio (usuarios + rol). */
   async listMembers(condominiumId: string, params: ListParams): Promise<ListResult<MemberWithRelations>> {
@@ -112,41 +102,5 @@ export const userService = {
   async removeMember(id: string): Promise<void> {
     const { error } = await supabase.from('condominium_members').delete().eq('id', id)
     if (error) throw toAppError(error)
-  },
-
-  /**
-   * Invita a un usuario que TODAVIA no tiene cuenta.
-   * Requiere la Edge Function `invite-member` desplegada (usa service role key).
-   */
-  async inviteMember(input: InviteMemberInput): Promise<{ user_id: string; invited: boolean }> {
-    const { data, error } = await supabase.functions.invoke<{
-      ok: boolean
-      user_id: string
-      member_id: string
-      invited: boolean
-      error?: string
-    }>('invite-member', {
-      body: {
-        condominium_id: input.condominiumId,
-        email: input.email,
-        full_name: input.fullName,
-        role_code: input.roleCode,
-        phone: input.phone ?? null,
-        document_number: input.documentNumber ?? null,
-        position: input.position ?? null,
-      },
-    })
-
-    if (error) {
-      throw toAppError({
-        message:
-          'No se pudo invitar al usuario. Verifica que la Edge Function `invite-member` este desplegada ' +
-          '(supabase functions deploy invite-member) o vincula un usuario ya registrado.',
-        code: 'EDGE_FUNCTION',
-      })
-    }
-    if (!data?.ok) throw toAppError({ message: data?.error ?? 'No se pudo invitar al usuario' })
-
-    return { user_id: data.user_id, invited: data.invited }
   },
 }

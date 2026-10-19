@@ -41,9 +41,6 @@ file_size_limit = "25MiB"
 [realtime]
 enabled = true
 
-[functions.invite-member]
-verify_jwt = true
-
 [functions.wompi-payments]
 verify_jwt = true
 

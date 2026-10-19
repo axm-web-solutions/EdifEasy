@@ -26,8 +26,9 @@ export const visitorService = {
       .eq('condominium_id', condominiumId)
       .order('created_at', { ascending: false })
       .limit(limit)
+      .returns<VisitorWithRelations[]>()
     if (error) throw toAppError(error)
-    return (data ?? []) as VisitorWithRelations[]
+    return data ?? []
   },
 
   async create(values: TablesInsert<'visitors'>): Promise<VisitorRow> {

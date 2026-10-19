@@ -206,7 +206,7 @@ function AdminFeesManager() {
               step={10000}
               value={generator.amount}
               onChange={generator.setAmount}
-              addonBefore="$"
+              prefix="$"
               formatter={(value) => `${value ?? ''}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
               parser={(value) => Number((value ?? '').replace(/\./g, ''))}
               placeholder="350.000"
