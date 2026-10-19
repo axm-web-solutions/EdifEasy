@@ -49,6 +49,7 @@ export const STORAGE_BUCKETS = {
   announcements: 'announcements',
   signatures: 'signatures',
   reportImages: 'report-images',
+  marketplace: 'marketplace',
 } as const
 
 export type StorageBucket = (typeof STORAGE_BUCKETS)[keyof typeof STORAGE_BUCKETS]

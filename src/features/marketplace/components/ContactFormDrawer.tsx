@@ -35,7 +35,13 @@ export function ContactFormDrawer({ form }: { form: ContactFormViewModel }) {
     >
       <form onSubmit={form.submit} noValidate>
         {!form.editingId ? (
-          <SelectField control={form.control} name="kind" label="Tipo" required options={form.kindOptions} />
+          <SelectField
+            control={form.control}
+            name="kind"
+            label="Tipo"
+            required
+            options={form.kindOptions}
+          />
         ) : null}
         <SelectField
           control={form.control}
@@ -53,8 +59,18 @@ export function ContactFormDrawer({ form }: { form: ContactFormViewModel }) {
           placeholder={form.kind === 'EMERGENCY' ? 'Cuadrante 12 - Policia' : 'Plomeria Don Jorge'}
         />
         <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
-          <TextField control={form.control} name="phone" label="Telefono" placeholder="310 000 0000" />
-          <TextField control={form.control} name="whatsapp" label="WhatsApp" placeholder="310 000 0000" />
+          <TextField
+            control={form.control}
+            name="phone"
+            label="Telefono"
+            placeholder="310 000 0000"
+          />
+          <TextField
+            control={form.control}
+            name="whatsapp"
+            label="WhatsApp"
+            placeholder="310 000 0000"
+          />
         </div>
         <TextAreaField
           control={form.control}
@@ -66,7 +82,12 @@ export function ContactFormDrawer({ form }: { form: ContactFormViewModel }) {
             form.kind === 'EMERGENCY' ? 'Atiende 24 horas' : 'Arreglos de tuberia y calentadores'
           }
         />
-        <TextField control={form.control} name="address" label="Direccion (opcional)" maxLength={200} />
+        <TextField
+          control={form.control}
+          name="address"
+          label="Direccion (opcional)"
+          maxLength={200}
+        />
         <SwitchField control={form.control} name="is_active" label="Visible para los residentes" />
       </form>
     </FormDrawer>

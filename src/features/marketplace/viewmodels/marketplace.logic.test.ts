@@ -50,7 +50,13 @@ describe('buildMarketItems', () => {
     ],
     [
       place({ id: 'n2', distance: 900 }),
-      place({ id: 'n1', name: 'Taxis Libres', category: 'taxi', distance: 100, phone: '6067451234' }),
+      place({
+        id: 'n1',
+        name: 'Taxis Libres',
+        category: 'taxi',
+        distance: 100,
+        phone: '6067451234',
+      }),
       place({ id: 'n3', name: 'Parque', category: 'park' }),
       place({ id: 'n4', name: 'Pizzeria', category: 'restaurant', distance: 50 }),
     ],
@@ -78,9 +84,13 @@ describe('buildMarketItems', () => {
   })
 
   it('filtra por categoria, telefono y texto sin tildes', () => {
-    expect(filterMarketItems(items, { category: 'taxi', search: '', onlyWithPhone: false })).toHaveLength(1)
     expect(
-      filterMarketItems(items, { category: null, search: '', onlyWithPhone: true }).map((item) => item.name),
+      filterMarketItems(items, { category: 'taxi', search: '', onlyWithPhone: false }),
+    ).toHaveLength(1)
+    expect(
+      filterMarketItems(items, { category: null, search: '', onlyWithPhone: true }).map(
+        (item) => item.name,
+      ),
     ).toEqual(['Plomeria Don Jorge', 'Trasteos Rapidos', 'Taxis Libres'])
     expect(
       filterMarketItems(items, { category: null, search: 'tubérias', onlyWithPhone: false }).map(

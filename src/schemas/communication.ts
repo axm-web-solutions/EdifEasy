@@ -29,7 +29,11 @@ export const alertSchema = z
   })
   .superRefine((values, ctx) => {
     if (values.audience === 'BUILDING' && !values.building_id) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['building_id'], message: 'Selecciona un bloque' })
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['building_id'],
+        message: 'Selecciona un bloque',
+      })
     }
     if (values.audience === 'APARTMENT' && !values.apartment_id) {
       ctx.addIssue({
@@ -62,7 +66,11 @@ export const announcementSchema = z
   })
   .superRefine((values, ctx) => {
     if (values.audience === 'BUILDING' && !values.building_id) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['building_id'], message: 'Selecciona un bloque' })
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['building_id'],
+        message: 'Selecciona un bloque',
+      })
     }
     if (values.audience === 'ROLE' && !values.audience_role_id) {
       ctx.addIssue({
@@ -86,7 +94,11 @@ export const feedPostSchema = z
   })
   .superRefine((values, ctx) => {
     if (values.audience === 'BUILDING' && !values.building_id) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['building_id'], message: 'Selecciona un bloque' })
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['building_id'],
+        message: 'Selecciona un bloque',
+      })
     }
     if (values.audience === 'ROLE' && !values.audience_role_id) {
       ctx.addIssue({

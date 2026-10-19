@@ -6,7 +6,13 @@ import { useActiveAlerts } from '@/hooks/useAlerts'
 import type { ModuleKey } from '@/constants/modules'
 import { formatCompactCurrency, formatNumber } from '@/utils/format'
 
-export type QuickAccessKey = 'alerts' | 'requests' | 'messages' | 'fines' | 'apartment'
+export type QuickAccessKey =
+  | 'alerts'
+  | 'requests'
+  | 'reservations'
+  | 'messages'
+  | 'fines'
+  | 'apartment'
 
 interface QuickAccess {
   key: QuickAccessKey
@@ -75,6 +81,13 @@ export function useResidentSummaryViewModel() {
         value: formatNumber(stats?.open_requests ?? 0),
         to: '/requests',
         module: 'requests',
+      },
+      {
+        key: 'reservations',
+        title: 'Reservar zona comun',
+        value: '',
+        to: '/requests?tab=reservas',
+        module: 'reservations',
       },
       {
         key: 'messages',

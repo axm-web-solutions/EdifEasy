@@ -33,6 +33,12 @@ export const NAVIGATION: NavItem[] = [
     children: [
       { key: 'platform-condominiums', label: 'Conjuntos', path: '/platform', icon: 'Building' },
       {
+        key: 'platform-legal',
+        label: 'Cumplimiento legal',
+        path: '/platform/legal',
+        icon: 'Scale',
+      },
+      {
         key: 'platform-modules',
         label: 'Modulos por rol',
         path: '/platform/modules',

@@ -1,6 +1,6 @@
 import { Alert, Card, Skeleton } from 'antd'
 import { Link } from 'react-router-dom'
-import { ChevronRight, FileQuestion, Gavel, Home, MessageCircle, Siren, Store } from 'lucide-react'
+import { CalendarClock, ChevronRight, FileQuestion, Gavel, Home, MessageCircle, Siren, Store } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type {
   QuickAccessKey,
@@ -12,6 +12,7 @@ const ICONS: Record<QuickAccessKey, ReactNode> = {
   alerts: <Siren size={18} />,
   fines: <Gavel size={18} />,
   requests: <FileQuestion size={18} />,
+  reservations: <CalendarClock size={18} />,
   messages: <MessageCircle size={18} />,
 }
 

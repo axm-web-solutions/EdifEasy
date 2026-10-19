@@ -181,6 +181,15 @@ export const paymentService = {
     return data.checkout_url as string
   },
 
+  async startReservationCheckout(reservationId: string): Promise<string> {
+    const data = await invokePayments({
+      action: 'reservation',
+      reservation_id: reservationId,
+      origin: window.location.origin,
+    })
+    return data.checkout_url as string
+  },
+
   async startSubscriptionCheckout(condominiumId: string, period: PlanPeriod): Promise<string> {
     const data = await invokePayments({
       action: 'subscription',

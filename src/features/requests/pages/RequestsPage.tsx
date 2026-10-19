@@ -1,5 +1,17 @@
 import { useState } from 'react'
-import { Avatar, Button, Drawer, Input, List, Space, Tag, Timeline, Tooltip, Typography } from 'antd'
+import {
+  Avatar,
+  Button,
+  Drawer,
+  Input,
+  List,
+  Space,
+  Tabs,
+  Tag,
+  Timeline,
+  Tooltip,
+  Typography,
+} from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { Eye, MessageSquare, Paperclip, Pencil, Plus, Trash2 } from 'lucide-react'
 import { AttachmentsList, parseAttachments } from '@/components/forms/AttachmentsField'
@@ -18,6 +30,8 @@ import type { RequestRow, TablesInsert } from '@/types/database'
 import type { RequestWithRelations } from '@/types/models'
 import type { ExportColumn } from '@/utils/export'
 import { RequestForm } from '../components/RequestForm'
+import { ReservationsPanel } from '../components/ReservationsPanel'
+import { useRequestsTabsViewModel } from '../viewmodels/useRequestsTabsViewModel'
 
 const { Paragraph, Text, Title } = Typography
 
@@ -36,6 +50,7 @@ const EXPORT_COLUMNS: ExportColumn<RequestWithRelations>[] = [
 export function RequestsPage() {
   const { currentCondominiumId, hasPermission, user } = useAuth()
   const canManage = hasPermission('manageRequests')
+  const tabs = useRequestsTabsViewModel()
 
   const table = useTableParams({ pageSize: 10 })
   const query = useRequests(currentCondominiumId, table.params)
@@ -190,65 +205,91 @@ export function RequestsPage() {
     <>
       <PageHeader
         title="Solicitudes"
-        subtitle="Requerimientos de los residentes y su seguimiento."
+        subtitle={
+          tabs.showReservations
+            ? 'Requerimientos de los residentes y reservas de zonas comunes.'
+            : 'Requerimientos de los residentes y su seguimiento.'
+        }
         actions={
-          <Button
-            type="primary"
-            icon={<Plus size={16} />}
-            onClick={() => {
-              setEditing(null)
-              setFormOpen(true)
-            }}
-            data-tour="create-button"
-          >
-            Nueva solicitud
-          </Button>
+          tabs.tab === 'reservas' ? null : (
+            <Button
+              type="primary"
+              icon={<Plus size={16} />}
+              onClick={() => {
+                setEditing(null)
+                setFormOpen(true)
+              }}
+              data-tour="create-button"
+            >
+              Nueva solicitud
+            </Button>
+          )
         }
         dataTour="page-header"
       />
 
-      <DataTable<RequestWithRelations>
-        columns={columns}
-        data={query.data?.data ?? []}
-        total={query.data?.total ?? 0}
-        loading={query.isFetching}
-        isError={query.isError}
-        errorMessage={query.error ? getErrorMessage(query.error) : undefined}
-        onRetry={() => void query.refetch()}
-        params={table.params}
-        onPageChange={table.setPage}
-        onSearch={table.setSearch}
-        onSort={table.setSort}
-        onFilter={table.setFilter}
-        onDateRange={table.setDateRange}
-        onReset={table.reset}
-        hasActiveFilters={table.hasActiveFilters}
-        showDateFilter
-        filters={[
-          { key: 'status', label: 'Estado', options: toOptions(REQUEST_STATUS) },
-          { key: 'type', label: 'Tipo', options: toOptions(REQUEST_TYPE) },
-          { key: 'priority', label: 'Prioridad', options: toOptions(PRIORITY_LEVEL) },
-        ]}
-        searchPlaceholder="Buscar por titulo, descripcion o codigo"
-        exportColumns={EXPORT_COLUMNS}
-        exportFileName="solicitudes"
-        exportFetcher={async () => {
-          if (!currentCondominiumId) return []
-          const result = await requestService.list(currentCondominiumId, {
-            ...table.params,
-            page: 1,
-            pageSize: 1000,
-          })
-          return result.data
-        }}
-        onRowClick={(row) => setDetail(row)}
-        emptyTitle="Sin solicitudes"
-        emptyDescription="Crea una solicitud para reportar una necesidad."
-        scrollX={1400}
-        dataTour="data-table"
-      />
+      {tabs.showReservations ? (
+        <Tabs
+          activeKey={tabs.tab}
+          onChange={tabs.setTab}
+          items={[
+            { key: 'solicitudes', label: 'Solicitudes' },
+            { key: 'reservas', label: 'Reservas de zonas comunes' },
+          ]}
+        />
+      ) : null}
 
-      <Drawer open={Boolean(detail)} onClose={() => setDetail(null)} width={640} title="Detalle de la solicitud">
+      {tabs.tab === 'reservas' ? (
+        <ReservationsPanel />
+      ) : (
+        <DataTable<RequestWithRelations>
+          columns={columns}
+          data={query.data?.data ?? []}
+          total={query.data?.total ?? 0}
+          loading={query.isFetching}
+          isError={query.isError}
+          errorMessage={query.error ? getErrorMessage(query.error) : undefined}
+          onRetry={() => void query.refetch()}
+          params={table.params}
+          onPageChange={table.setPage}
+          onSearch={table.setSearch}
+          onSort={table.setSort}
+          onFilter={table.setFilter}
+          onDateRange={table.setDateRange}
+          onReset={table.reset}
+          hasActiveFilters={table.hasActiveFilters}
+          showDateFilter
+          filters={[
+            { key: 'status', label: 'Estado', options: toOptions(REQUEST_STATUS) },
+            { key: 'type', label: 'Tipo', options: toOptions(REQUEST_TYPE) },
+            { key: 'priority', label: 'Prioridad', options: toOptions(PRIORITY_LEVEL) },
+          ]}
+          searchPlaceholder="Buscar por titulo, descripcion o codigo"
+          exportColumns={EXPORT_COLUMNS}
+          exportFileName="solicitudes"
+          exportFetcher={async () => {
+            if (!currentCondominiumId) return []
+            const result = await requestService.list(currentCondominiumId, {
+              ...table.params,
+              page: 1,
+              pageSize: 1000,
+            })
+            return result.data
+          }}
+          onRowClick={(row) => setDetail(row)}
+          emptyTitle="Sin solicitudes"
+          emptyDescription="Crea una solicitud para reportar una necesidad."
+          scrollX={1400}
+          dataTour="data-table"
+        />
+      )}
+
+      <Drawer
+        open={Boolean(detail)}
+        onClose={() => setDetail(null)}
+        width={640}
+        title="Detalle de la solicitud"
+      >
         {detail ? (
           <div className="space-y-4">
             <div>
@@ -285,7 +326,9 @@ export function RequestsPage() {
                   children: (
                     <div className="text-sm">
                       <strong>{detail.author?.full_name ?? 'Usuario'}</strong> creo la solicitud
-                      <div className="text-xs text-slate-400">{formatDateTime(detail.created_at)}</div>
+                      <div className="text-xs text-slate-400">
+                        {formatDateTime(detail.created_at)}
+                      </div>
                     </div>
                   ),
                 },

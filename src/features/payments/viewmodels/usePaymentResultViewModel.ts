@@ -10,6 +10,7 @@ const RETURN_TO: Record<PaymentKind, { path: string; label: string }> = {
   ADMIN_FEE: { path: '/admin-fees', label: 'Volver a mis cuotas' },
   FINE: { path: '/fines', label: 'Volver a multas' },
   SUBSCRIPTION: { path: '/plans', label: 'Volver a planes' },
+  RESERVATION: { path: '/requests?tab=reservas', label: 'Volver a mis reservas' },
 }
 
 export type PaymentResultState =
@@ -19,6 +20,7 @@ function concept(kind: PaymentKind | undefined, planPeriod: PlanPeriod | null | 
   if (kind === 'SUBSCRIPTION' && planPeriod)
     return `Plan ${PLAN_PERIOD[planPeriod].label.toLowerCase()}`
   if (kind === 'FINE') return 'Multa'
+  if (kind === 'RESERVATION') return 'Reserva de zona comun'
   return 'Cuota de administracion'
 }
 

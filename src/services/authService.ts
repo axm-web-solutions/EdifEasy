@@ -18,6 +18,8 @@ export interface SignUpInput {
   phone?: string
   documentNumber?: string
   documentType?: string
+  /** Version de terminos y politica aceptada en el formulario (prueba de autorizacion). */
+  legalVersion: string
 }
 
 export const authService = {
@@ -50,6 +52,8 @@ export const authService = {
           document_number: input.documentNumber ?? null,
           document_type: input.documentType ?? 'CC',
           requested_role: input.userType,
+          legal_version: input.legalVersion,
+          user_agent: typeof navigator === 'undefined' ? null : navigator.userAgent.slice(0, 400),
         },
         emailRedirectTo: `${window.location.origin}/login`,
       },

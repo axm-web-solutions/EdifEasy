@@ -185,6 +185,24 @@ export const queryKeys = {
     cached: (condominiumId: string) => ['places', 'cached', condominiumId] as const,
   },
 
+  legal: {
+    entity: ['legal', 'entity'] as const,
+    acceptances: (userId: string) => ['legal', 'acceptances', userId] as const,
+    requests: (scope: string) => ['legal', 'requests', scope] as const,
+    seller: (listingId: string) => ['legal', 'seller', listingId] as const,
+  },
+
+  listings: {
+    list: (condominiumId: string) => ['listings', 'list', condominiumId] as const,
+    images: (paths: string) => ['listings', 'images', paths] as const,
+  },
+
+  reservations: {
+    areas: (condominiumId: string) => ['reservations', 'areas', condominiumId] as const,
+    list: (condominiumId: string) => ['reservations', 'list', condominiumId] as const,
+    busy: (areaId: string, day: string) => ['reservations', 'busy', areaId, day] as const,
+  },
+
   directory: {
     /** Numeros de emergencia y servicios que agrega la administracion. */
     list: (condominiumId: string) => ['directory', condominiumId] as const,

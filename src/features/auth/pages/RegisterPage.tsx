@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react'
+import { useState } from 'react'
 import { Controller, useFieldArray, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Alert, Button, Card, Checkbox, Divider, Form, Result, Typography } from 'antd'
@@ -9,15 +9,9 @@ import { useAuth } from '@/hooks/useAuth'
 import { getErrorMessage } from '@/lib/errors'
 import { registrationService } from '@/services/registrationService'
 import { OrganizationPicker } from '../components/OrganizationPicker'
+import { LEGAL_VERSION } from '@/features/legal/legal.logic'
 
 const { Title, Text } = Typography
-
-/** Modal de documentos legales. Lazy: recien se carga al abrirlo. */
-const LegalDocsModal = lazy(() =>
-  import('@/components/ui/LegalDocsModal').then((m) => ({ default: m.LegalDocsModal })),
-)
-
-type LegalSection = 'terms' | 'privacy'
 
 const USER_TYPE_OPTIONS = [
   { value: 'OWNER', label: 'Propietario / Dueno' },
@@ -43,7 +37,6 @@ export function RegisterPage() {
    * ready   -> cuenta creada pero el envio fallo; se reintenta en /sin-condominio.
    */
   const [done, setDone] = useState<'confirm' | 'sent' | 'ready' | null>(null)
-  const [legalSection, setLegalSection] = useState<LegalSection | null>(null)
 
   const {
     control,
@@ -66,7 +59,9 @@ export function RegisterPage() {
       vehicles: [],
       password: '',
       confirmPassword: '',
-      acceptTerms: true,
+      // Nunca premarcadas: la autorizacion debe ser expresa (Ley 1581 de 2012).
+      acceptTerms: false,
+      acceptPrivacy: false,
     },
   })
 
@@ -83,6 +78,7 @@ export function RegisterPage() {
         userType: values.userType,
         phone: values.phone || undefined,
         documentNumber: values.documentNumber || undefined,
+        legalVersion: LEGAL_VERSION,
       })
 
       const input = {
@@ -213,12 +209,23 @@ export function RegisterPage() {
           userType={userType ?? 'OWNER'}
         />
 
-        <Divider plain orientation="left" className="!mb-4" style={{ color: '#64748b', fontSize: 12 }}>
+        <Divider
+          plain
+          orientation="left"
+          className="!mb-4"
+          style={{ color: '#64748b', fontSize: 12 }}
+        >
           TUS DATOS
         </Divider>
 
         <TextField control={control} name="fullName" label="Nombre completo" required />
-        <TextField control={control} name="email" label="Correo electronico" type="email" required />
+        <TextField
+          control={control}
+          name="email"
+          label="Correo electronico"
+          type="email"
+          required
+        />
 
         <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
           <TextField control={control} name="phone" label="Telefono" />
@@ -234,7 +241,12 @@ export function RegisterPage() {
           help="Util si necesitas aclarar algo sobre tu vinculo con el apartamento."
         />
 
-        <Divider plain orientation="left" className="!mb-4" style={{ color: '#64748b', fontSize: 12 }}>
+        <Divider
+          plain
+          orientation="left"
+          className="!mb-4"
+          style={{ color: '#64748b', fontSize: 12 }}
+        >
           VEHICULOS (OPCIONAL)
         </Divider>
 
@@ -271,7 +283,12 @@ export function RegisterPage() {
           + Agregar vehiculo
         </Button>
 
-        <Divider plain orientation="left" className="!mb-4" style={{ color: '#64748b', fontSize: 12 }}>
+        <Divider
+          plain
+          orientation="left"
+          className="!mb-4"
+          style={{ color: '#64748b', fontSize: 12 }}
+        >
           SEGURIDAD
         </Divider>
 
@@ -291,43 +308,41 @@ export function RegisterPage() {
           required
         />
 
-        <Controller
-          control={control}
-          name="acceptTerms"
-          render={({ field, fieldState }) => (
-            <Form.Item
-              validateStatus={fieldState.error ? 'error' : undefined}
-              help={fieldState.error?.message}
-            >
-              <Checkbox
-                checked={Boolean(field.value)}
-                onChange={(event) => field.onChange(event.target.checked)}
+        {(
+          [
+            ['acceptTerms', 'He leido y acepto los', '/legal/terminos', 'terminos y condiciones'],
+            [
+              'acceptPrivacy',
+              'Autorizo el tratamiento de mis datos personales segun la',
+              '/legal/privacidad',
+              'politica de tratamiento de datos',
+            ],
+          ] as const
+        ).map(([name, text, link, linkText]) => (
+          <Controller
+            key={name}
+            control={control}
+            name={name}
+            render={({ field, fieldState }) => (
+              <Form.Item
+                className="!mb-2"
+                validateStatus={fieldState.error ? 'error' : undefined}
+                help={fieldState.error?.message}
               >
-                Acepto los{' '}
-                <Typography.Link
-                  onClick={(event) => {
-                    event.preventDefault()
-                    event.stopPropagation()
-                    setLegalSection('terms')
-                  }}
+                <Checkbox
+                  checked={Boolean(field.value)}
+                  onChange={(event) => field.onChange(event.target.checked)}
                 >
-                  terminos y condiciones
-                </Typography.Link>{' '}
-                y la{' '}
-                <Typography.Link
-                  onClick={(event) => {
-                    event.preventDefault()
-                    event.stopPropagation()
-                    setLegalSection('privacy')
-                  }}
-                >
-                  politica de tratamiento de datos
-                </Typography.Link>
-                .
-              </Checkbox>
-            </Form.Item>
-          )}
-        />
+                  {text}{' '}
+                  <Link to={link} target="_blank" rel="noopener">
+                    {linkText}
+                  </Link>
+                  .
+                </Checkbox>
+              </Form.Item>
+            )}
+          />
+        ))}
 
         <Button type="primary" htmlType="submit" block size="large" loading={isSubmitting}>
           Crear cuenta y solicitar inscripcion
@@ -342,16 +357,6 @@ export function RegisterPage() {
           </Link>
         </Text>
       </div>
-
-      {legalSection ? (
-        <Suspense fallback={null}>
-          <LegalDocsModal
-            open
-            initialSection={legalSection}
-            onClose={() => setLegalSection(null)}
-          />
-        </Suspense>
-      ) : null}
     </Card>
   )
 }

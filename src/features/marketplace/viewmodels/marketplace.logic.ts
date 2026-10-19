@@ -109,10 +109,7 @@ export interface MarketFilters {
 }
 
 function normalize(text: string): string {
-  return text
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
+  return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 }
 
 export function filterMarketItems(items: MarketItem[], filters: MarketFilters): MarketItem[] {
@@ -127,7 +124,9 @@ export function filterMarketItems(items: MarketItem[], filters: MarketFilters): 
 }
 
 /** Chips de categoria con su conteo, en el orden del catalogo de servicios. */
-export function categoryChips(items: MarketItem[]): { value: string; label: string; count: number }[] {
+export function categoryChips(
+  items: MarketItem[],
+): { value: string; label: string; count: number }[] {
   const counts = new Map<string, number>()
   for (const item of items) counts.set(item.category, (counts.get(item.category) ?? 0) + 1)
   const order = [

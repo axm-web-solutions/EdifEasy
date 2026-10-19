@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react'
 import { Outlet } from 'react-router-dom'
 import { Building2, ShieldCheck, Sparkles } from 'lucide-react'
 import { GlassTowers } from '@/components/ui/GlassTowers'
+import { LegalLinks } from '@/features/legal/components/LegalLinks'
 
 /**
  * Escena 3D cargada bajo demanda: mantiene Three.js fuera del bundle inicial
@@ -15,7 +16,8 @@ const HIGHLIGHTS = [
   {
     icon: Building2,
     title: 'Multi-condominio',
-    description: 'Administra varios conjuntos desde una sola cuenta, con datos totalmente aislados.',
+    description:
+      'Administra varios conjuntos desde una sola cuenta, con datos totalmente aislados.',
   },
   {
     icon: ShieldCheck,
@@ -53,9 +55,7 @@ export function AuthLayout() {
           conserva contraste.
         */}
         <Suspense
-          fallback={
-            <GlassTowers className="pointer-events-none absolute inset-0 h-full w-full" />
-          }
+          fallback={<GlassTowers className="pointer-events-none absolute inset-0 h-full w-full" />}
         >
           <GlassTowers3D className="pointer-events-none absolute inset-0 h-full w-full" />
         </Suspense>
@@ -110,6 +110,7 @@ export function AuthLayout() {
             </div>
           </div>
           <Outlet />
+          <LegalLinks className="mt-6 justify-center" />
         </div>
       </main>
     </div>

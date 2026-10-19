@@ -42,7 +42,11 @@ export const provisionSchema = z
   })
   .superRefine((values, ctx) => {
     if (values.kind === 'HOUSES' && values.houses < 1) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['houses'], message: 'Indica cuantas casas hay' })
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['houses'],
+        message: 'Indica cuantas casas hay',
+      })
     }
     if (values.kind === 'TOWERS') {
       for (const key of ['towers', 'floors', 'units_per_floor'] as const) {

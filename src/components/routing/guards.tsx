@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { LegalConsentGate } from '@/features/legal/components/LegalConsentGate'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { Spin } from 'antd'
 import { useAuth } from '@/hooks/useAuth'
@@ -32,10 +33,18 @@ export function ProtectedRoute() {
   if (loadingContext) return <FullPageLoader tip="Cargando tu informacion..." />
 
   if (memberships.length === 0 && !isSuperAdmin) {
-    return <Navigate to="/sin-condominio" replace />
+    return (
+      <LegalConsentGate>
+        <Navigate to="/sin-condominio" replace />
+      </LegalConsentGate>
+    )
   }
 
-  return <Outlet />
+  return (
+    <LegalConsentGate>
+      <Outlet />
+    </LegalConsentGate>
+  )
 }
 
 /** Rutas publicas (login, registro): redirigen si ya hay sesion. */

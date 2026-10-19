@@ -13,6 +13,8 @@
  *       Solo el propietario activo del apartamento. Responde { checkout_url }.
  *   { action: 'fine', fine_id, origin }
  *       Quien vive en el apartamento multado (misma regla con la que ve la multa).
+ *   { action: 'reservation', reservation_id, origin }
+ *       Quien vive en el apartamento, con la reserva en PENDING_PAYMENT.
  *   { action: 'subscription', condominium_id, period, origin }
  *       Solo el ADMINISTRATOR del conjunto. period: MONTHLY | SEMIANNUAL | ANNUAL.
  *   { action: 'verify', transaction_id }
@@ -163,6 +165,57 @@ Deno.serve(async (req: Request) => {
         amount,
         payer_id: user.id,
         fine_id: fine.id,
+      })
+      if (insertError) throw new Error(insertError.message)
+
+      const url = await checkoutUrl({
+        reference,
+        amountInCents: Math.round(amount * 100),
+        redirectUrl: resolveRedirect(payload?.origin, RESULT_PATH),
+        email: user.email,
+      })
+      return json({ ok: true, reference, checkout_url: url })
+    }
+
+    // -------------------------------------------------------------- reserva
+    if (action === 'reservation') {
+      const reservationId = String(payload?.reservation_id ?? '')
+      const { data: reservation, error: resError } = await admin
+        .from('reservations')
+        .select('id, condominium_id, apartment_id, amount, status')
+        .eq('id', reservationId)
+        .maybeSingle()
+      if (resError) throw new Error(resError.message)
+      if (!reservation) return json({ error: 'Reserva no encontrada' }, 404)
+      if (reservation.status !== 'PENDING_PAYMENT') {
+        return json({ error: 'Esta reserva no tiene un pago pendiente' }, 409)
+      }
+      if (Number(reservation.amount) <= 0) return json({ error: 'La reserva no tiene valor a pagar' }, 400)
+
+      // Pagan quienes viven en el apartamento (misma regla de la politica RLS).
+      const { data: apartmentIds, error: aptError } = await admin.rpc('user_apartment_ids', {
+        p_user: user.id,
+      })
+      if (aptError) throw new Error(aptError.message)
+      const ids = ((apartmentIds ?? []) as unknown[]).map((row: any) =>
+        typeof row === 'string' ? row : row?.user_apartment_ids,
+      )
+      if (!ids.includes(reservation.apartment_id)) {
+        return json({ error: 'Solo los residentes del apartamento pueden pagar esta reserva' }, 403)
+      }
+      if (!(await moduleEnabled(admin, reservation.condominium_id, 'reservations', user.id))) {
+        return json({ error: 'El modulo de reservas no esta habilitado para tu rol' }, 403)
+      }
+
+      const reference = newReference('RES')
+      const amount = Number(reservation.amount)
+      const { error: insertError } = await admin.from('payments').insert({
+        condominium_id: reservation.condominium_id,
+        kind: 'RESERVATION',
+        reference,
+        amount,
+        payer_id: user.id,
+        reservation_id: reservation.id,
       })
       if (insertError) throw new Error(insertError.message)
 

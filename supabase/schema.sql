@@ -721,7 +721,7 @@ create table if not exists tribuia.role_modules (
   constraint role_modules_module_check check (module in (
     'residents', 'visitors', 'alerts', 'announcements', 'messages', 'requests',
     'incidents', 'fines', 'admin_fees', 'expenses', 'purchases', 'documents', 'reports',
-    'marketplace'
+    'marketplace', 'reservations'
   ))
 );
 
@@ -1459,7 +1459,7 @@ as $$
   select array[
     'residents', 'visitors', 'alerts', 'announcements', 'messages', 'requests',
     'incidents', 'fines', 'admin_fees', 'expenses', 'purchases', 'documents', 'reports',
-    'marketplace'
+    'marketplace', 'reservations'
   ]::text[];
 $$;
 
@@ -5862,7 +5862,7 @@ alter table tribuia.role_modules drop constraint if exists role_modules_module_c
 alter table tribuia.role_modules add constraint role_modules_module_check check (module in (
   'residents', 'visitors', 'alerts', 'announcements', 'messages', 'requests',
   'incidents', 'fines', 'admin_fees', 'expenses', 'purchases', 'documents', 'reports',
-  'marketplace'
+  'marketplace', 'reservations'
 ));
 
 create or replace function tribuia.role_module_codes()
@@ -5874,7 +5874,7 @@ as $$
   select array[
     'residents', 'visitors', 'alerts', 'announcements', 'messages', 'requests',
     'incidents', 'fines', 'admin_fees', 'expenses', 'purchases', 'documents', 'reports',
-    'marketplace'
+    'marketplace', 'reservations'
   ]::text[];
 $$;
 
@@ -6070,6 +6070,1452 @@ revoke all on function tribuia.provision_condominium(jsonb) from public, anon;
 revoke all on function tribuia.attach_provisioned_accounts(uuid, uuid, jsonb) from public, anon;
 grant execute on function tribuia.provision_condominium(jsonb) to authenticated, service_role;
 grant execute on function tribuia.attach_provisioned_accounts(uuid, uuid, jsonb) to authenticated, service_role;
+
+notify pgrst, 'reload schema';
+
+-- ============================================================================
+-- 20. RESERVAS DE ZONAS COMUNES (migracion 20261019000000_reservas_zonas_comunes)
+-- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- A. ZONAS COMUNES
+-- ----------------------------------------------------------------------------
+create table if not exists tribuia.common_areas (
+  id                uuid primary key default gen_random_uuid(),
+  condominium_id    uuid not null references tribuia.condominiums (id) on delete cascade,
+  name              text not null,
+  description       text,
+  rules             text,
+  price             numeric(14, 2) not null default 0,
+  capacity          integer,
+  open_time         time not null default '08:00',
+  close_time        time not null default '22:00',
+  max_hours         integer not null default 4,
+  requires_approval boolean not null default true,
+  is_active         boolean not null default true,
+  created_at        timestamptz not null default now(),
+  updated_at        timestamptz not null default now(),
+  constraint common_areas_name_key unique (condominium_id, name),
+  constraint common_areas_name_check check (length(btrim(name)) between 2 and 80),
+  constraint common_areas_price_check check (price >= 0 and price <= 50000000),
+  constraint common_areas_capacity_check check (capacity is null or capacity between 1 and 5000),
+  constraint common_areas_hours_check check (close_time > open_time),
+  constraint common_areas_max_hours_check check (max_hours between 1 and 24),
+  constraint common_areas_lengths_check check (
+    coalesce(length(description), 0) <= 500 and coalesce(length(rules), 0) <= 2000
+  )
+);
+
+comment on table tribuia.common_areas is
+  'Zonas comunes reservables. Horarios en hora de Colombia (America/Bogota).';
+
+drop trigger if exists trg_common_areas_updated_at on tribuia.common_areas;
+create trigger trg_common_areas_updated_at before update on tribuia.common_areas
+  for each row execute function tribuia.set_updated_at();
+drop trigger if exists trg_common_areas_lock_tenant on tribuia.common_areas;
+create trigger trg_common_areas_lock_tenant before update on tribuia.common_areas
+  for each row execute function tribuia.tg_lock_tenant_columns('condominium_id');
+drop trigger if exists trg_audit_common_areas on tribuia.common_areas;
+create trigger trg_audit_common_areas after insert or update or delete on tribuia.common_areas
+  for each row execute function tribuia.fn_audit('CREATE');
+
+
+-- ----------------------------------------------------------------------------
+-- B. RESERVAS
+-- ----------------------------------------------------------------------------
+create table if not exists tribuia.reservations (
+  id              uuid primary key default gen_random_uuid(),
+  condominium_id  uuid not null references tribuia.condominiums (id) on delete cascade,
+  -- Sin cascada: una zona con reservas no se borra (se desactiva).
+  common_area_id  uuid not null references tribuia.common_areas (id),
+  apartment_id    uuid not null references tribuia.apartments (id) on delete cascade,
+  starts_at       timestamptz not null,
+  ends_at         timestamptz not null,
+  guests          integer,
+  notes           text,
+  status          text not null default 'PENDING_APPROVAL',
+  amount          numeric(14, 2) not null default 0,
+  payment_method  text,
+  paid_at         timestamptz,
+  payment_id      uuid references tribuia.payments (id) on delete set null,
+  admin_notes     text,
+  reviewed_by     uuid references tribuia.profiles (id) on delete set null,
+  reviewed_at     timestamptz,
+  created_by      uuid references tribuia.profiles (id) on delete set null,
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now(),
+  constraint reservations_range_check check (ends_at > starts_at),
+  constraint reservations_status_check check (status in (
+    'PENDING_APPROVAL', 'PENDING_PAYMENT', 'CONFIRMED', 'REJECTED', 'CANCELLED'
+  )),
+  constraint reservations_payment_method_check check (
+    payment_method is null or payment_method in ('ONLINE', 'ON_SITE')
+  ),
+  constraint reservations_guests_check check (guests is null or guests between 0 and 5000),
+  constraint reservations_lengths_check check (
+    coalesce(length(notes), 0) <= 500 and coalesce(length(admin_notes), 0) <= 500
+  )
+);
+
+create index if not exists idx_reservations_area_time
+  on tribuia.reservations (common_area_id, starts_at);
+create index if not exists idx_reservations_condominium
+  on tribuia.reservations (condominium_id, starts_at desc);
+create index if not exists idx_reservations_apartment on tribuia.reservations (apartment_id);
+create index if not exists idx_reservations_created_by on tribuia.reservations (created_by);
+create index if not exists idx_reservations_reviewed_by on tribuia.reservations (reviewed_by);
+create index if not exists idx_reservations_payment on tribuia.reservations (payment_id);
+
+drop trigger if exists trg_reservations_updated_at on tribuia.reservations;
+create trigger trg_reservations_updated_at before update on tribuia.reservations
+  for each row execute function tribuia.set_updated_at();
+drop trigger if exists trg_reservations_lock_tenant on tribuia.reservations;
+create trigger trg_reservations_lock_tenant before update on tribuia.reservations
+  for each row execute function tribuia.tg_lock_tenant_columns('condominium_id', 'apartment_id', 'common_area_id');
+drop trigger if exists trg_reservations_tenant_ref on tribuia.reservations;
+create trigger trg_reservations_tenant_ref before insert or update on tribuia.reservations
+  for each row execute function tribuia.tg_assert_tenant_reference();
+drop trigger if exists trg_audit_reservations on tribuia.reservations;
+create trigger trg_audit_reservations after insert or update or delete on tribuia.reservations
+  for each row execute function tribuia.fn_audit('CREATE');
+
+-- Estados que ocupan el horario.
+create or replace function tribuia.reservation_blocks_slot(p_status text)
+returns boolean
+language sql
+immutable
+set search_path = tribuia, public, pg_temp
+as $$
+  select p_status in ('PENDING_APPROVAL', 'PENDING_PAYMENT', 'CONFIRMED');
+$$;
+
+-- Valida y completa la reserva al crearla.
+create or replace function tribuia.tg_reservation_before_insert()
+returns trigger
+language plpgsql
+security definer
+set search_path = tribuia, public, pg_temp
+as $$
+declare
+  v_area        tribuia.common_areas%rowtype;
+  v_local_start timestamp;
+  v_local_end   timestamp;
+begin
+  -- Serializa las reservas de la misma zona para que dos personas no tomen el
+  -- mismo horario al mismo tiempo.
+  perform pg_advisory_xact_lock(hashtextextended('reservation:' || new.common_area_id::text, 0));
+
+  select * into v_area from tribuia.common_areas where id = new.common_area_id;
+  if v_area.id is null or v_area.condominium_id <> new.condominium_id then
+    raise exception 'La zona comun no pertenece a este conjunto' using errcode = '23503';
+  end if;
+  if not v_area.is_active then
+    raise exception 'La zona "%" no esta disponible para reservas', v_area.name using errcode = 'P0001';
+  end if;
+
+  if new.starts_at <= now() then
+    raise exception 'La reserva debe ser para una fecha futura' using errcode = '22023';
+  end if;
+  if new.starts_at > now() + interval '180 days' then
+    raise exception 'Solo se puede reservar con hasta 6 meses de anticipacion' using errcode = '22023';
+  end if;
+  if new.ends_at - new.starts_at > make_interval(hours => v_area.max_hours) then
+    raise exception 'La zona "%" se reserva maximo % hora(s)', v_area.name, v_area.max_hours
+      using errcode = '22023';
+  end if;
+
+  v_local_start := new.starts_at at time zone 'America/Bogota';
+  v_local_end := new.ends_at at time zone 'America/Bogota';
+  if v_local_start::date <> v_local_end::date
+     or v_local_start::time < v_area.open_time
+     or v_local_end::time > v_area.close_time then
+    raise exception 'El horario de "%" es de % a %', v_area.name,
+      to_char(v_area.open_time, 'HH24:MI'), to_char(v_area.close_time, 'HH24:MI')
+      using errcode = '22023';
+  end if;
+
+  if v_area.capacity is not null and coalesce(new.guests, 0) > v_area.capacity then
+    raise exception 'La zona "%" tiene un aforo de % personas', v_area.name, v_area.capacity
+      using errcode = '22023';
+  end if;
+
+  if exists (
+    select 1 from tribuia.reservations r
+     where r.common_area_id = new.common_area_id
+       and tribuia.reservation_blocks_slot(r.status)
+       and r.starts_at < new.ends_at
+       and r.ends_at > new.starts_at
+  ) then
+    raise exception 'Ese horario ya esta reservado. Elige otro.' using errcode = '23P01';
+  end if;
+
+  -- Valor y estado los fija la base, no el navegador.
+  new.amount := v_area.price;
+  new.status := case
+    when v_area.requires_approval then 'PENDING_APPROVAL'
+    when v_area.price > 0 then 'PENDING_PAYMENT'
+    else 'CONFIRMED'
+  end;
+  new.payment_method := null;
+  new.paid_at := null;
+  new.payment_id := null;
+  new.admin_notes := null;
+  new.reviewed_by := null;
+  new.reviewed_at := null;
+  new.created_by := coalesce(auth.uid(), new.created_by);
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_reservations_before_insert on tribuia.reservations;
+create trigger trg_reservations_before_insert before insert on tribuia.reservations
+  for each row execute function tribuia.tg_reservation_before_insert();
+
+revoke execute on function tribuia.tg_reservation_before_insert() from public, anon, authenticated;
+
+
+-- ----------------------------------------------------------------------------
+-- C. RLS Y RPC
+-- ----------------------------------------------------------------------------
+alter table tribuia.common_areas enable row level security;
+alter table tribuia.reservations enable row level security;
+
+drop policy if exists common_areas_select on tribuia.common_areas;
+create policy common_areas_select on tribuia.common_areas for select to authenticated
+  using (
+    tribuia.user_can_access_condominium(condominium_id)
+    and (is_active or tribuia.is_condominium_admin(condominium_id))
+    and condominium_id not in (select tribuia.module_blocked_condominiums('reservations'))
+  );
+drop policy if exists common_areas_insert on tribuia.common_areas;
+create policy common_areas_insert on tribuia.common_areas for insert to authenticated
+  with check (tribuia.is_condominium_admin(condominium_id));
+drop policy if exists common_areas_update on tribuia.common_areas;
+create policy common_areas_update on tribuia.common_areas for update to authenticated
+  using (tribuia.is_condominium_admin(condominium_id))
+  with check (tribuia.is_condominium_admin(condominium_id));
+drop policy if exists common_areas_delete on tribuia.common_areas;
+create policy common_areas_delete on tribuia.common_areas for delete to authenticated
+  using (tribuia.is_condominium_admin(condominium_id));
+
+-- Ven la reserva: la administracion, voceros y seguridad (control de acceso),
+-- y quienes viven en el apartamento.
+drop policy if exists reservations_select on tribuia.reservations;
+create policy reservations_select on tribuia.reservations for select to authenticated
+  using (
+    (
+      tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY'])
+      or apartment_id in (select tribuia.user_apartment_ids())
+    )
+    and condominium_id not in (select tribuia.module_blocked_condominiums('reservations'))
+  );
+
+-- Reservan quienes viven en el apartamento, o la administracion a nombre de uno.
+drop policy if exists reservations_insert on tribuia.reservations;
+create policy reservations_insert on tribuia.reservations for insert to authenticated
+  with check (
+    (
+      apartment_id in (select tribuia.user_apartment_ids())
+      or tribuia.is_condominium_admin(condominium_id)
+    )
+    and condominium_id not in (select tribuia.module_blocked_condominiums('reservations'))
+  );
+-- Sin politicas de update/delete: los cambios de estado van por las RPC.
+
+revoke all on tribuia.common_areas, tribuia.reservations from anon;
+grant select, insert, update, delete on tribuia.common_areas to authenticated;
+grant select, insert on tribuia.reservations to authenticated;
+grant all on tribuia.common_areas, tribuia.reservations to service_role;
+
+
+-- Horarios ocupados de una zona (sin datos de quien reservo).
+create or replace function tribuia.common_area_busy_slots(
+  p_area uuid,
+  p_from timestamptz,
+  p_to   timestamptz
+)
+returns table (starts_at timestamptz, ends_at timestamptz, status text)
+language plpgsql
+stable
+security definer
+set search_path = tribuia, public, pg_temp
+as $$
+declare
+  v_condo uuid;
+begin
+  select condominium_id into v_condo from tribuia.common_areas where id = p_area;
+  if v_condo is null
+     or not tribuia.user_can_access_condominium(v_condo)
+     or not tribuia.module_enabled(v_condo, 'reservations') then
+    raise exception 'No tienes acceso a esta zona comun' using errcode = '42501';
+  end if;
+  if p_to - p_from > interval '62 days' then
+    raise exception 'Consulta maximo 62 dias' using errcode = '22023';
+  end if;
+
+  return query
+    select r.starts_at, r.ends_at, r.status
+      from tribuia.reservations r
+     where r.common_area_id = p_area
+       and tribuia.reservation_blocks_slot(r.status)
+       and r.starts_at < p_to
+       and r.ends_at > p_from
+     order by r.starts_at;
+end;
+$$;
+
+
+-- Aprobar o rechazar (administracion).
+create or replace function tribuia.review_reservation(
+  p_reservation uuid,
+  p_approve     boolean,
+  p_notes       text default null
+)
+returns text
+language plpgsql
+security definer
+set search_path = tribuia, public, pg_temp
+as $$
+declare
+  v_res tribuia.reservations%rowtype;
+begin
+  select * into v_res from tribuia.reservations where id = p_reservation for update;
+  if v_res.id is null then
+    raise exception 'La reserva no existe' using errcode = 'P0002';
+  end if;
+  if not tribuia.is_condominium_admin(v_res.condominium_id) then
+    raise exception 'Solo la administracion puede revisar reservas' using errcode = '42501';
+  end if;
+  if v_res.status <> 'PENDING_APPROVAL' then
+    raise exception 'Esta reserva ya fue revisada' using errcode = 'P0001';
+  end if;
+
+  update tribuia.reservations
+     set status = case
+           when not p_approve then 'REJECTED'
+           when amount > 0 then 'PENDING_PAYMENT'
+           else 'CONFIRMED'
+         end,
+         admin_notes = nullif(btrim(coalesce(p_notes, '')), ''),
+         reviewed_by = auth.uid(),
+         reviewed_at = now()
+   where id = p_reservation
+  returning status into v_res.status;
+
+  return v_res.status;
+end;
+$$;
+
+
+-- Pago recibido en la administracion (efectivo o transferencia).
+create or replace function tribuia.register_reservation_payment(p_reservation uuid)
+returns text
+language plpgsql
+security definer
+set search_path = tribuia, public, pg_temp
+as $$
+declare
+  v_res tribuia.reservations%rowtype;
+begin
+  select * into v_res from tribuia.reservations where id = p_reservation for update;
+  if v_res.id is null then
+    raise exception 'La reserva no existe' using errcode = 'P0002';
+  end if;
+  if not tribuia.is_condominium_admin(v_res.condominium_id) then
+    raise exception 'Solo la administracion registra pagos' using errcode = '42501';
+  end if;
+  if v_res.status <> 'PENDING_PAYMENT' then
+    raise exception 'Esta reserva no tiene un pago pendiente' using errcode = 'P0001';
+  end if;
+
+  update tribuia.reservations
+     set status = 'CONFIRMED', payment_method = 'ON_SITE', paid_at = now()
+   where id = p_reservation;
+  return 'CONFIRMED';
+end;
+$$;
+
+
+-- Cancelar: residentes antes de pagar; la administracion en cualquier estado activo.
+create or replace function tribuia.cancel_reservation(
+  p_reservation uuid,
+  p_reason      text default null
+)
+returns text
+language plpgsql
+security definer
+set search_path = tribuia, public, pg_temp
+as $$
+declare
+  v_res   tribuia.reservations%rowtype;
+  v_admin boolean;
+begin
+  select * into v_res from tribuia.reservations where id = p_reservation for update;
+  if v_res.id is null then
+    raise exception 'La reserva no existe' using errcode = 'P0002';
+  end if;
+
+  v_admin := tribuia.is_condominium_admin(v_res.condominium_id);
+  if not v_admin and not (v_res.apartment_id in (select tribuia.user_apartment_ids())) then
+    raise exception 'No puedes cancelar esta reserva' using errcode = '42501';
+  end if;
+  if not tribuia.reservation_blocks_slot(v_res.status) then
+    raise exception 'Esta reserva ya no esta activa' using errcode = 'P0001';
+  end if;
+  if not v_admin and v_res.paid_at is not null then
+    raise exception 'La reserva ya esta pagada: pide la cancelacion a la administracion'
+      using errcode = 'P0001';
+  end if;
+  if not v_admin and v_res.starts_at <= now() then
+    raise exception 'La reserva ya empezo' using errcode = 'P0001';
+  end if;
+
+  update tribuia.reservations
+     set status = 'CANCELLED',
+         admin_notes = coalesce(nullif(btrim(coalesce(p_reason, '')), ''), admin_notes)
+   where id = p_reservation;
+  return 'CANCELLED';
+end;
+$$;
+
+revoke all on function tribuia.common_area_busy_slots(uuid, timestamptz, timestamptz) from public, anon;
+revoke all on function tribuia.review_reservation(uuid, boolean, text) from public, anon;
+revoke all on function tribuia.register_reservation_payment(uuid) from public, anon;
+revoke all on function tribuia.cancel_reservation(uuid, text) from public, anon;
+grant execute on function tribuia.reservation_blocks_slot(text) to authenticated, service_role;
+grant execute on function tribuia.common_area_busy_slots(uuid, timestamptz, timestamptz) to authenticated, service_role;
+grant execute on function tribuia.review_reservation(uuid, boolean, text) to authenticated, service_role;
+grant execute on function tribuia.register_reservation_payment(uuid) to authenticated, service_role;
+grant execute on function tribuia.cancel_reservation(uuid, text) to authenticated, service_role;
+
+
+-- ----------------------------------------------------------------------------
+-- D. PAGO EN LINEA
+-- ----------------------------------------------------------------------------
+alter type tribuia.payment_kind add value if not exists 'RESERVATION';
+
+alter table tribuia.payments
+  add column if not exists reservation_id uuid references tribuia.reservations (id) on delete set null;
+create index if not exists idx_payments_reservation on tribuia.payments (reservation_id);
+
+-- 'RESERVATION' se compara como texto: se agrega al enum en esta misma transaccion.
+alter table tribuia.payments drop constraint if exists payments_target_check;
+alter table tribuia.payments add constraint payments_target_check check (
+  (kind::text = 'ADMIN_FEE' and admin_fee_id is not null)
+  or (kind::text = 'SUBSCRIPTION' and plan_period is not null)
+  or (kind::text = 'FINE' and fine_id is not null)
+  or (kind::text = 'RESERVATION' and reservation_id is not null)
+);
+
+create or replace function tribuia.apply_payment_result(
+  p_reference       text,
+  p_transaction_id  text,
+  p_status          text,
+  p_amount_in_cents bigint,
+  p_currency        text,
+  p_method          text,
+  p_message         text,
+  p_payload         jsonb
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = tribuia, public, pg_temp
+as $$
+declare
+  v_payment tribuia.payments%rowtype;
+  v_status  tribuia.payment_status;
+  v_start   date;
+  v_months  integer;
+begin
+  select * into v_payment from tribuia.payments where reference = p_reference for update;
+  if not found then
+    raise exception 'Pago no encontrado: %', p_reference;
+  end if;
+
+  if v_payment.status = 'APPROVED' then
+    return jsonb_build_object('id', v_payment.id, 'status', v_payment.status, 'kind', v_payment.kind);
+  end if;
+
+  v_status := case p_status
+    when 'APPROVED' then 'APPROVED'
+    when 'DECLINED' then 'DECLINED'
+    when 'VOIDED'   then 'VOIDED'
+    when 'ERROR'    then 'ERROR'
+    else 'PENDING'
+  end::tribuia.payment_status;
+
+  -- Proteccion contra montos manipulados: lo cobrado debe ser lo registrado.
+  if v_status = 'APPROVED'
+     and (p_amount_in_cents <> round(v_payment.amount * 100) or coalesce(p_currency, 'COP') <> v_payment.currency) then
+    v_status := 'ERROR';
+    p_message := 'El monto cobrado no coincide con el valor del pago';
+  end if;
+
+  update tribuia.payments
+     set status = v_status,
+         wompi_transaction_id = coalesce(p_transaction_id, wompi_transaction_id),
+         payment_method = coalesce(p_method, payment_method),
+         status_message = p_message,
+         paid_at = case when v_status = 'APPROVED' then now() else paid_at end,
+         raw = coalesce(p_payload, '{}'::jsonb)
+   where id = v_payment.id;
+
+  if v_status = 'APPROVED' then
+    if v_payment.kind::text = 'ADMIN_FEE' then
+      update tribuia.admin_fees
+         set status = 'PAID', paid_at = now(), payment_method = 'WOMPI', payment_id = v_payment.id
+       where id = v_payment.admin_fee_id;
+    elsif v_payment.kind::text = 'FINE' then
+      update tribuia.fines
+         set status = 'PAID', paid_at = now(), payment_method = 'WOMPI', payment_id = v_payment.id
+       where id = v_payment.fine_id;
+    elsif v_payment.kind::text = 'RESERVATION' then
+      -- Si la reserva se cancelo mientras se pagaba, queda el pago aprobado para
+      -- que la administracion lo devuelva; la reserva no se reactiva.
+      update tribuia.reservations
+         set status = case when status = 'PENDING_PAYMENT' then 'CONFIRMED' else status end,
+             paid_at = now(), payment_method = 'ONLINE', payment_id = v_payment.id
+       where id = v_payment.reservation_id;
+    else
+      -- El nuevo periodo empieza hoy o cuando termine el plan vigente.
+      select greatest(current_date, coalesce(max(ends_at), current_date)) into v_start
+        from tribuia.subscriptions where condominium_id = v_payment.condominium_id;
+
+      v_months := case v_payment.plan_period
+        when 'MONTHLY' then 1 when 'SEMIANNUAL' then 6 else 12 end;
+
+      insert into tribuia.subscriptions
+        (condominium_id, plan_period, apartments_count, unit_price, amount, starts_at, ends_at, payment_id)
+      values
+        (v_payment.condominium_id, v_payment.plan_period, v_payment.apartments_count,
+         v_payment.unit_price, v_payment.amount, v_start,
+         (v_start + make_interval(months => v_months))::date, v_payment.id);
+    end if;
+  end if;
+
+  return jsonb_build_object('id', v_payment.id, 'status', v_status, 'kind', v_payment.kind);
+end;
+$$;
+
+revoke all on function tribuia.apply_payment_result(text, text, text, bigint, text, text, text, jsonb) from public, anon, authenticated;
+grant execute on function tribuia.apply_payment_result(text, text, text, bigint, text, text, text, jsonb) to service_role;
+
+
+-- ----------------------------------------------------------------------------
+-- E. MODULO 'reservations'
+-- ----------------------------------------------------------------------------
+alter table tribuia.role_modules drop constraint if exists role_modules_module_check;
+alter table tribuia.role_modules add constraint role_modules_module_check check (module in (
+  'residents', 'visitors', 'alerts', 'announcements', 'messages', 'requests',
+  'incidents', 'fines', 'admin_fees', 'expenses', 'purchases', 'documents', 'reports',
+  'marketplace', 'reservations'
+));
+
+create or replace function tribuia.role_module_codes()
+returns text[]
+language sql
+immutable
+set search_path = tribuia, public, pg_temp
+as $$
+  select array[
+    'residents', 'visitors', 'alerts', 'announcements', 'messages', 'requests',
+    'incidents', 'fines', 'admin_fees', 'expenses', 'purchases', 'documents', 'reports',
+    'marketplace', 'reservations'
+  ]::text[];
+$$;
+
+notify pgrst, 'reload schema';
+
+-- ============================================================================
+-- 21. CLASIFICADOS DEL MARKETPLACE (migracion 20261019100000_clasificados_marketplace)
+-- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- A. TABLA
+-- ----------------------------------------------------------------------------
+create table if not exists tribuia.marketplace_listings (
+  id               uuid primary key default gen_random_uuid(),
+  condominium_id   uuid not null references tribuia.condominiums (id) on delete cascade,
+  apartment_id     uuid references tribuia.apartments (id) on delete set null,
+  category         text not null,
+  title            text not null,
+  description      text not null,
+  price            numeric(14, 2),
+  price_type       text not null default 'FIXED',
+  item_condition   text,
+  details          jsonb not null default '{}'::jsonb,
+  images           jsonb not null default '[]'::jsonb,
+  contact_phone    text,
+  contact_whatsapp text,
+  status           text not null default 'PENDING',
+  review_notes     text,
+  reviewed_by      uuid references tribuia.profiles (id) on delete set null,
+  reviewed_at      timestamptz,
+  published_at     timestamptz,
+  expires_at       timestamptz,
+  created_by       uuid not null default auth.uid() references tribuia.profiles (id) on delete cascade,
+  created_at       timestamptz not null default now(),
+  updated_at       timestamptz not null default now(),
+  constraint marketplace_listings_category_check check (category in (
+    'PRODUCTS', 'PROPERTY_RENT', 'PROPERTY_SALE', 'FOOD', 'ACCESSORIES', 'CLASSES', 'SERVICES', 'OTHER'
+  )),
+  constraint marketplace_listings_price_type_check check (price_type in (
+    'FIXED', 'NEGOTIABLE', 'FREE', 'PER_HOUR', 'PER_MONTH', 'PER_UNIT'
+  )),
+  constraint marketplace_listings_condition_check check (
+    item_condition is null or item_condition in ('NEW', 'USED')
+  ),
+  constraint marketplace_listings_status_check check (status in (
+    'PENDING', 'APPROVED', 'REJECTED', 'SOLD', 'ARCHIVED'
+  )),
+  constraint marketplace_listings_title_check check (length(btrim(title)) between 3 and 120),
+  constraint marketplace_listings_description_check check (length(btrim(description)) between 10 and 3000),
+  constraint marketplace_listings_price_check check (price is null or price between 0 and 99999999999),
+  constraint marketplace_listings_details_check check (
+    jsonb_typeof(details) = 'object' and pg_column_size(details) <= 4000
+  ),
+  constraint marketplace_listings_images_check check (
+    jsonb_typeof(images) = 'array' and jsonb_array_length(images) <= 6
+  ),
+  constraint marketplace_listings_lengths_check check (
+    coalesce(length(contact_phone), 0) <= 30
+    and coalesce(length(contact_whatsapp), 0) <= 30
+    and coalesce(length(review_notes), 0) <= 500
+  )
+);
+
+comment on table tribuia.marketplace_listings is
+  'Clasificados de los miembros del conjunto. Solo se ven aprobados y vigentes (o los propios). Moderados por la administracion.';
+
+create index if not exists idx_marketplace_listings_feed
+  on tribuia.marketplace_listings (condominium_id, status, published_at desc);
+create index if not exists idx_marketplace_listings_created_by
+  on tribuia.marketplace_listings (created_by);
+create index if not exists idx_marketplace_listings_apartment
+  on tribuia.marketplace_listings (apartment_id);
+create index if not exists idx_marketplace_listings_reviewed_by
+  on tribuia.marketplace_listings (reviewed_by);
+
+drop trigger if exists trg_marketplace_listings_updated_at on tribuia.marketplace_listings;
+create trigger trg_marketplace_listings_updated_at before update on tribuia.marketplace_listings
+  for each row execute function tribuia.set_updated_at();
+drop trigger if exists trg_marketplace_listings_lock_tenant on tribuia.marketplace_listings;
+create trigger trg_marketplace_listings_lock_tenant before update on tribuia.marketplace_listings
+  for each row execute function tribuia.tg_lock_tenant_columns('condominium_id', 'created_by');
+drop trigger if exists trg_marketplace_listings_tenant_ref on tribuia.marketplace_listings;
+create trigger trg_marketplace_listings_tenant_ref before insert or update on tribuia.marketplace_listings
+  for each row execute function tribuia.tg_assert_tenant_reference();
+drop trigger if exists trg_audit_marketplace_listings on tribuia.marketplace_listings;
+create trigger trg_audit_marketplace_listings
+  after insert or update or delete on tribuia.marketplace_listings
+  for each row execute function tribuia.fn_audit('CREATE');
+
+
+-- ----------------------------------------------------------------------------
+-- B. REGLAS (triggers) Y MODERACION
+-- ----------------------------------------------------------------------------
+-- Las fotos deben estar en la carpeta del autor dentro del conjunto.
+create or replace function tribuia.marketplace_images_valid(
+  p_images      jsonb,
+  p_condominium uuid,
+  p_author      uuid
+)
+returns boolean
+language sql
+immutable
+set search_path = tribuia, public, pg_temp
+as $$
+  select coalesce(bool_and(
+           jsonb_typeof(value) = 'string'
+           and (value #>> '{}') like p_condominium::text || '/listings/' || p_author::text || '/%'
+           and length(value #>> '{}') <= 300
+         ), true)
+    from jsonb_array_elements(coalesce(p_images, '[]'::jsonb));
+$$;
+
+create or replace function tribuia.tg_marketplace_listing_before_insert()
+returns trigger
+language plpgsql
+security definer
+set search_path = tribuia, public, pg_temp
+as $$
+declare
+  v_admin boolean;
+begin
+  new.created_by := coalesce(auth.uid(), new.created_by);
+  v_admin := tribuia.is_condominium_admin(new.condominium_id, new.created_by);
+
+  if new.apartment_id is not null and not v_admin
+     and new.apartment_id not in (select tribuia.user_apartment_ids(new.created_by)) then
+    raise exception 'Solo puedes publicar a nombre de tu propio apartamento' using errcode = '42501';
+  end if;
+
+  if not tribuia.marketplace_images_valid(new.images, new.condominium_id, new.created_by) then
+    raise exception 'Las fotos no pertenecen a esta publicacion' using errcode = '22023';
+  end if;
+
+  -- Antispam: maximo 10 publicaciones activas por persona en el conjunto.
+  if not v_admin and (
+    select count(*) from tribuia.marketplace_listings
+     where condominium_id = new.condominium_id
+       and created_by = new.created_by
+       and status in ('PENDING', 'APPROVED')
+  ) >= 10 then
+    raise exception 'Tienes 10 publicaciones activas. Marca alguna como vendida o archivala.'
+      using errcode = 'P0001';
+  end if;
+
+  -- La administracion publica directo; el resto espera aprobacion.
+  new.review_notes := null;
+  new.reviewed_by := null;
+  new.reviewed_at := null;
+  if v_admin then
+    new.status := 'APPROVED';
+    new.published_at := now();
+    new.expires_at := now() + interval '60 days';
+  else
+    new.status := 'PENDING';
+    new.published_at := null;
+    new.expires_at := null;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_marketplace_listings_before_insert on tribuia.marketplace_listings;
+create trigger trg_marketplace_listings_before_insert before insert on tribuia.marketplace_listings
+  for each row execute function tribuia.tg_marketplace_listing_before_insert();
+
+create or replace function tribuia.tg_marketplace_listing_before_update()
+returns trigger
+language plpgsql
+security definer
+set search_path = tribuia, public, pg_temp
+as $$
+declare
+  v_content_changed boolean;
+begin
+  -- Service role / SQL Editor: sin restricciones. (La RPC de moderacion corre
+  -- con el JWT del administrador y pasa por la rama de administracion.)
+  if auth.uid() is null then
+    return new;
+  end if;
+
+  if not tribuia.marketplace_images_valid(new.images, new.condominium_id, new.created_by) then
+    raise exception 'Las fotos no pertenecen a esta publicacion' using errcode = '22023';
+  end if;
+
+  if tribuia.is_condominium_admin(new.condominium_id) then
+    return new;
+  end if;
+
+  -- El autor no se aprueba ni se modera a si mismo.
+  if new.status is distinct from old.status and new.status not in ('SOLD', 'ARCHIVED', 'PENDING') then
+    raise exception 'Solo la administracion aprueba publicaciones' using errcode = '42501';
+  end if;
+  new.review_notes := old.review_notes;
+  new.reviewed_by := old.reviewed_by;
+  new.reviewed_at := old.reviewed_at;
+  new.published_at := old.published_at;
+  new.expires_at := old.expires_at;
+
+  if new.apartment_id is distinct from old.apartment_id and new.apartment_id is not null
+     and new.apartment_id not in (select tribuia.user_apartment_ids()) then
+    raise exception 'Solo puedes publicar a nombre de tu propio apartamento' using errcode = '42501';
+  end if;
+
+  v_content_changed :=
+    (new.category, new.title, new.description, new.price, new.price_type, new.item_condition,
+     new.details, new.images, new.contact_phone, new.contact_whatsapp, new.apartment_id)
+    is distinct from
+    (old.category, old.title, old.description, old.price, old.price_type, old.item_condition,
+     old.details, old.images, old.contact_phone, old.contact_whatsapp, old.apartment_id);
+
+  -- Contenido nuevo (o republicar algo vendido/archivado) vuelve a revision.
+  if (v_content_changed and new.status not in ('SOLD', 'ARCHIVED'))
+     or (new.status = 'PENDING' and old.status <> 'PENDING') then
+    new.status := 'PENDING';
+    new.review_notes := null;
+    new.reviewed_by := null;
+    new.reviewed_at := null;
+    new.published_at := null;
+    new.expires_at := null;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_marketplace_listings_before_update on tribuia.marketplace_listings;
+create trigger trg_marketplace_listings_before_update before update on tribuia.marketplace_listings
+  for each row execute function tribuia.tg_marketplace_listing_before_update();
+
+revoke execute on function tribuia.tg_marketplace_listing_before_insert() from public, anon, authenticated;
+revoke execute on function tribuia.tg_marketplace_listing_before_update() from public, anon, authenticated;
+
+-- Aprobar o rechazar (administracion). Avisa al autor.
+create or replace function tribuia.review_marketplace_listing(
+  p_listing uuid,
+  p_approve boolean,
+  p_notes   text default null
+)
+returns text
+language plpgsql
+security definer
+set search_path = tribuia, public, pg_temp
+as $$
+declare
+  v_row tribuia.marketplace_listings%rowtype;
+  v_status text;
+begin
+  select * into v_row from tribuia.marketplace_listings where id = p_listing for update;
+  if v_row.id is null then
+    raise exception 'La publicacion no existe' using errcode = 'P0002';
+  end if;
+  if not tribuia.is_condominium_admin(v_row.condominium_id) then
+    raise exception 'Solo la administracion modera el marketplace' using errcode = '42501';
+  end if;
+  if v_row.status <> 'PENDING' then
+    raise exception 'Esta publicacion ya fue revisada' using errcode = 'P0001';
+  end if;
+
+  v_status := case when p_approve then 'APPROVED' else 'REJECTED' end;
+  update tribuia.marketplace_listings
+     set status = v_status,
+         review_notes = nullif(btrim(coalesce(p_notes, '')), ''),
+         reviewed_by = auth.uid(),
+         reviewed_at = now(),
+         published_at = case when p_approve then now() else null end,
+         expires_at = case when p_approve then now() + interval '60 days' else null end
+   where id = p_listing;
+
+  insert into tribuia.notifications
+    (condominium_id, user_id, title, body, type, priority, entity, entity_id, link)
+  values (
+    v_row.condominium_id, v_row.created_by,
+    case when p_approve then 'Tu publicacion fue aprobada' else 'Tu publicacion no fue aprobada' end,
+    left(v_row.title || coalesce(' — ' || nullif(btrim(coalesce(p_notes, '')), ''), ''), 240),
+    'SYSTEM', 'LOW', 'marketplace_listings', v_row.id, '/marketplace?tab=mias'
+  );
+  return v_status;
+end;
+$$;
+
+-- Aviso a la administracion cuando llega algo por aprobar.
+create or replace function tribuia.tg_marketplace_listing_notify()
+returns trigger
+language plpgsql
+security definer
+set search_path = tribuia, public, pg_temp
+as $$
+begin
+  if new.status = 'PENDING' and (tg_op = 'INSERT' or old.status is distinct from 'PENDING') then
+    insert into tribuia.notifications
+      (condominium_id, user_id, title, body, type, priority, entity, entity_id, link)
+    select new.condominium_id, m.user_id, 'Publicacion por aprobar en el marketplace',
+           left(new.title, 240), 'SYSTEM', 'LOW', 'marketplace_listings', new.id,
+           '/marketplace?tab=revisar'
+      from tribuia.condominium_members m
+      join tribuia.roles r on r.id = m.role_id and r.code = 'ADMINISTRATOR'
+     where m.condominium_id = new.condominium_id
+       and m.status = 'ACTIVE'
+       and m.user_id <> new.created_by;
+  end if;
+  return null;
+end;
+$$;
+
+drop trigger if exists trg_marketplace_listings_notify on tribuia.marketplace_listings;
+create trigger trg_marketplace_listings_notify
+  after insert or update of status on tribuia.marketplace_listings
+  for each row execute function tribuia.tg_marketplace_listing_notify();
+
+revoke execute on function tribuia.tg_marketplace_listing_notify() from public, anon, authenticated;
+revoke all on function tribuia.review_marketplace_listing(uuid, boolean, text) from public, anon;
+grant execute on function tribuia.review_marketplace_listing(uuid, boolean, text) to authenticated, service_role;
+grant execute on function tribuia.marketplace_images_valid(jsonb, uuid, uuid) to authenticated, service_role;
+
+
+-- ----------------------------------------------------------------------------
+-- RLS
+-- ----------------------------------------------------------------------------
+alter table tribuia.marketplace_listings enable row level security;
+
+drop policy if exists marketplace_listings_select on tribuia.marketplace_listings;
+create policy marketplace_listings_select on tribuia.marketplace_listings for select to authenticated
+  using (
+    tribuia.user_can_access_condominium(condominium_id)
+    and condominium_id not in (select tribuia.module_blocked_condominiums('marketplace'))
+    and (
+      (status = 'APPROVED' and (expires_at is null or expires_at > now()))
+      or created_by = (select auth.uid())
+      or tribuia.is_condominium_admin(condominium_id)
+    )
+  );
+
+drop policy if exists marketplace_listings_insert on tribuia.marketplace_listings;
+create policy marketplace_listings_insert on tribuia.marketplace_listings for insert to authenticated
+  with check (
+    created_by = (select auth.uid())
+    and tribuia.user_can_access_condominium(condominium_id)
+    and condominium_id not in (select tribuia.module_blocked_condominiums('marketplace'))
+  );
+
+drop policy if exists marketplace_listings_update on tribuia.marketplace_listings;
+create policy marketplace_listings_update on tribuia.marketplace_listings for update to authenticated
+  using (created_by = (select auth.uid()) or tribuia.is_condominium_admin(condominium_id))
+  with check (
+    (created_by = (select auth.uid()) or tribuia.is_condominium_admin(condominium_id))
+    and condominium_id not in (select tribuia.module_blocked_condominiums('marketplace'))
+  );
+
+drop policy if exists marketplace_listings_delete on tribuia.marketplace_listings;
+create policy marketplace_listings_delete on tribuia.marketplace_listings for delete to authenticated
+  using (created_by = (select auth.uid()) or tribuia.is_condominium_admin(condominium_id));
+
+revoke all on tribuia.marketplace_listings from anon;
+grant select, insert, update, delete on tribuia.marketplace_listings to authenticated;
+grant all on tribuia.marketplace_listings to service_role;
+
+
+-- ----------------------------------------------------------------------------
+-- D. STORAGE: fotos de las publicaciones
+-- ----------------------------------------------------------------------------
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('marketplace', 'marketplace', false, 5242880, array['image/png', 'image/jpeg', 'image/webp'])
+on conflict (id) do update
+  set public = excluded.public,
+      file_size_limit = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
+
+do $$
+begin
+  drop policy if exists edifeasy_marketplace_read on storage.objects;
+  drop policy if exists edifeasy_marketplace_write on storage.objects;
+  drop policy if exists edifeasy_marketplace_delete on storage.objects;
+
+  -- Ruta: <condominium_id>/listings/<user_id>/<archivo>
+  execute $pol$
+    create policy edifeasy_marketplace_read on storage.objects for select to authenticated
+    using (
+      bucket_id = 'marketplace'
+      and tribuia.user_can_access_condominium(tribuia.safe_uuid((storage.foldername(name))[1]))
+    )
+  $pol$;
+
+  execute $pol$
+    create policy edifeasy_marketplace_write on storage.objects for insert to authenticated
+    with check (
+      bucket_id = 'marketplace'
+      and (storage.foldername(name))[2] = 'listings'
+      and (storage.foldername(name))[3] = (select auth.uid())::text
+      and tribuia.user_can_access_condominium(tribuia.safe_uuid((storage.foldername(name))[1]))
+    )
+  $pol$;
+
+  execute $pol$
+    create policy edifeasy_marketplace_delete on storage.objects for delete to authenticated
+    using (
+      bucket_id = 'marketplace'
+      and (
+        (storage.foldername(name))[3] = (select auth.uid())::text
+        or tribuia.is_condominium_admin(tribuia.safe_uuid((storage.foldername(name))[1]))
+      )
+    )
+  $pol$;
+exception
+  when insufficient_privilege then
+    raise notice 'Sin privilegios para crear politicas de storage.objects. Crealas desde el Dashboard (Storage -> Policies).';
+end
+$$;
+
+notify pgrst, 'reload schema';
+
+-- ============================================================================
+-- 22. CUMPLIMIENTO LEGAL (migracion 20261019200000_cumplimiento_legal)
+-- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- A. DATOS LEGALES DEL OPERADOR
+-- ----------------------------------------------------------------------------
+create table if not exists tribuia.platform_settings (
+  key        text primary key,
+  value      jsonb not null default '{}'::jsonb,
+  updated_by uuid references tribuia.profiles (id) on delete set null,
+  updated_at timestamptz not null default now(),
+  constraint platform_settings_key_check check (key in ('legal_entity')),
+  constraint platform_settings_value_check check (
+    jsonb_typeof(value) = 'object' and pg_column_size(value) <= 8000
+  )
+);
+
+comment on table tribuia.platform_settings is
+  'Configuracion global de la plataforma. legal_entity: datos del operador para terminos y politica de datos.';
+
+create index if not exists idx_platform_settings_updated_by on tribuia.platform_settings (updated_by);
+
+drop trigger if exists trg_platform_settings_updated_at on tribuia.platform_settings;
+create trigger trg_platform_settings_updated_at before update on tribuia.platform_settings
+  for each row execute function tribuia.set_updated_at();
+
+insert into tribuia.platform_settings (key, value)
+values ('legal_entity', '{}'::jsonb)
+on conflict (key) do nothing;
+
+alter table tribuia.platform_settings enable row level security;
+
+drop policy if exists platform_settings_select on tribuia.platform_settings;
+create policy platform_settings_select on tribuia.platform_settings for select to anon, authenticated
+  using (key = 'legal_entity');
+drop policy if exists platform_settings_update on tribuia.platform_settings;
+create policy platform_settings_update on tribuia.platform_settings for update to authenticated
+  using (tribuia.is_super_admin())
+  with check (tribuia.is_super_admin());
+
+revoke all on tribuia.platform_settings from anon, authenticated;
+grant select on tribuia.platform_settings to anon, authenticated;
+grant update on tribuia.platform_settings to authenticated;
+grant all on tribuia.platform_settings to service_role;
+
+
+-- ----------------------------------------------------------------------------
+-- B. PRUEBA DE LA AUTORIZACION
+-- ----------------------------------------------------------------------------
+create table if not exists tribuia.legal_acceptances (
+  id          uuid primary key default gen_random_uuid(),
+  -- La prueba se conserva aunque se borre la cuenta (se guarda el correo).
+  user_id     uuid references tribuia.profiles (id) on delete set null,
+  email       text not null,
+  document    text not null,
+  version     text not null,
+  source      text not null default 'APP',
+  user_agent  text,
+  accepted_at timestamptz not null default now(),
+  constraint legal_acceptances_document_check check (document in ('TERMS', 'PRIVACY', 'MARKETPLACE_RULES')),
+  constraint legal_acceptances_source_check check (source in ('SIGNUP', 'LOGIN', 'APP')),
+  constraint legal_acceptances_version_check check (version ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'),
+  constraint legal_acceptances_ua_check check (coalesce(length(user_agent), 0) <= 400)
+);
+
+create unique index if not exists uq_legal_acceptances_user_doc_version
+  on tribuia.legal_acceptances (user_id, document, version);
+
+alter table tribuia.legal_acceptances enable row level security;
+
+drop policy if exists legal_acceptances_select on tribuia.legal_acceptances;
+create policy legal_acceptances_select on tribuia.legal_acceptances for select to authenticated
+  using (user_id = (select auth.uid()) or tribuia.is_super_admin());
+-- Sin insert/update/delete directos: solo accept_legal_documents y el alta.
+
+revoke all on tribuia.legal_acceptances from anon, authenticated;
+grant select on tribuia.legal_acceptances to authenticated;
+grant all on tribuia.legal_acceptances to service_role;
+
+create or replace function tribuia.accept_legal_documents(
+  p_documents  text[],
+  p_version    text,
+  p_user_agent text default null
+)
+returns integer
+language plpgsql
+security definer
+set search_path = tribuia, public, pg_temp
+as $$
+declare
+  v_user  uuid := auth.uid();
+  v_email text;
+  v_count integer;
+begin
+  if v_user is null then
+    raise exception 'No autenticado' using errcode = '42501';
+  end if;
+  if p_documents is null or cardinality(p_documents) = 0
+     or not (p_documents <@ array['TERMS', 'PRIVACY', 'MARKETPLACE_RULES']) then
+    raise exception 'Documentos invalidos' using errcode = '22023';
+  end if;
+
+  select email into v_email from tribuia.profiles where id = v_user;
+
+  insert into tribuia.legal_acceptances (user_id, email, document, version, source, user_agent)
+  select v_user, coalesce(v_email, ''), d, p_version, 'LOGIN', left(p_user_agent, 400)
+    from unnest(p_documents) as d
+  on conflict (user_id, document, version) do nothing;
+
+  get diagnostics v_count = row_count;
+  return v_count;
+end;
+$$;
+
+revoke all on function tribuia.accept_legal_documents(text[], text, text) from public, anon;
+grant execute on function tribuia.accept_legal_documents(text[], text, text) to authenticated;
+
+-- El alta guarda la aceptacion que el usuario dio en el formulario de registro
+-- (metadato legal_version). Reemplaza handle_new_user conservando su logica.
+create or replace function tribuia.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = tribuia, public, pg_temp
+as $$
+declare
+  v_requested_role text;
+  v_legal_version  text;
+begin
+  v_requested_role := nullif(new.raw_user_meta_data ->> 'requested_role', '');
+
+  if v_requested_role is not null and v_requested_role not in ('OWNER', 'TENANT', 'BOTH') then
+    raise exception 'Autoregistro no permitido para el rol %. Solo propietarios y arrendatarios pueden crear su cuenta por este medio.', v_requested_role
+      using errcode = '42501';
+  end if;
+
+  insert into tribuia.profiles (id, email, full_name, phone, document_number, document_type, avatar_url, metadata)
+  values (
+    new.id,
+    new.email,
+    coalesce(nullif(new.raw_user_meta_data ->> 'full_name', ''), split_part(new.email, '@', 1)),
+    new.raw_user_meta_data ->> 'phone',
+    new.raw_user_meta_data ->> 'document_number',
+    coalesce(new.raw_user_meta_data ->> 'document_type', 'CC'),
+    new.raw_user_meta_data ->> 'avatar_url',
+    jsonb_build_object('requested_role', v_requested_role)
+  )
+  on conflict (id) do update
+    set email = excluded.email,
+        full_name = coalesce(nullif(excluded.full_name, ''), tribuia.profiles.full_name);
+
+  v_legal_version := new.raw_user_meta_data ->> 'legal_version';
+  if v_legal_version ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' then
+    insert into tribuia.legal_acceptances (user_id, email, document, version, source, user_agent)
+    select new.id, coalesce(new.email, ''), d, v_legal_version, 'SIGNUP',
+           left(new.raw_user_meta_data ->> 'user_agent', 400)
+      from unnest(array['TERMS', 'PRIVACY']) as d
+    on conflict (user_id, document, version) do nothing;
+  end if;
+
+  return new;
+end;
+$$;
+
+
+-- ----------------------------------------------------------------------------
+-- C. CONSULTAS Y RECLAMOS DE TITULARES
+-- ----------------------------------------------------------------------------
+-- Suma dias habiles (lunes a viernes). No descuenta festivos: el plazo real
+-- puede ser uno o dos dias mayor, nunca menor.
+create or replace function tribuia.add_business_days(p_from timestamptz, p_days integer)
+returns timestamptz
+language plpgsql
+immutable
+set search_path = tribuia, public, pg_temp
+as $$
+declare
+  v_date  timestamptz := p_from;
+  v_added integer := 0;
+begin
+  while v_added < p_days loop
+    v_date := v_date + interval '1 day';
+    if extract(isodow from v_date at time zone 'America/Bogota') < 6 then
+      v_added := v_added + 1;
+    end if;
+  end loop;
+  return v_date;
+end;
+$$;
+
+create table if not exists tribuia.data_requests (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid references tribuia.profiles (id) on delete set null,
+  email       text not null,
+  type        text not null,
+  details     text,
+  status      text not null default 'OPEN',
+  response    text,
+  due_at      timestamptz not null,
+  resolved_at timestamptz,
+  resolved_by uuid references tribuia.profiles (id) on delete set null,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now(),
+  constraint data_requests_type_check check (type in ('ACCESS', 'RECTIFY', 'DELETE', 'REVOKE', 'COMPLAINT')),
+  constraint data_requests_status_check check (status in ('OPEN', 'IN_PROGRESS', 'RESOLVED', 'REJECTED')),
+  constraint data_requests_lengths_check check (
+    coalesce(length(details), 0) <= 2000 and coalesce(length(response), 0) <= 4000
+  )
+);
+
+create index if not exists idx_data_requests_user on tribuia.data_requests (user_id);
+create index if not exists idx_data_requests_status on tribuia.data_requests (status, due_at);
+create index if not exists idx_data_requests_resolved_by on tribuia.data_requests (resolved_by);
+
+drop trigger if exists trg_data_requests_updated_at on tribuia.data_requests;
+create trigger trg_data_requests_updated_at before update on tribuia.data_requests
+  for each row execute function tribuia.set_updated_at();
+
+alter table tribuia.data_requests enable row level security;
+
+drop policy if exists data_requests_select on tribuia.data_requests;
+create policy data_requests_select on tribuia.data_requests for select to authenticated
+  using (user_id = (select auth.uid()) or tribuia.is_super_admin());
+
+revoke all on tribuia.data_requests from anon, authenticated;
+grant select on tribuia.data_requests to authenticated;
+grant all on tribuia.data_requests to service_role;
+
+-- Consultas (conocer sus datos): 10 dias habiles. Reclamos: 15 dias habiles.
+create or replace function tribuia.create_data_request(p_type text, p_details text default null)
+returns uuid
+language plpgsql
+security definer
+set search_path = tribuia, public, pg_temp
+as $$
+declare
+  v_user  uuid := auth.uid();
+  v_email text;
+  v_id    uuid;
+begin
+  if v_user is null then
+    raise exception 'No autenticado' using errcode = '42501';
+  end if;
+  if p_type not in ('ACCESS', 'RECTIFY', 'DELETE', 'REVOKE', 'COMPLAINT') then
+    raise exception 'Tipo de solicitud invalido' using errcode = '22023';
+  end if;
+  if (select count(*) from tribuia.data_requests
+       where user_id = v_user and status in ('OPEN', 'IN_PROGRESS')) >= 5 then
+    raise exception 'Ya tienes 5 solicitudes abiertas. Espera la respuesta.' using errcode = 'P0001';
+  end if;
+
+  select email into v_email from tribuia.profiles where id = v_user;
+
+  insert into tribuia.data_requests (user_id, email, type, details, due_at)
+  values (v_user, coalesce(v_email, ''), p_type, nullif(left(btrim(coalesce(p_details, '')), 2000), ''),
+          tribuia.add_business_days(now(), case when p_type = 'ACCESS' then 10 else 15 end))
+  returning id into v_id;
+  return v_id;
+end;
+$$;
+
+-- Respuesta del operador (SUPER_ADMIN). Avisa al titular.
+create or replace function tribuia.resolve_data_request(
+  p_request  uuid,
+  p_status   text,
+  p_response text
+)
+returns text
+language plpgsql
+security definer
+set search_path = tribuia, public, pg_temp
+as $$
+declare
+  v_row tribuia.data_requests%rowtype;
+begin
+  if not tribuia.is_super_admin() then
+    raise exception 'Solo el operador de la plataforma responde solicitudes de datos' using errcode = '42501';
+  end if;
+  if p_status not in ('IN_PROGRESS', 'RESOLVED', 'REJECTED') then
+    raise exception 'Estado invalido' using errcode = '22023';
+  end if;
+  if p_status in ('RESOLVED', 'REJECTED') and length(btrim(coalesce(p_response, ''))) < 10 then
+    raise exception 'Escribe la respuesta al titular (minimo 10 caracteres)' using errcode = '22023';
+  end if;
+
+  update tribuia.data_requests
+     set status = p_status,
+         response = coalesce(nullif(btrim(coalesce(p_response, '')), ''), response),
+         resolved_at = case when p_status in ('RESOLVED', 'REJECTED') then now() else null end,
+         resolved_by = case when p_status in ('RESOLVED', 'REJECTED') then auth.uid() else null end
+   where id = p_request
+  returning * into v_row;
+
+  if v_row.id is null then
+    raise exception 'La solicitud no existe' using errcode = 'P0002';
+  end if;
+
+  if v_row.user_id is not null and p_status in ('RESOLVED', 'REJECTED') then
+    insert into tribuia.notifications (user_id, title, body, type, priority, entity, entity_id, link)
+    values (v_row.user_id, 'Respuesta a tu solicitud sobre tus datos personales',
+            left(v_row.response, 240), 'SYSTEM', 'MEDIUM', 'data_requests', v_row.id,
+            '/settings?tab=privacidad');
+  end if;
+  return v_row.status;
+end;
+$$;
+
+revoke all on function tribuia.create_data_request(text, text) from public, anon;
+revoke all on function tribuia.resolve_data_request(uuid, text, text) from public, anon;
+grant execute on function tribuia.create_data_request(text, text) to authenticated;
+grant execute on function tribuia.resolve_data_request(uuid, text, text) to authenticated;
+
+
+-- ----------------------------------------------------------------------------
+-- D. DESCARGA DE MIS DATOS
+-- ----------------------------------------------------------------------------
+create or replace function tribuia.export_my_data()
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = tribuia, public, pg_temp
+as $$
+declare
+  v_user uuid := auth.uid();
+begin
+  if v_user is null then
+    raise exception 'No autenticado' using errcode = '42501';
+  end if;
+
+  return jsonb_build_object(
+    'generated_at', now(),
+    'profile', (select to_jsonb(p) - 'metadata' from tribuia.profiles p where p.id = v_user),
+    'memberships', coalesce((
+      select jsonb_agg(jsonb_build_object(
+               'condominium', c.name, 'role', r.name, 'status', m.status, 'since', m.joined_at))
+        from tribuia.condominium_members m
+        join tribuia.condominiums c on c.id = m.condominium_id
+        join tribuia.roles r on r.id = m.role_id
+       where m.user_id = v_user), '[]'::jsonb),
+    'apartments', coalesce((
+      select jsonb_agg(jsonb_build_object(
+               'condominium', c.name, 'building', b.name, 'apartment', a.number,
+               'relation', x.relation, 'active', x.is_active))
+        from (
+          select apartment_id, 'OWNER' as relation, is_active from tribuia.apartment_owners where profile_id = v_user
+          union all
+          select apartment_id, 'TENANT', is_active from tribuia.apartment_tenants where profile_id = v_user
+        ) x
+        join tribuia.apartments a on a.id = x.apartment_id
+        join tribuia.buildings b on b.id = a.building_id
+        join tribuia.condominiums c on c.id = a.condominium_id), '[]'::jsonb),
+    'resident_records', coalesce((
+      select jsonb_agg(to_jsonb(r) - 'condominium_id' - 'apartment_id' - 'profile_id')
+        from tribuia.residents r where r.profile_id = v_user), '[]'::jsonb),
+    'requests', coalesce((
+      select jsonb_agg(jsonb_build_object('code', q.code, 'title', q.title, 'status', q.status, 'created_at', q.created_at))
+        from tribuia.requests q where q.created_by = v_user), '[]'::jsonb),
+    'reservations', coalesce((
+      select jsonb_agg(jsonb_build_object('area', ca.name, 'starts_at', rv.starts_at, 'ends_at', rv.ends_at,
+                                          'status', rv.status, 'amount', rv.amount))
+        from tribuia.reservations rv join tribuia.common_areas ca on ca.id = rv.common_area_id
+       where rv.created_by = v_user), '[]'::jsonb),
+    'marketplace_listings', coalesce((
+      select jsonb_agg(jsonb_build_object('title', l.title, 'category', l.category, 'status', l.status,
+                                          'price', l.price, 'created_at', l.created_at))
+        from tribuia.marketplace_listings l where l.created_by = v_user), '[]'::jsonb),
+    'payments', coalesce((
+      select jsonb_agg(jsonb_build_object('reference', p.reference, 'kind', p.kind, 'amount', p.amount,
+                                          'status', p.status, 'paid_at', p.paid_at))
+        from tribuia.payments p where p.payer_id = v_user), '[]'::jsonb),
+    'legal_acceptances', coalesce((
+      select jsonb_agg(jsonb_build_object('document', a.document, 'version', a.version,
+                                          'accepted_at', a.accepted_at, 'source', a.source))
+        from tribuia.legal_acceptances a where a.user_id = v_user), '[]'::jsonb),
+    'data_requests', coalesce((
+      select jsonb_agg(jsonb_build_object('type', d.type, 'status', d.status, 'created_at', d.created_at,
+                                          'response', d.response))
+        from tribuia.data_requests d where d.user_id = v_user), '[]'::jsonb)
+  );
+end;
+$$;
+
+revoke all on function tribuia.export_my_data() from public, anon;
+grant execute on function tribuia.export_my_data() to authenticated;
+
+
+-- ----------------------------------------------------------------------------
+-- E. REGISTRO DE VENDEDORES DEL MARKETPLACE (Ley 1480 de 2011, art. 53)
+-- ----------------------------------------------------------------------------
+create table if not exists tribuia.marketplace_seller_registry (
+  listing_id      uuid primary key references tribuia.marketplace_listings (id) on delete cascade,
+  condominium_id  uuid not null references tribuia.condominiums (id) on delete cascade,
+  seller_id       uuid references tribuia.profiles (id) on delete set null,
+  full_name       text not null,
+  document_type   text,
+  document_number text not null,
+  address         text not null,
+  phone           text,
+  email           text,
+  created_at      timestamptz not null default now()
+);
+
+comment on table tribuia.marketplace_seller_registry is
+  'Registro de oferentes del portal de contacto (Ley 1480 art. 53). Solo lo ven la administracion del conjunto, el operador y el propio vendedor.';
+
+create index if not exists idx_seller_registry_condominium on tribuia.marketplace_seller_registry (condominium_id);
+create index if not exists idx_seller_registry_seller on tribuia.marketplace_seller_registry (seller_id);
+
+alter table tribuia.marketplace_seller_registry enable row level security;
+
+drop policy if exists seller_registry_select on tribuia.marketplace_seller_registry;
+create policy seller_registry_select on tribuia.marketplace_seller_registry for select to authenticated
+  using (seller_id = (select auth.uid()) or tribuia.is_condominium_admin(condominium_id));
+
+revoke all on tribuia.marketplace_seller_registry from anon, authenticated;
+grant select on tribuia.marketplace_seller_registry to authenticated;
+grant all on tribuia.marketplace_seller_registry to service_role;
+
+-- Antes de publicar: documento del vendedor y reglas aceptadas.
+create or replace function tribuia.tg_marketplace_listing_requirements()
+returns trigger
+language plpgsql
+security definer
+set search_path = tribuia, public, pg_temp
+as $$
+declare
+  v_profile tribuia.profiles%rowtype;
+begin
+  if auth.uid() is null then
+    return new;
+  end if;
+  select * into v_profile from tribuia.profiles where id = new.created_by;
+  if nullif(btrim(coalesce(v_profile.document_number, '')), '') is null then
+    raise exception 'Para publicar registra tu documento de identidad (Ley 1480 de 2011, art. 53)'
+      using errcode = 'P0001';
+  end if;
+  if not exists (
+    select 1 from tribuia.legal_acceptances
+     where user_id = new.created_by and document = 'MARKETPLACE_RULES'
+  ) then
+    raise exception 'Acepta las reglas del marketplace para publicar' using errcode = 'P0001';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_marketplace_listings_requirements on tribuia.marketplace_listings;
+create trigger trg_marketplace_listings_requirements before insert on tribuia.marketplace_listings
+  for each row execute function tribuia.tg_marketplace_listing_requirements();
+
+-- Al publicar se guarda el registro del oferente con los datos de ese momento.
+create or replace function tribuia.tg_marketplace_listing_registry()
+returns trigger
+language plpgsql
+security definer
+set search_path = tribuia, public, pg_temp
+as $$
+begin
+  insert into tribuia.marketplace_seller_registry
+    (listing_id, condominium_id, seller_id, full_name, document_type, document_number, address, phone, email)
+  select new.id, new.condominium_id, p.id, p.full_name, p.document_type,
+         coalesce(nullif(btrim(p.document_number), ''), 'NO REGISTRADO'),
+         concat_ws(', ',
+           nullif(concat_ws(' ', b.name, case when a.number is not null then 'Apto ' || a.number end), ''),
+           c.name, c.address, c.city),
+         coalesce(new.contact_phone, new.contact_whatsapp, p.phone),
+         p.email
+    from tribuia.profiles p
+    join tribuia.condominiums c on c.id = new.condominium_id
+    left join tribuia.apartments a on a.id = new.apartment_id
+    left join tribuia.buildings b on b.id = a.building_id
+   where p.id = new.created_by
+  on conflict (listing_id) do nothing;
+  return null;
+end;
+$$;
+
+drop trigger if exists trg_marketplace_listings_registry on tribuia.marketplace_listings;
+create trigger trg_marketplace_listings_registry after insert on tribuia.marketplace_listings
+  for each row execute function tribuia.tg_marketplace_listing_registry();
+
+revoke execute on function tribuia.tg_marketplace_listing_requirements() from public, anon, authenticated;
+revoke execute on function tribuia.tg_marketplace_listing_registry() from public, anon, authenticated;
 
 notify pgrst, 'reload schema';
 

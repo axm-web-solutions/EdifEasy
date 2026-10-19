@@ -74,7 +74,6 @@ export const apartmentTenantSchema = z.object({
   is_active: z.boolean().default(true),
 })
 
-
 /** Invitacion creada por un administrador para dar de alta a un usuario. */
 export const invitationSchema = z.object({
   email: z.string().min(1, 'El correo es obligatorio').email('Correo invalido'),

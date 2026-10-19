@@ -86,6 +86,12 @@ const CreateFromRutPage = lazy(() =>
     default: m.CreateFromRutPage,
   })),
 )
+const CompliancePage = lazy(() =>
+  import('@/features/legal/pages/CompliancePage').then((m) => ({ default: m.CompliancePage })),
+)
+const LegalPage = lazy(() =>
+  import('@/features/legal/pages/LegalPage').then((m) => ({ default: m.LegalPage })),
+)
 const FeedPage = lazy(() =>
   import('@/features/feed/pages/FeedPage').then((m) => ({ default: m.FeedPage })),
 )
@@ -145,6 +151,10 @@ export function AppRoutes() {
         </Route>
 
         <Route path="/sin-condominio" element={<NoCondominiumPage />} />
+
+        {/* Documentos legales: publicos, con o sin sesion. */}
+        <Route path="/legal" element={<Navigate to="/legal/terminos" replace />} />
+        <Route path="/legal/:doc" element={<LegalPage />} />
 
         {/* Privadas */}
         <Route element={<ProtectedRoute />}>
@@ -307,6 +317,14 @@ export function AppRoutes() {
               element={
                 <RoleGuard roles={['SUPER_ADMIN']}>
                   <CreateFromRutPage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/platform/legal"
+              element={
+                <RoleGuard roles={['SUPER_ADMIN']}>
+                  <CompliancePage />
                 </RoleGuard>
               }
             />

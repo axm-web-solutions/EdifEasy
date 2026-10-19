@@ -38,11 +38,17 @@ describe('registerSchema', () => {
     vehicles: [],
     password: 'Secreta123',
     confirmPassword: 'Secreta123',
-    acceptTerms: true as const,
+    acceptTerms: true,
+    acceptPrivacy: true,
   }
 
   it('acepta un registro completo', () => {
     expect(registerSchema.safeParse(base).success).toBe(true)
+  })
+
+  it('exige aceptar terminos y autorizar datos por separado (sin premarcar)', () => {
+    expect(registerSchema.safeParse({ ...base, acceptTerms: false }).success).toBe(false)
+    expect(registerSchema.safeParse({ ...base, acceptPrivacy: false }).success).toBe(false)
   })
 
   it('rechaza contrasenas debiles', () => {

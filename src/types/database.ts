@@ -86,7 +86,7 @@ export type IncidentStatus = 'OPEN' | 'INVESTIGATING' | 'RESOLVED' | 'CLOSED'
 export type ExpenseStatus = 'PENDING' | 'APPROVED' | 'PAID' | 'REJECTED'
 export type PurchaseStatus = 'DRAFT' | 'ORDERED' | 'RECEIVED' | 'CANCELLED'
 export type FineStatus = 'PENDING' | 'PAID' | 'CANCELLED' | 'APPEALED'
-export type PaymentKind = 'ADMIN_FEE' | 'SUBSCRIPTION' | 'FINE'
+export type PaymentKind = 'ADMIN_FEE' | 'SUBSCRIPTION' | 'FINE' | 'RESERVATION'
 export type PaymentStatus = 'PENDING' | 'APPROVED' | 'DECLINED' | 'VOIDED' | 'ERROR'
 export type PlanPeriod = 'MONTHLY' | 'SEMIANNUAL' | 'ANNUAL'
 export type AdminFeeStatus = 'PENDING' | 'PAID' | 'CANCELLED'
@@ -202,6 +202,144 @@ export type CondominiumPlaceRow = {
   address: string | null
   phone: string | null
   website: string | null
+  created_at: string
+}
+
+/** Zona comun reservable. Horas en hora de Colombia ("HH:MM:SS"). */
+export type CommonAreaRow = {
+  id: string
+  condominium_id: string
+  name: string
+  description: string | null
+  rules: string | null
+  price: number
+  capacity: number | null
+  open_time: string
+  close_time: string
+  max_hours: number
+  requires_approval: boolean
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export type ReservationStatus =
+  | 'PENDING_APPROVAL'
+  | 'PENDING_PAYMENT'
+  | 'CONFIRMED'
+  | 'REJECTED'
+  | 'CANCELLED'
+
+export type ReservationRow = {
+  id: string
+  condominium_id: string
+  common_area_id: string
+  apartment_id: string
+  starts_at: string
+  ends_at: string
+  guests: number | null
+  notes: string | null
+  status: ReservationStatus
+  amount: number
+  payment_method: 'ONLINE' | 'ON_SITE' | null
+  paid_at: string | null
+  payment_id: string | null
+  admin_notes: string | null
+  reviewed_by: string | null
+  reviewed_at: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type ListingCategory =
+  | 'PRODUCTS'
+  | 'PROPERTY_RENT'
+  | 'PROPERTY_SALE'
+  | 'FOOD'
+  | 'ACCESSORIES'
+  | 'CLASSES'
+  | 'SERVICES'
+  | 'OTHER'
+export type ListingPriceType = 'FIXED' | 'NEGOTIABLE' | 'FREE' | 'PER_HOUR' | 'PER_MONTH' | 'PER_UNIT'
+export type ListingStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'SOLD' | 'ARCHIVED'
+
+/** Clasificado de un miembro del conjunto (moderado por la administracion). */
+export type MarketplaceListingRow = {
+  id: string
+  condominium_id: string
+  apartment_id: string | null
+  category: ListingCategory
+  title: string
+  description: string
+  price: number | null
+  price_type: ListingPriceType
+  item_condition: 'NEW' | 'USED' | null
+  details: Json
+  /** Rutas en el bucket `marketplace`. */
+  images: Json
+  contact_phone: string | null
+  contact_whatsapp: string | null
+  status: ListingStatus
+  review_notes: string | null
+  reviewed_by: string | null
+  reviewed_at: string | null
+  published_at: string | null
+  expires_at: string | null
+  created_by: string
+  created_at: string
+  updated_at: string
+}
+
+export type PlatformSettingsRow = {
+  key: 'legal_entity'
+  value: Json
+  updated_by: string | null
+  updated_at: string
+}
+
+/** Prueba de la autorizacion (Ley 1581): quien acepto que version y cuando. */
+export type LegalAcceptanceRow = {
+  id: string
+  user_id: string | null
+  email: string
+  document: 'TERMS' | 'PRIVACY' | 'MARKETPLACE_RULES'
+  version: string
+  source: 'SIGNUP' | 'LOGIN' | 'APP'
+  user_agent: string | null
+  accepted_at: string
+}
+
+export type DataRequestType = 'ACCESS' | 'RECTIFY' | 'DELETE' | 'REVOKE' | 'COMPLAINT'
+export type DataRequestStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'REJECTED'
+
+/** Consulta o reclamo de un titular sobre sus datos personales. */
+export type DataRequestRow = {
+  id: string
+  user_id: string | null
+  email: string
+  type: DataRequestType
+  details: string | null
+  status: DataRequestStatus
+  response: string | null
+  due_at: string
+  resolved_at: string | null
+  resolved_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+/** Registro de oferentes del marketplace (Ley 1480, art. 53). */
+export type SellerRegistryRow = {
+  listing_id: string
+  condominium_id: string
+  seller_id: string | null
+  full_name: string
+  document_type: string | null
+  document_number: string
+  address: string
+  phone: string | null
+  email: string | null
   created_at: string
 }
 
@@ -587,6 +725,7 @@ export type PaymentRow = {
   payer_id: string | null
   admin_fee_id: string | null
   fine_id: string | null
+  reservation_id: string | null
   plan_period: PlanPeriod | null
   apartments_count: number | null
   unit_price: number | null
@@ -811,6 +950,22 @@ export interface Database {
       visitors: TableDef<VisitorRow, 'condominium_id' | 'apartment_id' | 'full_name'>
       alerts: TableDef<AlertRow, 'condominium_id' | 'title' | 'description'>
       announcements: TableDef<AnnouncementRow, 'condominium_id' | 'title' | 'content'>
+      common_areas: TableDef<CommonAreaRow, 'condominium_id' | 'name'>
+      reservations: TableDef<
+        ReservationRow,
+        'condominium_id' | 'common_area_id' | 'apartment_id' | 'starts_at' | 'ends_at'
+      >
+      platform_settings: TableDef<PlatformSettingsRow, 'key'>
+      legal_acceptances: TableDef<LegalAcceptanceRow, 'email' | 'document' | 'version'>
+      data_requests: TableDef<DataRequestRow, 'email' | 'type' | 'due_at'>
+      marketplace_seller_registry: TableDef<
+        SellerRegistryRow,
+        'listing_id' | 'condominium_id' | 'full_name' | 'document_number' | 'address'
+      >
+      marketplace_listings: TableDef<
+        MarketplaceListingRow,
+        'condominium_id' | 'category' | 'title' | 'description'
+      >
       community_contacts: TableDef<
         CommunityContactRow,
         'condominium_id' | 'kind' | 'category' | 'name'
@@ -994,6 +1149,33 @@ export interface Database {
       replace_condominium_location: {
         Args: { p_condominium: string; p_location: Json | null; p_places: Json }
         Returns: number
+      }
+      common_area_busy_slots: {
+        Args: { p_area: string; p_from: string; p_to: string }
+        Returns: { starts_at: string; ends_at: string; status: string }[]
+      }
+      review_reservation: {
+        Args: { p_reservation: string; p_approve: boolean; p_notes?: string | null }
+        Returns: string
+      }
+      register_reservation_payment: { Args: { p_reservation: string }; Returns: string }
+      cancel_reservation: {
+        Args: { p_reservation: string; p_reason?: string | null }
+        Returns: string
+      }
+      accept_legal_documents: {
+        Args: { p_documents: string[]; p_version: string; p_user_agent?: string | null }
+        Returns: number
+      }
+      create_data_request: { Args: { p_type: string; p_details?: string | null }; Returns: string }
+      resolve_data_request: {
+        Args: { p_request: string; p_status: string; p_response: string }
+        Returns: string
+      }
+      export_my_data: { Args: Record<string, never>; Returns: Json }
+      review_marketplace_listing: {
+        Args: { p_listing: string; p_approve: boolean; p_notes?: string | null }
+        Returns: string
       }
       provision_condominium: { Args: { p_payload: Json }; Returns: Json }
       attach_provisioned_accounts: {

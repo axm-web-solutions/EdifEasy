@@ -890,16 +890,17 @@ export const TOURS: TourConfig[] = [
         popover: {
           title: 'Marketplace',
           description:
-            'Servicios y comercios cerca del conjunto con llamada, WhatsApp y cómo llegar. Los "Recomendados" los agrega la administración.',
+            'Compra, vende y arrienda entre vecinos, y encuentra servicios cerca del conjunto con llamada y WhatsApp.',
           side: 'bottom',
           align: 'start',
         },
       },
       {
-        element: '[data-tour="marketplace-filters"]',
+        element: '[data-tour="classifieds-filters"]',
         popover: {
-          title: 'Buscar y filtrar',
-          description: 'Busca por nombre o filtra por categoría: aseo, plomeros, carpinteros, taxis, domicilios...',
+          title: 'Clasificados de los vecinos',
+          description:
+            'Filtra por categoría (artículos, arriendos, comida, accesorios, clases...) o publica lo tuyo. La administración aprueba cada publicación. En "Servicios cercanos" están plomeros, cerrajeros, taxis y más.',
           side: 'bottom',
           align: 'start',
         },

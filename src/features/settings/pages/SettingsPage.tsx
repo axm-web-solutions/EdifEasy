@@ -4,6 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Avatar, Button, Card, Col, Descriptions, Row, Space, Tabs, Tag, Upload } from 'antd'
 import { Camera, Save } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { PrivacyPanel } from '@/features/legal/components/PrivacyPanel'
+import { useSearchParams } from 'react-router-dom'
 import { SelectField, TextField } from '@/components/forms/fields'
 import { CondominiumForm } from '@/features/condominiums/components/CondominiumForm'
 import { useAuth } from '@/hooks/useAuth'
@@ -19,6 +21,7 @@ import { formatDate, initials } from '@/utils/format'
 import { useQueryClient } from '@tanstack/react-query'
 
 export function SettingsPage() {
+  const [searchParams] = useSearchParams()
   const queryClient = useQueryClient()
   const { profile, user, role, memberships, currentCondominiumId, hasPermission, refreshContext } =
     useAuth()
@@ -133,7 +136,12 @@ export function SettingsPage() {
             </div>
             <TextField control={control} name="phone" label="Telefono" />
 
-            <Button type="primary" htmlType="submit" icon={<Save size={15} />} loading={savingProfile}>
+            <Button
+              type="primary"
+              htmlType="submit"
+              icon={<Save size={15} />}
+              loading={savingProfile}
+            >
               Guardar cambios
             </Button>
           </form>
@@ -180,9 +188,13 @@ export function SettingsPage() {
         <Descriptions bordered column={{ xs: 1, sm: 2 }} size="small">
           <Descriptions.Item label="Nombre">{condominiumQuery.data.name}</Descriptions.Item>
           <Descriptions.Item label="NIT">{condominiumQuery.data.nit ?? '—'}</Descriptions.Item>
-          <Descriptions.Item label="Direccion">{condominiumQuery.data.address ?? '—'}</Descriptions.Item>
+          <Descriptions.Item label="Direccion">
+            {condominiumQuery.data.address ?? '—'}
+          </Descriptions.Item>
           <Descriptions.Item label="Ciudad">{condominiumQuery.data.city ?? '—'}</Descriptions.Item>
-          <Descriptions.Item label="Telefono">{condominiumQuery.data.phone ?? '—'}</Descriptions.Item>
+          <Descriptions.Item label="Telefono">
+            {condominiumQuery.data.phone ?? '—'}
+          </Descriptions.Item>
           <Descriptions.Item label="Correo">{condominiumQuery.data.email ?? '—'}</Descriptions.Item>
           <Descriptions.Item label="Estado">{condominiumQuery.data.status}</Descriptions.Item>
           <Descriptions.Item label="Creado">
@@ -198,14 +210,31 @@ export function SettingsPage() {
 
   return (
     <>
-      <PageHeader title="Configuracion" subtitle="Perfil, roles y datos del condominio." dataTour="page-header" />
+      <PageHeader
+        title="Configuracion"
+        subtitle="Perfil, roles y datos del condominio."
+        dataTour="page-header"
+      />
 
       <Tabs
-        defaultActiveKey="profile"
+        defaultActiveKey={searchParams.get('tab') === 'privacidad' ? 'privacy' : 'profile'}
         items={[
-          { key: 'profile', label: 'Mi perfil', children: <div data-tour="profile-tab">{profileTab}</div> },
-          { key: 'memberships', label: 'Mis roles', children: <div data-tour="memberships-tab">{membershipsTab}</div> },
-          { key: 'condominium', label: 'Condominio', children: <div data-tour="condominium-tab">{condominiumTab}</div> },
+          {
+            key: 'profile',
+            label: 'Mi perfil',
+            children: <div data-tour="profile-tab">{profileTab}</div>,
+          },
+          {
+            key: 'memberships',
+            label: 'Mis roles',
+            children: <div data-tour="memberships-tab">{membershipsTab}</div>,
+          },
+          {
+            key: 'condominium',
+            label: 'Condominio',
+            children: <div data-tour="condominium-tab">{condominiumTab}</div>,
+          },
+          { key: 'privacy', label: 'Privacidad y datos', children: <PrivacyPanel /> },
         ]}
       />
 

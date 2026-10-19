@@ -43,7 +43,7 @@ export function toCsv<T>(rows: T[], columns: ExportColumn<T>[]): string {
   return `${UTF8_BOM}${header}\r\n${body}`
 }
 
-function downloadBlob(content: BlobPart, fileName: string, mimeType: string): void {
+export function downloadBlob(content: BlobPart, fileName: string, mimeType: string): void {
   const blob = new Blob([content], { type: mimeType })
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')

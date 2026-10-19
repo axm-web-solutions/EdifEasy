@@ -131,11 +131,16 @@ export function useCheckout() {
     onSuccess: redirect,
   })
 
+  const payReservation = useMutation({
+    mutationFn: (reservationId: string) => paymentService.startReservationCheckout(reservationId),
+    onSuccess: redirect,
+  })
+
   const paySubscription = useMutation({
     mutationFn: ({ condominiumId, period }: { condominiumId: string; period: PlanPeriod }) =>
       paymentService.startSubscriptionCheckout(condominiumId, period),
     onSuccess: redirect,
   })
 
-  return { payAdminFee, payFine, paySubscription }
+  return { payAdminFee, payFine, payReservation, paySubscription }
 }

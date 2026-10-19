@@ -45,6 +45,9 @@ export type PlaceCategory =
   | 'plumber'
   | 'electrician'
   | 'locksmith'
+  | 'painter'
+  | 'appliance_repair'
+  | 'gardening'
   | 'hardware'
   | 'mechanic'
   | 'veterinary'
@@ -92,6 +95,9 @@ export const PLACE_CATEGORIES: Record<
   plumber: { label: 'Plomeros', hex: '#1d4ed8', group: 'service' },
   electrician: { label: 'Electricistas', hex: '#ca8a04', group: 'service' },
   locksmith: { label: 'Cerrajeros', hex: '#57534e', group: 'service' },
+  painter: { label: 'Pintores', hex: '#be185d', group: 'service' },
+  appliance_repair: { label: 'Tecnicos de electrodomesticos', hex: '#4338ca', group: 'service' },
+  gardening: { label: 'Jardineria', hex: '#15803d', group: 'service' },
   hardware: { label: 'Ferreterias', hex: '#c2410c', group: 'service' },
   mechanic: { label: 'Talleres', hex: '#334155', group: 'service' },
   veterinary: { label: 'Veterinarias', hex: '#7e22ce', group: 'service' },
@@ -137,6 +143,9 @@ const OVERPASS_SELECTORS: Record<PlaceCategory, string[]> = {
   plumber: ['nwr["craft"="plumber"]'],
   electrician: ['nwr["craft"="electrician"]'],
   locksmith: ['nwr["craft"="locksmith"]', 'nwr["shop"="locksmith"]'],
+  painter: ['nwr["craft"="painter"]'],
+  appliance_repair: ['nwr["craft"~"^(electronics_repair|appliance_repair|hvac)$"]'],
+  gardening: ['nwr["craft"="gardener"]', 'nwr["shop"="garden_centre"]'],
   hardware: ['nwr["shop"~"^(hardware|doityourself|paint)$"]'],
   mechanic: ['nwr["shop"~"^(car_repair|tyres|motorcycle_repair)$"]'],
   veterinary: ['nwr["amenity"="veterinary"]'],
@@ -170,6 +179,9 @@ function categorize(tags: Record<string, string>): PlaceCategory | null {
   if (tags.craft === 'plumber') return 'plumber'
   if (tags.craft === 'electrician') return 'electrician'
   if (tags.craft === 'locksmith' || tags.shop === 'locksmith') return 'locksmith'
+  if (tags.craft === 'painter') return 'painter'
+  if (['electronics_repair', 'appliance_repair', 'hvac'].includes(tags.craft)) return 'appliance_repair'
+  if (tags.craft === 'gardener' || tags.shop === 'garden_centre') return 'gardening'
   if (['hardware', 'doityourself', 'paint'].includes(tags.shop)) return 'hardware'
   if (['car_repair', 'tyres', 'motorcycle_repair'].includes(tags.shop)) return 'mechanic'
   if (tags.shop === 'mall' || tags.shop === 'department_store') return 'mall'
@@ -271,7 +283,7 @@ const PLACES_MAX_AGE_DAYS = 7
  * Lugares guardados antes de esta fecha no traen las categorias de emergencia
  * y servicios (ni telefonos): se vuelven a consultar aunque no tengan 7 dias.
  */
-const PLACES_CATALOG_SINCE = Date.parse('2026-10-18T00:00:00Z')
+const PLACES_CATALOG_SINCE = Date.parse('2026-10-19T00:00:00Z')
 
 /** true si los lugares guardados hay que volver a consultarlos. */
 export function placesAreStale(updatedAt: string | null, now = Date.now()): boolean {

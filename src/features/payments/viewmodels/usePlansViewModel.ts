@@ -5,6 +5,8 @@ import { formatCurrency, formatDate, formatDateTime, formatNumber } from '@/util
 import { getErrorMessage } from '@/lib/errors'
 import type { PlanPeriod } from '@/types/database'
 import { planStatus, tariffDescription } from './plans.logic'
+import { useLegalEntity } from '@/hooks/useLegal'
+import { vatNote } from '@/features/legal/legal.logic'
 
 /**
  * ViewModel de Planes: el administrador paga EdiFeasy por todo el conjunto con
@@ -15,6 +17,7 @@ export function usePlansViewModel() {
   const quoteQuery = useSubscriptionQuote(currentCondominiumId)
   const paymentsQuery = usePayments(currentCondominiumId, 'SUBSCRIPTION')
   const { paySubscription } = useCheckout()
+  const legalEntity = useLegalEntity()
 
   const quote = quoteQuery.data
   const current = quote?.current ?? null
@@ -47,7 +50,10 @@ export function usePlansViewModel() {
     pricing: {
       apartments: formatNumber(quote?.apartments_count ?? 0),
       unitPrice: `${formatCurrency(quote?.unit_price ?? 0)} / mes`,
-      tariff: tariffDescription(quote?.apartments_count ?? 0),
+      // Ley 1480: el precio informado debe aclarar los impuestos.
+      tariff: [tariffDescription(quote?.apartments_count ?? 0), vatNote(legalEntity.data)]
+        .filter(Boolean)
+        .join(' '),
       noApartments: (quote?.apartments_count ?? 0) === 0,
     },
 

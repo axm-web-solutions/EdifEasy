@@ -40,9 +40,11 @@ export const registerSchema = z
     vehicles: z.array(registrationVehicleSchema).optional().default([]),
     password: passwordSchema,
     confirmPassword: z.string().min(1, 'Confirma la contrasena'),
-    acceptTerms: z.literal(true, {
-      errorMap: () => ({ message: 'Debes aceptar los terminos y condiciones' }),
-    }),
+    // Casillas sin premarcar: deben marcarse expresamente (Ley 1581 de 2012).
+    acceptTerms: z.boolean().refine((value) => value, 'Debes aceptar los terminos y condiciones'),
+    acceptPrivacy: z
+      .boolean()
+      .refine((value) => value, 'Debes autorizar el tratamiento de tus datos para crear la cuenta'),
   })
   .refine((values) => values.password === values.confirmPassword, {
     message: 'Las contrasenas no coinciden',
