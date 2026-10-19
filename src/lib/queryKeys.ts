@@ -173,6 +173,13 @@ export const queryKeys = {
     overview: ['platform', 'overview'] as const,
   },
 
+  modules: {
+    /** Modulos deshabilitados para el usuario actual en un conjunto. */
+    mine: (condominiumId: string) => ['modules', 'mine', condominiumId] as const,
+    /** Matriz de configuracion; 'default' = plantilla. */
+    matrix: (scope: string) => ['modules', 'matrix', scope] as const,
+  },
+
   places: {
     /** Lugares cercanos guardados en la base para un condominio. */
     cached: (condominiumId: string) => ['places', 'cached', condominiumId] as const,

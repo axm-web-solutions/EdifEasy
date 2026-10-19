@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { screen } from '@testing-library/react'
 import { renderWithProviders } from '@/test/test-utils'
 import { RoleGuard } from './guards'
+import { moduleService } from '@/services/moduleService'
 
 const Secret = () => <div>Contenido financiero</div>
 
@@ -71,5 +72,30 @@ describe('RoleGuard', () => {
     )
 
     expect(screen.queryByText('Contenido financiero')).not.toBeInTheDocument()
+  })
+})
+
+describe('RoleGuard con modulos', () => {
+  it('bloquea un modulo desactivado para el rol en el conjunto', async () => {
+    vi.spyOn(moduleService, 'myDisabled').mockResolvedValue(['fines'])
+    renderWithProviders(
+      <RoleGuard module="fines">
+        <div>Pantalla de multas</div>
+      </RoleGuard>,
+      { authValue: { role: 'OWNER' } },
+    )
+    expect(await screen.findByText(/no esta habilitado para tu rol/i)).toBeInTheDocument()
+    expect(screen.queryByText('Pantalla de multas')).not.toBeInTheDocument()
+  })
+
+  it('muestra el modulo cuando esta habilitado', async () => {
+    vi.spyOn(moduleService, 'myDisabled').mockResolvedValue([])
+    renderWithProviders(
+      <RoleGuard module="fines">
+        <div>Pantalla de multas</div>
+      </RoleGuard>,
+      { authValue: { role: 'OWNER' } },
+    )
+    expect(await screen.findByText('Pantalla de multas')).toBeInTheDocument()
   })
 })

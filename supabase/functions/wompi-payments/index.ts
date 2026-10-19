@@ -32,6 +32,20 @@ import {
 } from '../_shared/wompi.ts'
 
 const RESULT_PATH = '/payments/result'
+
+/**
+ * La funcion escribe con la service role (sin RLS), asi que verifica a mano que
+ * el SUPER_ADMIN no haya desactivado el modulo para el rol de quien paga.
+ */
+async function moduleEnabled(admin: any, condominiumId: string, module: string, userId: string) {
+  const { data, error } = await admin.rpc('module_enabled', {
+    p_condominium: condominiumId,
+    p_module: module,
+    p_user: userId,
+  })
+  if (error) throw new Error(error.message)
+  return data === true
+}
 const PERIODS = ['MONTHLY', 'SEMIANNUAL', 'ANNUAL']
 
 Deno.serve(async (req: Request) => {
@@ -86,6 +100,9 @@ Deno.serve(async (req: Request) => {
         .eq('is_active', true)
         .maybeSingle()
       if (!ownership) return json({ error: 'Solo el propietario del apartamento puede pagar esta cuota' }, 403)
+      if (!(await moduleEnabled(admin, fee.condominium_id, 'admin_fees', user.id))) {
+        return json({ error: 'El modulo de cuotas no esta habilitado para tu rol' }, 403)
+      }
 
       const reference = newReference('ADM')
       const amount = Number(fee.amount)
@@ -132,6 +149,9 @@ Deno.serve(async (req: Request) => {
       )
       if (!ids.includes(fine.apartment_id)) {
         return json({ error: 'Solo los residentes del apartamento pueden pagar esta multa' }, 403)
+      }
+      if (!(await moduleEnabled(admin, fine.condominium_id, 'fines', user.id))) {
+        return json({ error: 'El modulo de multas no esta habilitado para tu rol' }, 403)
       }
 
       const reference = newReference('MUL')

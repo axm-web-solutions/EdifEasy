@@ -33,7 +33,9 @@ const ApartmentDetailPage = lazy(() =>
   })),
 )
 const MyApartmentPage = lazy(() =>
-  import('@/features/apartments/pages/MyApartmentPage').then((m) => ({ default: m.MyApartmentPage })),
+  import('@/features/apartments/pages/MyApartmentPage').then((m) => ({
+    default: m.MyApartmentPage,
+  })),
 )
 const UsersPage = lazy(() =>
   import('@/features/users/pages/UsersPage').then((m) => ({ default: m.UsersPage })),
@@ -76,6 +78,9 @@ const FinesPage = lazy(() =>
 const PlatformPage = lazy(() =>
   import('@/features/platform/pages/PlatformPage').then((m) => ({ default: m.PlatformPage })),
 )
+const RoleModulesPage = lazy(() =>
+  import('@/features/platform/pages/RoleModulesPage').then((m) => ({ default: m.RoleModulesPage })),
+)
 const AdminFeesPage = lazy(() =>
   import('@/features/payments/pages/AdminFeesPage').then((m) => ({ default: m.AdminFeesPage })),
 )
@@ -83,7 +88,9 @@ const PlansPage = lazy(() =>
   import('@/features/payments/pages/PlansPage').then((m) => ({ default: m.PlansPage })),
 )
 const PaymentResultPage = lazy(() =>
-  import('@/features/payments/pages/PaymentResultPage').then((m) => ({ default: m.PaymentResultPage })),
+  import('@/features/payments/pages/PaymentResultPage').then((m) => ({
+    default: m.PaymentResultPage,
+  })),
 )
 const DocumentsPage = lazy(() =>
   import('@/features/documents/pages/DocumentsPage').then((m) => ({ default: m.DocumentsPage })),
@@ -184,7 +191,7 @@ export function AppRoutes() {
             <Route
               path="/residents"
               element={
-                <RoleGuard permission="viewResidents">
+                <RoleGuard permission="viewResidents" module="residents">
                   <ResidentsPage />
                 </RoleGuard>
               }
@@ -192,23 +199,65 @@ export function AppRoutes() {
             <Route
               path="/visitors"
               element={
-                <RoleGuard permission="viewVisitors">
+                <RoleGuard permission="viewVisitors" module="visitors">
                   <VisitorsPage />
                 </RoleGuard>
               }
             />
 
-            <Route path="/alerts" element={<AlertsPage />} />
-            <Route path="/announcements" element={<AnnouncementsPage />} />
-            <Route path="/messages" element={<MessagesPage />} />
-            <Route path="/requests" element={<RequestsPage />} />
-            <Route path="/incidents" element={<IncidentsPage />} />
-            <Route path="/fines" element={<FinesPage />} />
+            <Route
+              path="/alerts"
+              element={
+                <RoleGuard module="alerts">
+                  <AlertsPage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/announcements"
+              element={
+                <RoleGuard module="announcements">
+                  <AnnouncementsPage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/messages"
+              element={
+                <RoleGuard module="messages">
+                  <MessagesPage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/requests"
+              element={
+                <RoleGuard module="requests">
+                  <RequestsPage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/incidents"
+              element={
+                <RoleGuard module="incidents">
+                  <IncidentsPage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/fines"
+              element={
+                <RoleGuard module="fines">
+                  <FinesPage />
+                </RoleGuard>
+              }
+            />
 
             <Route
               path="/expenses"
               element={
-                <RoleGuard permission="viewFinance">
+                <RoleGuard permission="viewFinance" module="expenses">
                   <ExpensesPage />
                 </RoleGuard>
               }
@@ -216,7 +265,7 @@ export function AppRoutes() {
             <Route
               path="/purchases"
               element={
-                <RoleGuard permission="viewFinance">
+                <RoleGuard permission="viewFinance" module="purchases">
                   <PurchasesPage />
                 </RoleGuard>
               }
@@ -231,9 +280,17 @@ export function AppRoutes() {
               }
             />
             <Route
+              path="/platform/modules"
+              element={
+                <RoleGuard roles={['SUPER_ADMIN']}>
+                  <RoleModulesPage />
+                </RoleGuard>
+              }
+            />
+            <Route
               path="/admin-fees"
               element={
-                <RoleGuard roles={['ADMINISTRATOR', 'OWNER']}>
+                <RoleGuard roles={['ADMINISTRATOR', 'OWNER']} module="admin_fees">
                   <AdminFeesPage />
                 </RoleGuard>
               }
@@ -249,12 +306,19 @@ export function AppRoutes() {
             {/* Retorno desde Wompi: lo usan propietarios y administradores. */}
             <Route path="/payments/result" element={<PaymentResultPage />} />
 
-            <Route path="/documents" element={<DocumentsPage />} />
+            <Route
+              path="/documents"
+              element={
+                <RoleGuard module="documents">
+                  <DocumentsPage />
+                </RoleGuard>
+              }
+            />
 
             <Route
               path="/reports"
               element={
-                <RoleGuard permission="viewReports">
+                <RoleGuard permission="viewReports" module="reports">
                   <ReportsPage />
                 </RoleGuard>
               }

@@ -30,6 +30,7 @@ import type {
   SubscriptionRow,
   VisitorRow,
 } from './database'
+import type { ModuleKey } from '@/constants/modules'
 
 export type ProfileRef = Pick<ProfileRow, 'id' | 'full_name' | 'email' | 'avatar_url' | 'phone'>
 export type BuildingRef = Pick<BuildingRow, 'id' | 'name' | 'number'>
@@ -303,6 +304,20 @@ export interface PlatformCondominium {
   admins: { full_name: string; email: string }[]
   plan: { period: PlanPeriod; ends_at: string; active: boolean } | null
   last_payment_at: string | null
+}
+
+/** Celda de la matriz de modulos por rol (`role_modules_matrix`). */
+export interface RoleModuleCell {
+  role: RoleCode
+  module: ModuleKey
+  enabled: boolean
+  /** condominium: configurado en el conjunto; default: plantilla; system: sin configurar. */
+  source: 'condominium' | 'default' | 'system'
+}
+
+export interface RoleModulesMatrix {
+  condominium_id: string | null
+  cells: RoleModuleCell[]
 }
 
 export interface ListResult<T> {

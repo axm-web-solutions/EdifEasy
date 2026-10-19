@@ -4,6 +4,8 @@ import type { MenuProps } from 'antd'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { NAVIGATION, isNavItemVisible, type NavItem } from '@/constants/navigation'
 import { useAuth } from '@/hooks/useAuth'
+import { useModuleAccess } from '@/hooks/useModules'
+import type { ModuleKey } from '@/constants/modules'
 import { usePendingRegistrationCount } from '@/hooks/useRegistrationRequests'
 import { Icon } from '@/components/ui/Icon'
 
@@ -14,12 +16,19 @@ function buildMenu(
   hasRole: ReturnType<typeof useAuth>['hasRole'],
   hasPermission: ReturnType<typeof useAuth>['hasPermission'],
   pendingApprovals: number,
+  isModuleEnabled: (module: ModuleKey) => boolean,
 ): MenuItem[] {
   return items
-    .filter((item) => isNavItemVisible(item, hasRole, hasPermission))
+    .filter((item) => isNavItemVisible(item, hasRole, hasPermission, isModuleEnabled))
     .map<MenuItem | null>((item) => {
       if (item.children) {
-        const children = buildMenu(item.children, hasRole, hasPermission, pendingApprovals)
+        const children = buildMenu(
+          item.children,
+          hasRole,
+          hasPermission,
+          pendingApprovals,
+          isModuleEnabled,
+        )
         if (children.length === 0) return null
         return {
           key: item.key,
@@ -71,9 +80,11 @@ export function Sidebar({
     hasPermission('manageMembers') ? currentCondominiumId : null,
   )
 
+  const { isModuleEnabled } = useModuleAccess()
+
   const items = useMemo(
-    () => buildMenu(NAVIGATION, hasRole, hasPermission, pendingApprovals),
-    [hasRole, hasPermission, pendingApprovals],
+    () => buildMenu(NAVIGATION, hasRole, hasPermission, pendingApprovals, isModuleEnabled),
+    [hasRole, hasPermission, pendingApprovals, isModuleEnabled],
   )
 
   const selectedKey = useMemo(() => {

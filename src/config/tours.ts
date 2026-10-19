@@ -578,6 +578,32 @@ export const TOURS: TourConfig[] = [
     ],
   },
   {
+    id: 'platform-modules',
+    once: true,
+    steps: [
+      {
+        element: '[data-tour="page-header"]',
+        popover: {
+          title: 'Módulos por rol',
+          description:
+            'Decide qué módulos ve cada rol. Puedes editar la plantilla por defecto o un conjunto específico.',
+          side: 'bottom',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="data-table"]',
+        popover: {
+          title: 'Matriz',
+          description:
+            'Cada interruptor activa u oculta un módulo para un rol. Los de borde amarillo son ajustes propios del conjunto.',
+          side: 'top',
+          align: 'start',
+        },
+      },
+    ],
+  },
+  {
     id: 'admin-fees',
     once: true,
     steps: [
@@ -871,6 +897,7 @@ const ROUTE_TOURS: Record<string, string> = {
   '/fines': 'fines',
   '/admin-fees': 'admin-fees',
   '/platform': 'platform',
+  '/platform/modules': 'platform-modules',
   '/plans': 'plans',
   '/expenses': 'expenses',
   '/purchases': 'purchases',

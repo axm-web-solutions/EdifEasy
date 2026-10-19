@@ -5,6 +5,8 @@ import { useAuth } from '@/hooks/useAuth'
 import { AccessDenied } from '@/components/ui/states'
 import type { RoleCode } from '@/types/database'
 import type { PermissionKey } from '@/constants/roles'
+import type { ModuleKey } from '@/constants/modules'
+import { useModuleAccess } from '@/hooks/useModules'
 
 function FullPageLoader({ tip = 'Cargando...' }: { tip?: string }) {
   return (
@@ -53,16 +55,25 @@ export function PublicOnlyRoute() {
 export function RoleGuard({
   roles,
   permission,
+  module,
   children,
 }: {
   roles?: RoleCode[]
   permission?: PermissionKey
+  /** Modulo configurable por el SUPER_ADMIN; si esta desactivado para el rol no se muestra. */
+  module?: ModuleKey
   children: ReactNode
 }) {
   const { hasRole, hasPermission } = useAuth()
+  const { isModuleEnabled } = useModuleAccess()
 
   if (roles && roles.length > 0 && !hasRole(roles)) return <AccessDenied />
   if (permission && !hasPermission(permission)) return <AccessDenied />
+  if (module && !isModuleEnabled(module)) {
+    return (
+      <AccessDenied description="Este modulo no esta habilitado para tu rol en este conjunto." />
+    )
+  }
 
   return <>{children}</>
 }

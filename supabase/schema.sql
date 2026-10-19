@@ -701,6 +701,32 @@ create table if not exists tribuia.report_images (
   created_at     timestamptz not null default now()
 );
 
+-- 3.28 Modulos por rol (migracion 20261018000000_modulos_por_rol) ---------------
+-- Una fila por (conjunto, rol, modulo). condominium_id null = PLANTILLA por
+-- defecto. Resolucion: coalesce(fila del conjunto, fila de la plantilla, true).
+-- Sin filas = todo habilitado. Se escribe solo via set_role_module /
+-- reset_role_modules (seccion 17). La funcion module_enabled esta en 5.12.
+create table if not exists tribuia.role_modules (
+  id             uuid primary key default gen_random_uuid(),
+  condominium_id uuid references tribuia.condominiums (id) on delete cascade,
+  role_code      text not null,
+  module         text not null,
+  enabled        boolean not null,
+  updated_by     uuid references tribuia.profiles (id) on delete set null,
+  updated_at     timestamptz not null default now(),
+  constraint role_modules_scope_key unique nulls not distinct (condominium_id, role_code, module),
+  constraint role_modules_role_code_check check (role_code in (
+    'ADMINISTRATOR', 'SPOKESPERSON', 'OWNER', 'TENANT', 'SECURITY', 'SERVICE_STAFF'
+  )),
+  constraint role_modules_module_check check (module in (
+    'residents', 'visitors', 'alerts', 'announcements', 'messages', 'requests',
+    'incidents', 'fines', 'admin_fees', 'expenses', 'purchases', 'documents', 'reports'
+  ))
+);
+
+comment on table tribuia.role_modules is
+  'Modulos habilitados por rol. condominium_id null = plantilla por defecto. Sin fila = habilitado. Solo se escribe via set_role_module / reset_role_modules.';
+
 -- ----------------------------------------------------------------------------
 -- 3.24 RECONCILIACION DE CONSTRAINTS
 -- ----------------------------------------------------------------------------
@@ -812,6 +838,14 @@ create unique index if not exists uq_meeting_signatures_document
 create index if not exists idx_reports_condominium on tribuia.reports (condominium_id, created_at desc);
 create index if not exists idx_reports_status on tribuia.reports (status);
 create index if not exists idx_report_images_report on tribuia.report_images (report_id);
+
+-- role_modules: el indice unico (condominium_id, role_code, module) resuelve las
+-- busquedas por conjunto y por plantilla y cubre la FK de condominium_id.
+-- Ruta rapida de module_enabled: solo indexa las filas deshabilitadas.
+create index if not exists idx_role_modules_disabled
+  on tribuia.role_modules (module, condominium_id) where not enabled;
+create index if not exists idx_role_modules_updated_by
+  on tribuia.role_modules (updated_by);
 
 -- ----------------------------------------------------------------------------
 -- 5. FUNCIONES AUXILIARES
@@ -1402,6 +1436,130 @@ begin
 end
 $$;
 
+-- 5.12 Modulos por rol (migracion 20261018000000_modulos_por_rol) ------------
+-- Catalogos (orden de presentacion de la matriz; deben coincidir con los checks
+-- de tribuia.role_modules), module_enabled (RPC, resumenes) y
+-- module_blocked_condominiums (politicas de la seccion 7). Las RPC de configuracion estan en la seccion 17.
+create or replace function tribuia.role_module_roles()
+returns text[]
+language sql
+immutable
+set search_path = tribuia, public, pg_temp
+as $$
+  select array['ADMINISTRATOR', 'SPOKESPERSON', 'OWNER', 'TENANT', 'SECURITY', 'SERVICE_STAFF']::text[];
+$$;
+
+create or replace function tribuia.role_module_codes()
+returns text[]
+language sql
+immutable
+set search_path = tribuia, public, pg_temp
+as $$
+  select array[
+    'residents', 'visitors', 'alerts', 'announcements', 'messages', 'requests',
+    'incidents', 'fines', 'admin_fees', 'expenses', 'purchases', 'documents', 'reports'
+  ]::text[];
+$$;
+
+-- true si: no hay conjunto o usuario (service role), es SUPER_ADMIN, no tiene
+-- membresia activa en el conjunto (decide la politica existente) o ALGUNO de
+-- sus roles activos tiene el modulo habilitado, con
+--   enabled = coalesce(fila del conjunto, fila de la plantilla, true).
+-- Rendimiento: se evalua por fila. Ruta rapida: si no hay ninguna fila
+-- `enabled = false` del modulo en el conjunto ni en la plantilla, una sola
+-- sonda al indice parcial idx_role_modules_disabled y devuelve true.
+create or replace function tribuia.module_enabled(
+  p_condominium uuid,
+  p_module      text,
+  p_user        uuid default auth.uid()
+)
+returns boolean
+language plpgsql
+stable
+security definer
+set search_path = tribuia, public, pg_temp
+as $$
+declare
+  v_enabled boolean;
+begin
+  -- Ruta rapida: sin conjunto, sin usuario (service role) o sin ninguna fila
+  -- deshabilitada para el modulo (ni en el conjunto ni en la plantilla).
+  if p_condominium is null
+     or p_user is null
+     or not exists (
+       select 1
+         from tribuia.role_modules rm
+        where rm.module = p_module
+          and not rm.enabled
+          and (rm.condominium_id = p_condominium or rm.condominium_id is null)
+     ) then
+    return true;
+  end if;
+
+  if tribuia.is_super_admin(p_user) then
+    return true;
+  end if;
+
+  -- Basta con que UNO de sus roles activos en el conjunto lo tenga habilitado.
+  -- Sin membresias activas bool_or da null -> true (decide la politica).
+  select bool_or(coalesce(rc.enabled, rt.enabled, true))
+    into v_enabled
+    from tribuia.condominium_members m
+    join tribuia.roles r on r.id = m.role_id
+    left join tribuia.role_modules rc
+           on rc.condominium_id = p_condominium
+          and rc.role_code = r.code
+          and rc.module = p_module
+    left join tribuia.role_modules rt
+           on rt.condominium_id is null
+          and rt.role_code = r.code
+          and rt.module = p_module
+   where m.condominium_id = p_condominium
+     and m.user_id = p_user
+     and m.status = 'ACTIVE';
+
+  return coalesce(v_enabled, true);
+end;
+$$;
+
+-- Version de conjunto de module_enabled para las politicas RLS: condominios
+-- donde el modulo esta BLOQUEADO para el usuario (tiene membresias activas y
+-- ninguno de sus roles lo tiene habilitado). Para cualquier condominio c:
+--   module_enabled(c, m, u)  <=>  c not in (select module_blocked_condominiums(m, u))
+-- Las politicas usan `<condominio> not in (select ...)`: PostgreSQL la resuelve
+-- como subplan hasheado UNA vez por consulta y por fila solo hace una prueba de
+-- pertenencia. Llamar a module_enabled por fila multiplicaba por ~40 el costo de
+-- un count(*) (count=exact de PostgREST) sobre todo el conjunto.
+-- Sin filas deshabilitadas para el modulo, SUPER_ADMIN o usuario null: vacio.
+create or replace function tribuia.module_blocked_condominiums(
+  p_module text,
+  p_user   uuid default auth.uid()
+)
+returns setof uuid
+language sql
+stable
+security definer
+set search_path = tribuia, public, pg_temp
+as $$
+  select m.condominium_id
+    from tribuia.condominium_members m
+    join tribuia.roles r on r.id = m.role_id
+    left join tribuia.role_modules rc
+           on rc.condominium_id = m.condominium_id
+          and rc.role_code = r.code
+          and rc.module = p_module
+    left join tribuia.role_modules rt
+           on rt.condominium_id is null
+          and rt.role_code = r.code
+          and rt.module = p_module
+   where m.user_id = p_user
+     and m.status = 'ACTIVE'
+     and exists (select 1 from tribuia.role_modules d where d.module = p_module and not d.enabled)
+     and not tribuia.is_super_admin(p_user)
+   group by m.condominium_id
+  having not bool_or(coalesce(rc.enabled, rt.enabled, true));
+$$;
+
 -- ----------------------------------------------------------------------------
 -- 6. TRIGGERS
 -- ----------------------------------------------------------------------------
@@ -1878,55 +2036,86 @@ create policy apartment_tenants_write on tribuia.apartment_tenants for all to au
 
 -- 7.10 residents ---------------------------------------------------------------------
 -- SECURITY puede consultar residentes (necesario para su funcion), no puede editar.
+-- Modulos por rol (seccion 17): todas las politicas de los modulos terminan en
+-- `and <condominio> not in (select tribuia.module_blocked_condominiums('<modulo>'))`
+-- (equivale a module_enabled, pero se evalua una vez por consulta; residents
+-- agrupa residents, vehicles y pets).
 create policy residents_select on tribuia.residents for select to authenticated
   using (
-    tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY'])
-    or apartment_id in (select tribuia.user_apartment_ids())
+    (
+      tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY'])
+      or apartment_id in (select tribuia.user_apartment_ids())
+    )
+    and condominium_id not in (select tribuia.module_blocked_condominiums('residents'))
   );
 create policy residents_write on tribuia.residents for all to authenticated
   using (
-    tribuia.is_condominium_admin(condominium_id)
-    or tribuia.user_owns_apartment(apartment_id)
+    (
+      tribuia.is_condominium_admin(condominium_id)
+      or tribuia.user_owns_apartment(apartment_id)
+    )
+    and condominium_id not in (select tribuia.module_blocked_condominiums('residents'))
   )
   with check (
-    tribuia.is_condominium_admin(condominium_id)
-    or tribuia.user_owns_apartment(apartment_id)
+    (
+      tribuia.is_condominium_admin(condominium_id)
+      or tribuia.user_owns_apartment(apartment_id)
+    )
+    and condominium_id not in (select tribuia.module_blocked_condominiums('residents'))
   );
 
 -- 7.11 vehicles ------------------------------------------------------------------------
 create policy vehicles_select on tribuia.vehicles for select to authenticated
   using (
-    tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY'])
-    or apartment_id in (select tribuia.user_apartment_ids())
+    (
+      tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY'])
+      or apartment_id in (select tribuia.user_apartment_ids())
+    )
+    and condominium_id not in (select tribuia.module_blocked_condominiums('residents'))
   );
 create policy vehicles_write on tribuia.vehicles for all to authenticated
   using (
-    tribuia.is_condominium_admin(condominium_id)
-    or tribuia.user_owns_apartment(apartment_id)
-    or tribuia.user_is_tenant(apartment_id)
+    (
+      tribuia.is_condominium_admin(condominium_id)
+      or tribuia.user_owns_apartment(apartment_id)
+      or tribuia.user_is_tenant(apartment_id)
+    )
+    and condominium_id not in (select tribuia.module_blocked_condominiums('residents'))
   )
   with check (
-    tribuia.is_condominium_admin(condominium_id)
-    or tribuia.user_owns_apartment(apartment_id)
-    or tribuia.user_is_tenant(apartment_id)
+    (
+      tribuia.is_condominium_admin(condominium_id)
+      or tribuia.user_owns_apartment(apartment_id)
+      or tribuia.user_is_tenant(apartment_id)
+    )
+    and condominium_id not in (select tribuia.module_blocked_condominiums('residents'))
   );
 
 -- 7.12 pets -----------------------------------------------------------------------------
 create policy pets_select on tribuia.pets for select to authenticated
   using (
-    tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY'])
-    or apartment_id in (select tribuia.user_apartment_ids())
+    (
+      tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY'])
+      or apartment_id in (select tribuia.user_apartment_ids())
+    )
+    and condominium_id not in (select tribuia.module_blocked_condominiums('residents'))
   );
 create policy pets_write on tribuia.pets for all to authenticated
   using (
-    tribuia.is_condominium_admin(condominium_id)
-    or tribuia.user_owns_apartment(apartment_id)
-    or tribuia.user_is_tenant(apartment_id)
+    (
+      tribuia.is_condominium_admin(condominium_id)
+      or tribuia.user_owns_apartment(apartment_id)
+      or tribuia.user_is_tenant(apartment_id)
+    )
+    and condominium_id not in (select tribuia.module_blocked_condominiums('residents'))
   )
   with check (
-    tribuia.is_condominium_admin(condominium_id)
-    or tribuia.user_owns_apartment(apartment_id)
-    or tribuia.user_is_tenant(apartment_id)
+    (
+      tribuia.is_condominium_admin(condominium_id)
+      or tribuia.user_owns_apartment(apartment_id)
+      or tribuia.user_is_tenant(apartment_id)
+    )
+    and condominium_id not in (select tribuia.module_blocked_condominiums('residents'))
   );
 
 -- 7.13 visitors ------------------------------------------------------------------
@@ -1935,22 +2124,31 @@ create policy pets_write on tribuia.pets for all to authenticated
 -- y gestionan los visitantes de sus propios apartamentos.
 create policy visitors_select on tribuia.visitors for select to authenticated
   using (
-    tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY'])
-    or apartment_id in (select tribuia.user_apartment_ids())
-    or tribuia.user_is_tenant(apartment_id)
+    (
+      tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY'])
+      or apartment_id in (select tribuia.user_apartment_ids())
+      or tribuia.user_is_tenant(apartment_id)
+    )
+    and condominium_id not in (select tribuia.module_blocked_condominiums('visitors'))
   );
 create policy visitors_write on tribuia.visitors for all to authenticated
   using (
-    tribuia.is_condominium_admin(condominium_id)
-    or tribuia.has_role(condominium_id, array['SECURITY'])
-    or tribuia.user_owns_apartment(apartment_id)
-    or tribuia.user_is_tenant(apartment_id)
+    (
+      tribuia.is_condominium_admin(condominium_id)
+      or tribuia.has_role(condominium_id, array['SECURITY'])
+      or tribuia.user_owns_apartment(apartment_id)
+      or tribuia.user_is_tenant(apartment_id)
+    )
+    and condominium_id not in (select tribuia.module_blocked_condominiums('visitors'))
   )
   with check (
-    tribuia.is_condominium_admin(condominium_id)
-    or tribuia.has_role(condominium_id, array['SECURITY'])
-    or tribuia.user_owns_apartment(apartment_id)
-    or tribuia.user_is_tenant(apartment_id)
+    (
+      tribuia.is_condominium_admin(condominium_id)
+      or tribuia.has_role(condominium_id, array['SECURITY'])
+      or tribuia.user_owns_apartment(apartment_id)
+      or tribuia.user_is_tenant(apartment_id)
+    )
+    and condominium_id not in (select tribuia.module_blocked_condominiums('visitors'))
   );
 
 -- 7.14 alerts ----------------------------------------------------------------------------
@@ -1964,17 +2162,27 @@ create policy alerts_select on tribuia.alerts for select to authenticated
       or (audience = 'APARTMENT' and apartment_id in (select tribuia.user_apartment_ids()))
       or (audience = 'ROLE' and tribuia.user_has_role_id(condominium_id, audience_role_id))
     )
+    and condominium_id not in (select tribuia.module_blocked_condominiums('alerts'))
   );
 
 create policy alerts_insert on tribuia.alerts for insert to authenticated
-  with check (tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY']));
+  with check (
+    tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY'])
+    and condominium_id not in (select tribuia.module_blocked_condominiums('alerts'))
+  );
 
 create policy alerts_update on tribuia.alerts for update to authenticated
-  using (tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON']) or created_by = auth.uid())
-  with check (tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON']) or created_by = auth.uid());
+  using (
+    (tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON']) or created_by = auth.uid())
+    and condominium_id not in (select tribuia.module_blocked_condominiums('alerts'))
+  )
+  with check (
+    (tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON']) or created_by = auth.uid())
+    and condominium_id not in (select tribuia.module_blocked_condominiums('alerts'))
+  );
 
 create policy alerts_delete on tribuia.alerts for delete to authenticated
-  using (tribuia.is_condominium_admin(condominium_id));
+  using (tribuia.is_condominium_admin(condominium_id) and condominium_id not in (select tribuia.module_blocked_condominiums('alerts')));
 
 -- 7.14 announcements -----------------------------------------------------------------------
 create policy announcements_select on tribuia.announcements for select to authenticated
@@ -1992,17 +2200,27 @@ create policy announcements_select on tribuia.announcements for select to authen
         )
       )
     )
+    and condominium_id not in (select tribuia.module_blocked_condominiums('announcements'))
   );
 
 create policy announcements_insert on tribuia.announcements for insert to authenticated
-  with check (tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON']));
+  with check (
+    tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON'])
+    and condominium_id not in (select tribuia.module_blocked_condominiums('announcements'))
+  );
 
 create policy announcements_update on tribuia.announcements for update to authenticated
-  using (tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON']))
-  with check (tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON']));
+  using (
+    tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON'])
+    and condominium_id not in (select tribuia.module_blocked_condominiums('announcements'))
+  )
+  with check (
+    tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON'])
+    and condominium_id not in (select tribuia.module_blocked_condominiums('announcements'))
+  );
 
 create policy announcements_delete on tribuia.announcements for delete to authenticated
-  using (tribuia.is_condominium_admin(condominium_id));
+  using (tribuia.is_condominium_admin(condominium_id) and condominium_id not in (select tribuia.module_blocked_condominiums('announcements')));
 
 -- 7.15 notifications -------------------------------------------------------------------------
 create policy notifications_select on tribuia.notifications for select to authenticated
@@ -2026,25 +2244,42 @@ create policy notifications_delete on tribuia.notifications for delete to authen
 -- 7.16 conversations / participants / messages -------------------------------------------------
 -- `created_by` se incluye para que el INSERT ... RETURNING funcione: al crear la
 -- conversacion el autor todavia no figura en conversation_participants.
+-- Modulo 'messages': conversations, conversation_participants y messages (los
+-- participantes toman el condominio de la conversacion).
 create policy conversations_select on tribuia.conversations for select to authenticated
   using (
-    created_by = auth.uid()
-    or tribuia.is_conversation_participant(id)
-    or tribuia.is_condominium_admin(condominium_id)
+    (
+      created_by = auth.uid()
+      or tribuia.is_conversation_participant(id)
+      or tribuia.is_condominium_admin(condominium_id)
+    )
+    and condominium_id not in (select tribuia.module_blocked_condominiums('messages'))
   );
 create policy conversations_insert on tribuia.conversations for insert to authenticated
-  with check (tribuia.user_can_access_condominium(condominium_id));
+  with check (
+    tribuia.user_can_access_condominium(condominium_id)
+    and condominium_id not in (select tribuia.module_blocked_condominiums('messages'))
+  );
 create policy conversations_update on tribuia.conversations for update to authenticated
-  using (tribuia.is_conversation_participant(id) or tribuia.is_condominium_admin(condominium_id))
-  with check (tribuia.is_conversation_participant(id) or tribuia.is_condominium_admin(condominium_id));
+  using (
+    (tribuia.is_conversation_participant(id) or tribuia.is_condominium_admin(condominium_id))
+    and condominium_id not in (select tribuia.module_blocked_condominiums('messages'))
+  )
+  with check (
+    (tribuia.is_conversation_participant(id) or tribuia.is_condominium_admin(condominium_id))
+    and condominium_id not in (select tribuia.module_blocked_condominiums('messages'))
+  );
 create policy conversations_delete on tribuia.conversations for delete to authenticated
-  using (tribuia.is_condominium_admin(condominium_id));
+  using (tribuia.is_condominium_admin(condominium_id) and condominium_id not in (select tribuia.module_blocked_condominiums('messages')));
 
 create policy participants_select on tribuia.conversation_participants for select to authenticated
   using (
-    user_id = (select auth.uid())
-    or tribuia.is_conversation_participant(conversation_id)
-    or tribuia.is_condominium_admin(tribuia.conversation_condominium(conversation_id))
+    (
+      user_id = (select auth.uid())
+      or tribuia.is_conversation_participant(conversation_id)
+      or tribuia.is_condominium_admin(tribuia.conversation_condominium(conversation_id))
+    )
+    and tribuia.conversation_condominium(conversation_id) not in (select tribuia.module_blocked_condominiums('messages'))
   );
 create policy participants_insert on tribuia.conversation_participants for insert to authenticated
   with check (
@@ -2055,55 +2290,101 @@ create policy participants_insert on tribuia.conversation_participants for inser
       or tribuia.is_conversation_participant(conversation_id)
       or tribuia.is_condominium_admin(tribuia.conversation_condominium(conversation_id))
     )
+    and tribuia.conversation_condominium(conversation_id) not in (select tribuia.module_blocked_condominiums('messages'))
   );
 create policy participants_update on tribuia.conversation_participants for update to authenticated
-  using (user_id = auth.uid()) with check (user_id = auth.uid());
-create policy participants_delete on tribuia.conversation_participants for delete to authenticated
-  using (user_id = auth.uid() or tribuia.is_condominium_admin(tribuia.conversation_condominium(conversation_id)));
-
-create policy messages_select on tribuia.messages for select to authenticated
-  using (tribuia.is_conversation_participant(conversation_id) or tribuia.is_condominium_admin(condominium_id));
-create policy messages_insert on tribuia.messages for insert to authenticated
-  with check (sender_id = auth.uid() and tribuia.is_conversation_participant(conversation_id));
-create policy messages_update on tribuia.messages for update to authenticated
-  using (sender_id = (select auth.uid()) and tribuia.user_can_access_condominium(condominium_id))
-  with check (sender_id = (select auth.uid()) and tribuia.user_can_access_condominium(condominium_id));
-create policy messages_delete on tribuia.messages for delete to authenticated
-  using (sender_id = auth.uid() or tribuia.is_condominium_admin(condominium_id));
-
--- 7.17 requests -----------------------------------------------------------------------------------
-create policy requests_select on tribuia.requests for select to authenticated
   using (
-    tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON', 'SERVICE_STAFF', 'SECURITY'])
-    or created_by = auth.uid()
-    or assigned_to = auth.uid()
-    or apartment_id in (select tribuia.user_apartment_ids())
-  );
-create policy requests_insert on tribuia.requests for insert to authenticated
-  with check (tribuia.user_can_access_condominium(condominium_id) and created_by = auth.uid());
-create policy requests_update on tribuia.requests for update to authenticated
-  using (
-    tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SERVICE_STAFF'])
-    or (
-      tribuia.user_can_access_condominium(condominium_id)
-      and (assigned_to = (select auth.uid()) or created_by = (select auth.uid()))
-    )
+    user_id = auth.uid()
+    and tribuia.conversation_condominium(conversation_id) not in (select tribuia.module_blocked_condominiums('messages'))
   )
   with check (
-    tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SERVICE_STAFF'])
-    or (
-      tribuia.user_can_access_condominium(condominium_id)
-      and (assigned_to = (select auth.uid()) or created_by = (select auth.uid()))
+    user_id = auth.uid()
+    and tribuia.conversation_condominium(conversation_id) not in (select tribuia.module_blocked_condominiums('messages'))
+  );
+create policy participants_delete on tribuia.conversation_participants for delete to authenticated
+  using (
+    (user_id = auth.uid() or tribuia.is_condominium_admin(tribuia.conversation_condominium(conversation_id)))
+    and tribuia.conversation_condominium(conversation_id) not in (select tribuia.module_blocked_condominiums('messages'))
+  );
+
+create policy messages_select on tribuia.messages for select to authenticated
+  using (
+    (tribuia.is_conversation_participant(conversation_id) or tribuia.is_condominium_admin(condominium_id))
+    and condominium_id not in (select tribuia.module_blocked_condominiums('messages'))
+  );
+create policy messages_insert on tribuia.messages for insert to authenticated
+  with check (
+    sender_id = auth.uid()
+    and tribuia.is_conversation_participant(conversation_id)
+    and condominium_id not in (select tribuia.module_blocked_condominiums('messages'))
+  );
+create policy messages_update on tribuia.messages for update to authenticated
+  using (
+    sender_id = (select auth.uid())
+    and tribuia.user_can_access_condominium(condominium_id)
+    and condominium_id not in (select tribuia.module_blocked_condominiums('messages'))
+  )
+  with check (
+    sender_id = (select auth.uid())
+    and tribuia.user_can_access_condominium(condominium_id)
+    and condominium_id not in (select tribuia.module_blocked_condominiums('messages'))
+  );
+create policy messages_delete on tribuia.messages for delete to authenticated
+  using (
+    (sender_id = auth.uid() or tribuia.is_condominium_admin(condominium_id))
+    and condominium_id not in (select tribuia.module_blocked_condominiums('messages'))
+  );
+
+-- 7.17 requests -----------------------------------------------------------------------------------
+-- Modulo 'requests': requests y request_comments (condominio de la solicitud).
+create policy requests_select on tribuia.requests for select to authenticated
+  using (
+    (
+      tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON', 'SERVICE_STAFF', 'SECURITY'])
+      or created_by = auth.uid()
+      or assigned_to = auth.uid()
+      or apartment_id in (select tribuia.user_apartment_ids())
     )
+    and condominium_id not in (select tribuia.module_blocked_condominiums('requests'))
+  );
+create policy requests_insert on tribuia.requests for insert to authenticated
+  with check (
+    tribuia.user_can_access_condominium(condominium_id)
+    and created_by = auth.uid()
+    and condominium_id not in (select tribuia.module_blocked_condominiums('requests'))
+  );
+create policy requests_update on tribuia.requests for update to authenticated
+  using (
+    (
+      tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SERVICE_STAFF'])
+      or (
+        tribuia.user_can_access_condominium(condominium_id)
+        and (assigned_to = (select auth.uid()) or created_by = (select auth.uid()))
+      )
+    )
+    and condominium_id not in (select tribuia.module_blocked_condominiums('requests'))
+  )
+  with check (
+    (
+      tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SERVICE_STAFF'])
+      or (
+        tribuia.user_can_access_condominium(condominium_id)
+        and (assigned_to = (select auth.uid()) or created_by = (select auth.uid()))
+      )
+    )
+    and condominium_id not in (select tribuia.module_blocked_condominiums('requests'))
   );
 create policy requests_delete on tribuia.requests for delete to authenticated
-  using (tribuia.is_condominium_admin(condominium_id));
+  using (tribuia.is_condominium_admin(condominium_id) and condominium_id not in (select tribuia.module_blocked_condominiums('requests')));
 
 create policy request_comments_select on tribuia.request_comments for select to authenticated
   using (
-    tribuia.has_role(tribuia.request_condominium(request_id), array['ADMINISTRATOR', 'SPOKESPERSON', 'SERVICE_STAFF'])
-    or tribuia.request_owner(request_id) = auth.uid()
-    or tribuia.request_apartment(request_id) in (select tribuia.user_apartment_ids())
+    (
+      tribuia.has_role(tribuia.request_condominium(request_id), array['ADMINISTRATOR', 'SPOKESPERSON', 'SERVICE_STAFF'])
+      or tribuia.request_owner(request_id) = auth.uid()
+      or tribuia.request_apartment(request_id) in (select tribuia.user_apartment_ids())
+    )
+    and tribuia.request_condominium(request_id) not in (select tribuia.module_blocked_condominiums('requests'))
   );
 create policy request_comments_insert on tribuia.request_comments for insert to authenticated
   with check (
@@ -2113,82 +2394,120 @@ create policy request_comments_insert on tribuia.request_comments for insert to 
       or tribuia.request_owner(request_id) = auth.uid()
       or tribuia.request_apartment(request_id) in (select tribuia.user_apartment_ids())
     )
+    and tribuia.request_condominium(request_id) not in (select tribuia.module_blocked_condominiums('requests'))
   );
 create policy request_comments_update on tribuia.request_comments for update to authenticated
-  using (author_id = auth.uid()) with check (author_id = auth.uid());
+  using (
+    author_id = auth.uid()
+    and tribuia.request_condominium(request_id) not in (select tribuia.module_blocked_condominiums('requests'))
+  )
+  with check (
+    author_id = auth.uid()
+    and tribuia.request_condominium(request_id) not in (select tribuia.module_blocked_condominiums('requests'))
+  );
 create policy request_comments_delete on tribuia.request_comments for delete to authenticated
-  using (author_id = auth.uid() or tribuia.is_condominium_admin(tribuia.request_condominium(request_id)));
+  using (
+    (author_id = auth.uid() or tribuia.is_condominium_admin(tribuia.request_condominium(request_id)))
+    and tribuia.request_condominium(request_id) not in (select tribuia.module_blocked_condominiums('requests'))
+  );
 
 -- 7.18 incidents ----------------------------------------------------------------------------------
 create policy incidents_select on tribuia.incidents for select to authenticated
   using (
-    tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY', 'SERVICE_STAFF'])
-    or reported_by = auth.uid()
-    or assigned_to = auth.uid()
-    or apartment_id in (select tribuia.user_apartment_ids())
+    (
+      tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY', 'SERVICE_STAFF'])
+      or reported_by = auth.uid()
+      or assigned_to = auth.uid()
+      or apartment_id in (select tribuia.user_apartment_ids())
+    )
+    and condominium_id not in (select tribuia.module_blocked_condominiums('incidents'))
   );
 create policy incidents_insert on tribuia.incidents for insert to authenticated
-  with check (tribuia.user_can_access_condominium(condominium_id));
+  with check (
+    tribuia.user_can_access_condominium(condominium_id)
+    and condominium_id not in (select tribuia.module_blocked_condominiums('incidents'))
+  );
 create policy incidents_update on tribuia.incidents for update to authenticated
   using (
-    tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SECURITY'])
-    or (
-      tribuia.user_can_access_condominium(condominium_id)
-      and (reported_by = (select auth.uid()) or assigned_to = (select auth.uid()))
+    (
+      tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SECURITY'])
+      or (
+        tribuia.user_can_access_condominium(condominium_id)
+        and (reported_by = (select auth.uid()) or assigned_to = (select auth.uid()))
+      )
     )
+    and condominium_id not in (select tribuia.module_blocked_condominiums('incidents'))
   )
   with check (
-    tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SECURITY'])
-    or (
-      tribuia.user_can_access_condominium(condominium_id)
-      and (reported_by = (select auth.uid()) or assigned_to = (select auth.uid()))
+    (
+      tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SECURITY'])
+      or (
+        tribuia.user_can_access_condominium(condominium_id)
+        and (reported_by = (select auth.uid()) or assigned_to = (select auth.uid()))
+      )
     )
+    and condominium_id not in (select tribuia.module_blocked_condominiums('incidents'))
   );
 create policy incidents_delete on tribuia.incidents for delete to authenticated
-  using (tribuia.is_condominium_admin(condominium_id));
+  using (tribuia.is_condominium_admin(condominium_id) and condominium_id not in (select tribuia.module_blocked_condominiums('incidents')));
 
 -- 7.19 finanzas: expense_categories / expenses -----------------------------------------------------
+-- Modulo 'expenses': expenses y expense_categories.
 create policy expense_categories_select on tribuia.expense_categories for select to authenticated
-  using (tribuia.can_view_finance(condominium_id));
+  using (tribuia.can_view_finance(condominium_id) and condominium_id not in (select tribuia.module_blocked_condominiums('expenses')));
 create policy expense_categories_write on tribuia.expense_categories for all to authenticated
-  using (tribuia.can_manage_finance(condominium_id))
-  with check (tribuia.can_manage_finance(condominium_id));
+  using (tribuia.can_manage_finance(condominium_id) and condominium_id not in (select tribuia.module_blocked_condominiums('expenses')))
+  with check (tribuia.can_manage_finance(condominium_id) and condominium_id not in (select tribuia.module_blocked_condominiums('expenses')));
 
 create policy expenses_select on tribuia.expenses for select to authenticated
-  using (tribuia.can_view_finance(condominium_id));
+  using (tribuia.can_view_finance(condominium_id) and condominium_id not in (select tribuia.module_blocked_condominiums('expenses')));
 create policy expenses_write on tribuia.expenses for all to authenticated
-  using (tribuia.can_manage_finance(condominium_id))
-  with check (tribuia.can_manage_finance(condominium_id));
+  using (tribuia.can_manage_finance(condominium_id) and condominium_id not in (select tribuia.module_blocked_condominiums('expenses')))
+  with check (tribuia.can_manage_finance(condominium_id) and condominium_id not in (select tribuia.module_blocked_condominiums('expenses')));
 
 -- 7.20 purchases -------------------------------------------------------------------------------------
+-- Modulo 'purchases': purchases y purchase_items (condominio de la compra).
 create policy purchases_select on tribuia.purchases for select to authenticated
-  using (tribuia.can_view_finance(condominium_id));
+  using (tribuia.can_view_finance(condominium_id) and condominium_id not in (select tribuia.module_blocked_condominiums('purchases')));
 create policy purchases_write on tribuia.purchases for all to authenticated
-  using (tribuia.can_manage_finance(condominium_id))
-  with check (tribuia.can_manage_finance(condominium_id));
+  using (tribuia.can_manage_finance(condominium_id) and condominium_id not in (select tribuia.module_blocked_condominiums('purchases')))
+  with check (tribuia.can_manage_finance(condominium_id) and condominium_id not in (select tribuia.module_blocked_condominiums('purchases')));
 
 create policy purchase_items_select on tribuia.purchase_items for select to authenticated
-  using (tribuia.can_view_finance(tribuia.purchase_condominium(purchase_id)));
+  using (
+    tribuia.can_view_finance(tribuia.purchase_condominium(purchase_id))
+    and tribuia.purchase_condominium(purchase_id) not in (select tribuia.module_blocked_condominiums('purchases'))
+  );
 create policy purchase_items_write on tribuia.purchase_items for all to authenticated
-  using (tribuia.can_manage_finance(tribuia.purchase_condominium(purchase_id)))
-  with check (tribuia.can_manage_finance(tribuia.purchase_condominium(purchase_id)));
+  using (
+    tribuia.can_manage_finance(tribuia.purchase_condominium(purchase_id))
+    and tribuia.purchase_condominium(purchase_id) not in (select tribuia.module_blocked_condominiums('purchases'))
+  )
+  with check (
+    tribuia.can_manage_finance(tribuia.purchase_condominium(purchase_id))
+    and tribuia.purchase_condominium(purchase_id) not in (select tribuia.module_blocked_condominiums('purchases'))
+  );
 
 -- 7.21 fines ------------------------------------------------------------------------------------------
 create policy fines_select on tribuia.fines for select to authenticated
   using (
-    tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON'])
-    or apartment_id in (select tribuia.user_apartment_ids())
+    (
+      tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON'])
+      or apartment_id in (select tribuia.user_apartment_ids())
+    )
+    and condominium_id not in (select tribuia.module_blocked_condominiums('fines'))
   );
 create policy fines_write on tribuia.fines for all to authenticated
-  using (tribuia.is_condominium_admin(condominium_id))
-  with check (tribuia.is_condominium_admin(condominium_id));
+  using (tribuia.is_condominium_admin(condominium_id) and condominium_id not in (select tribuia.module_blocked_condominiums('fines')))
+  with check (tribuia.is_condominium_admin(condominium_id) and condominium_id not in (select tribuia.module_blocked_condominiums('fines')));
 
 -- 7.22 documents ---------------------------------------------------------------------------------------
+-- Modulo 'documents': documents y document_categories.
 create policy document_categories_select on tribuia.document_categories for select to authenticated
-  using (tribuia.user_can_access_condominium(condominium_id));
+  using (tribuia.user_can_access_condominium(condominium_id) and condominium_id not in (select tribuia.module_blocked_condominiums('documents')));
 create policy document_categories_write on tribuia.document_categories for all to authenticated
-  using (tribuia.is_condominium_admin(condominium_id))
-  with check (tribuia.is_condominium_admin(condominium_id));
+  using (tribuia.is_condominium_admin(condominium_id) and condominium_id not in (select tribuia.module_blocked_condominiums('documents')))
+  with check (tribuia.is_condominium_admin(condominium_id) and condominium_id not in (select tribuia.module_blocked_condominiums('documents')));
 
 create policy documents_select on tribuia.documents for select to authenticated
   using (
@@ -2204,17 +2523,25 @@ create policy documents_select on tribuia.documents for select to authenticated
         )
       )
     )
+    and condominium_id not in (select tribuia.module_blocked_condominiums('documents'))
   );
 create policy documents_insert on tribuia.documents for insert to authenticated
   with check (
     tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON'])
     and uploaded_by = auth.uid()
+    and condominium_id not in (select tribuia.module_blocked_condominiums('documents'))
   );
 create policy documents_update on tribuia.documents for update to authenticated
-  using (tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON']))
-  with check (tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON']));
+  using (
+    tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON'])
+    and condominium_id not in (select tribuia.module_blocked_condominiums('documents'))
+  )
+  with check (
+    tribuia.has_role(condominium_id, array['ADMINISTRATOR', 'SPOKESPERSON'])
+    and condominium_id not in (select tribuia.module_blocked_condominiums('documents'))
+  );
 create policy documents_delete on tribuia.documents for delete to authenticated
-  using (tribuia.is_condominium_admin(condominium_id));
+  using (tribuia.is_condominium_admin(condominium_id) and condominium_id not in (select tribuia.module_blocked_condominiums('documents')));
 
 -- 7.23 audit_logs -----------------------------------------------------------------------------------------
 create policy audit_logs_select on tribuia.audit_logs for select to authenticated
@@ -3749,17 +4076,21 @@ drop policy if exists payments_select on tribuia.payments;
 drop policy if exists subscriptions_select on tribuia.subscriptions;
 
 -- Administracion ve todas las cuotas; cada propietario solo las suyas.
+-- Modulos por rol (seccion 17): ambas politicas exigen el modulo 'admin_fees'.
 create policy admin_fees_select on tribuia.admin_fees for select to authenticated
   using (
-    tribuia.is_condominium_admin(condominium_id)
-    or tribuia.user_owns_apartment(apartment_id)
+    (
+      tribuia.is_condominium_admin(condominium_id)
+      or tribuia.user_owns_apartment(apartment_id)
+    )
+    and condominium_id not in (select tribuia.module_blocked_condominiums('admin_fees'))
   );
 
 -- Solo administracion crea/edita cuotas (p. ej. registrar un pago en efectivo).
 -- Los pagos en linea los marca `apply_payment_result` desde la Edge Function.
 create policy admin_fees_write on tribuia.admin_fees for all to authenticated
-  using (tribuia.is_condominium_admin(condominium_id))
-  with check (tribuia.is_condominium_admin(condominium_id));
+  using (tribuia.is_condominium_admin(condominium_id) and condominium_id not in (select tribuia.module_blocked_condominiums('admin_fees')))
+  with check (tribuia.is_condominium_admin(condominium_id) and condominium_id not in (select tribuia.module_blocked_condominiums('admin_fees')));
 
 -- Pagos: quien paga ve los suyos; administracion ve los del conjunto.
 -- Sin politicas de escritura: solo la service role (Edge Function) escribe.
@@ -3841,6 +4172,11 @@ declare
 begin
   if not tribuia.is_condominium_admin(p_condominium) then
     raise exception 'No tienes permisos sobre este condominio' using errcode = '42501';
+  end if;
+  -- SECURITY DEFINER no pasa por RLS: control explicito de modulos por rol.
+  if not tribuia.module_enabled(p_condominium, 'admin_fees') then
+    raise exception 'El modulo de cuotas de administracion no esta habilitado para tu rol'
+      using errcode = '42501';
   end if;
   if p_amount is null or p_amount <= 0 then
     raise exception 'El valor de la cuota debe ser mayor a cero';
@@ -4441,6 +4777,11 @@ begin
     raise exception 'No tienes acceso a este condominio' using errcode = '42501';
   end if;
 
+  -- Modulos por rol (seccion 17).
+  if not tribuia.module_enabled(p_condominium, 'fines', v_uid) then
+    raise exception 'El modulo de multas no esta habilitado para tu rol' using errcode = '42501';
+  end if;
+
   select jsonb_build_object(
            'pending_amount', coalesce(sum(f.amount) filter (where f.status = 'PENDING'), 0),
            'pending_count',  count(*) filter (where f.status = 'PENDING'),
@@ -4493,6 +4834,12 @@ begin
     raise exception 'No tienes permisos sobre este condominio' using errcode = '42501';
   end if;
 
+  -- Modulos por rol (seccion 17).
+  if not tribuia.module_enabled(p_condominium, 'admin_fees', (select auth.uid())) then
+    raise exception 'El modulo de cuotas de administracion no esta habilitado para tu rol'
+      using errcode = '42501';
+  end if;
+
   select jsonb_build_object(
            'paid_amount',    coalesce(sum(f.amount) filter (where f.status = 'PAID'), 0),
            'paid_count',     count(*) filter (where f.status = 'PAID'),
@@ -4538,6 +4885,11 @@ declare
 begin
   if not tribuia.can_view_finance(p_condominium, (select auth.uid())) then
     raise exception 'No tienes permisos sobre este condominio' using errcode = '42501';
+  end if;
+
+  -- Modulos por rol (seccion 17).
+  if not tribuia.module_enabled(p_condominium, 'expenses', (select auth.uid())) then
+    raise exception 'El modulo de gastos no esta habilitado para tu rol' using errcode = '42501';
   end if;
 
   select jsonb_build_object(
@@ -5119,6 +5471,221 @@ from tribuia.buildings b;
 grant select on tribuia.buildings_with_counts to authenticated, service_role;
 
 -- Refresca el cache de esquema de PostgREST.
+notify pgrst, 'reload schema';
+
+-- ============================================================================
+-- 17. MODULOS POR ROL (migracion 20261018000000_modulos_por_rol)
+-- ----------------------------------------------------------------------------
+-- El SUPER_ADMIN decide, por conjunto, que modulos ve y puede usar cada rol.
+--   * Tabla tribuia.role_modules (3.28) e indices (4). condominium_id null =
+--     plantilla por defecto. enabled = coalesce(conjunto, plantilla, true):
+--     sin filas todo queda habilitado.
+--   * Todas las politicas de las tablas de cada modulo (seccion 7 y admin_fees
+--     en el bloque de pagos) agregan con AND
+--       <condominio> not in (select tribuia.module_blocked_condominiums('<modulo>'))
+--     equivalente a tribuia.module_enabled (5.12) pero evaluado una vez por
+--     consulta (subplan hasheado) en lugar de una vez por fila:
+--       residents -> residents, vehicles, pets       visitors -> visitors
+--       alerts -> alerts            announcements -> announcements
+--       messages -> conversations, conversation_participants, messages
+--       requests -> requests, request_comments       incidents -> incidents
+--       fines -> fines              admin_fees -> admin_fees
+--       expenses -> expenses, expense_categories
+--       purchases -> purchases, purchase_items
+--       documents -> documents, document_categories  reports -> solo interfaz
+--   * fines_summary, admin_fees_summary, expenses_summary (15) y
+--     generate_admin_fees responden 42501 si el modulo esta deshabilitado.
+--   * Service role / auth.uid() null: module_enabled devuelve true;
+--     apply_payment_result y los triggers son SECURITY DEFINER (sin RLS).
+-- ============================================================================
+
+drop trigger if exists trg_role_modules_updated_at on tribuia.role_modules;
+create trigger trg_role_modules_updated_at before update on tribuia.role_modules
+  for each row execute function tribuia.set_updated_at();
+
+-- Modulos deshabilitados para el usuario actual en el conjunto (orden del
+-- catalogo). SUPER_ADMIN o usuario sin membresia: arreglo vacio.
+create or replace function tribuia.my_disabled_modules(p_condominium uuid)
+returns text[]
+language sql
+stable
+security definer
+set search_path = tribuia, public, pg_temp
+as $$
+  select coalesce(
+           array_agg(u.module order by u.ord)
+             filter (where not tribuia.module_enabled(p_condominium, u.module, (select auth.uid()))),
+           '{}'::text[])
+    from unnest(tribuia.role_module_codes()) with ordinality as u(module, ord);
+$$;
+
+-- Matriz completa roles x modulos. p_condominium null = plantilla.
+-- source: 'condominium' (fila del conjunto), 'default' (fila de la plantilla),
+-- 'system' (sin fila: habilitado).
+create or replace function tribuia.role_modules_matrix(p_condominium uuid default null)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = tribuia, public, pg_temp
+as $$
+declare
+  v_result jsonb;
+begin
+  if not tribuia.is_super_admin((select auth.uid())) then
+    raise exception 'Solo un super administrador puede configurar los modulos por rol'
+      using errcode = '42501';
+  end if;
+
+  if p_condominium is not null
+     and not exists (select 1 from tribuia.condominiums c where c.id = p_condominium) then
+    raise exception 'El condominio % no existe', p_condominium using errcode = 'P0002';
+  end if;
+
+  select jsonb_build_object(
+           'condominium_id', p_condominium,
+           'cells', coalesce(jsonb_agg(
+             jsonb_build_object(
+               'role',    r.code,
+               'module',  m.code,
+               'enabled', coalesce(rc.enabled, rt.enabled, true),
+               'source',  case
+                            when rc.id is not null then 'condominium'
+                            when rt.id is not null then 'default'
+                            else 'system'
+                          end
+             ) order by r.ord, m.ord), '[]'::jsonb)
+         )
+    into v_result
+    from unnest(tribuia.role_module_roles()) with ordinality as r(code, ord)
+   cross join unnest(tribuia.role_module_codes()) with ordinality as m(code, ord)
+    left join tribuia.role_modules rc
+           on p_condominium is not null
+          and rc.condominium_id = p_condominium
+          and rc.role_code = r.code
+          and rc.module = m.code
+    left join tribuia.role_modules rt
+           on rt.condominium_id is null
+          and rt.role_code = r.code
+          and rt.module = m.code;
+
+  return v_result;
+end;
+$$;
+
+-- Crea o actualiza una celda. p_condominium null = plantilla.
+create or replace function tribuia.set_role_module(
+  p_condominium uuid,
+  p_role        text,
+  p_module      text,
+  p_enabled     boolean
+)
+returns void
+language plpgsql
+security definer
+set search_path = tribuia, public, pg_temp
+as $$
+begin
+  if not tribuia.is_super_admin((select auth.uid())) then
+    raise exception 'Solo un super administrador puede configurar los modulos por rol'
+      using errcode = '42501';
+  end if;
+
+  if p_role is null or not (p_role = any (tribuia.role_module_roles())) then
+    raise exception 'Rol no configurable: %', coalesce(p_role, 'null') using errcode = '22023';
+  end if;
+  if p_module is null or not (p_module = any (tribuia.role_module_codes())) then
+    raise exception 'Modulo desconocido: %', coalesce(p_module, 'null') using errcode = '22023';
+  end if;
+  if p_enabled is null then
+    raise exception 'enabled no puede ser null' using errcode = '22023';
+  end if;
+
+  if p_condominium is not null
+     and not exists (select 1 from tribuia.condominiums c where c.id = p_condominium) then
+    raise exception 'El condominio % no existe', p_condominium using errcode = 'P0002';
+  end if;
+
+  insert into tribuia.role_modules (condominium_id, role_code, module, enabled, updated_by, updated_at)
+  values (p_condominium, p_role, p_module, p_enabled, (select auth.uid()), now())
+  on conflict on constraint role_modules_scope_key do update
+     set enabled    = excluded.enabled,
+         updated_by = excluded.updated_by,
+         updated_at = now();
+end;
+$$;
+
+-- Borra la configuracion propia del conjunto (vuelve a la plantilla).
+-- p_condominium null borra la plantilla (vuelve a "todo habilitado").
+create or replace function tribuia.reset_role_modules(p_condominium uuid)
+returns integer
+language plpgsql
+security definer
+set search_path = tribuia, public, pg_temp
+as $$
+declare
+  v_count integer;
+begin
+  if not tribuia.is_super_admin((select auth.uid())) then
+    raise exception 'Solo un super administrador puede configurar los modulos por rol'
+      using errcode = '42501';
+  end if;
+
+  if p_condominium is null then
+    delete from tribuia.role_modules where condominium_id is null;
+  else
+    delete from tribuia.role_modules where condominium_id = p_condominium;
+  end if;
+
+  get diagnostics v_count = row_count;
+  return v_count;
+end;
+$$;
+
+
+-- ----------------------------------------------------------------------------
+-- RLS de role_modules: lectura para SUPER_ADMIN y para miembros (filas de su
+-- conjunto y la plantilla). Sin politicas de escritura: solo via RPC.
+-- ----------------------------------------------------------------------------
+alter table tribuia.role_modules enable row level security;
+
+drop policy if exists role_modules_select on tribuia.role_modules;
+create policy role_modules_select on tribuia.role_modules for select to authenticated
+  using (
+    (select tribuia.is_super_admin())
+    or condominium_id in (select tribuia.user_condominium_ids())
+    or (condominium_id is null and (select exists (select 1 from tribuia.user_condominium_ids())))
+  );
+
+revoke all on tribuia.role_modules from anon;
+revoke insert, update, delete, truncate on tribuia.role_modules from authenticated;
+grant select on tribuia.role_modules to authenticated;
+grant all on tribuia.role_modules to service_role;
+
+-- ----------------------------------------------------------------------------
+-- Permisos: nada para anon (el esquema concede execute a anon por defecto).
+-- ----------------------------------------------------------------------------
+revoke all on function tribuia.role_module_roles() from public, anon;
+revoke all on function tribuia.role_module_codes() from public, anon;
+revoke all on function tribuia.module_enabled(uuid, text, uuid) from public, anon;
+revoke all on function tribuia.module_blocked_condominiums(text, uuid) from public, anon;
+revoke all on function tribuia.my_disabled_modules(uuid) from public, anon;
+revoke all on function tribuia.role_modules_matrix(uuid) from public, anon;
+revoke all on function tribuia.set_role_module(uuid, text, text, boolean) from public, anon;
+revoke all on function tribuia.reset_role_modules(uuid) from public, anon;
+
+grant execute on function tribuia.role_module_roles() to authenticated, service_role;
+grant execute on function tribuia.role_module_codes() to authenticated, service_role;
+-- authenticated: resumenes y frontend. service_role: la Edge Function de pagos
+-- puede validarlo con p_user.
+grant execute on function tribuia.module_enabled(uuid, text, uuid) to authenticated, service_role;
+-- authenticated: lo evaluan las politicas RLS.
+grant execute on function tribuia.module_blocked_condominiums(text, uuid) to authenticated, service_role;
+grant execute on function tribuia.my_disabled_modules(uuid) to authenticated, service_role;
+grant execute on function tribuia.role_modules_matrix(uuid) to authenticated, service_role;
+grant execute on function tribuia.set_role_module(uuid, text, text, boolean) to authenticated, service_role;
+grant execute on function tribuia.reset_role_modules(uuid) to authenticated, service_role;
+
 notify pgrst, 'reload schema';
 
 -- ============================================================================

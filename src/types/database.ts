@@ -131,7 +131,7 @@ export type RoleCode =
 // ---------------------------------------------------------------------------
 // ROWS
 // ---------------------------------------------------------------------------
-export interface ProfileRow {
+export type ProfileRow = {
   id: string
   email: string
   full_name: string
@@ -145,7 +145,7 @@ export interface ProfileRow {
   updated_at: string
 }
 
-export interface RoleRow {
+export type RoleRow = {
   id: string
   code: RoleCode
   name: string
@@ -156,7 +156,7 @@ export interface RoleRow {
   updated_at: string
 }
 
-export interface UserRoleRow {
+export type UserRoleRow = {
   id: string
   user_id: string
   role_id: string
@@ -164,7 +164,7 @@ export interface UserRoleRow {
   updated_at: string
 }
 
-export interface CondominiumRow {
+export type CondominiumRow = {
   id: string
   name: string
   nit: string | null
@@ -190,7 +190,7 @@ export interface CondominiumRow {
   updated_at: string
 }
 
-export interface CondominiumPlaceRow {
+export type CondominiumPlaceRow = {
   id: string
   condominium_id: string
   osm_id: string
@@ -203,7 +203,7 @@ export interface CondominiumPlaceRow {
   created_at: string
 }
 
-export interface CondominiumMemberRow {
+export type CondominiumMemberRow = {
   id: string
   condominium_id: string
   user_id: string
@@ -215,7 +215,7 @@ export interface CondominiumMemberRow {
   updated_at: string
 }
 
-export interface BuildingRow {
+export type BuildingRow = {
   id: string
   condominium_id: string
   name: string
@@ -227,7 +227,7 @@ export interface BuildingRow {
   updated_at: string
 }
 
-export interface ApartmentRow {
+export type ApartmentRow = {
   id: string
   condominium_id: string
   building_id: string
@@ -244,7 +244,7 @@ export interface ApartmentRow {
   updated_at: string
 }
 
-export interface ApartmentOwnerRow {
+export type ApartmentOwnerRow = {
   id: string
   apartment_id: string
   profile_id: string
@@ -257,7 +257,7 @@ export interface ApartmentOwnerRow {
   updated_at: string
 }
 
-export interface ApartmentTenantRow {
+export type ApartmentTenantRow = {
   id: string
   apartment_id: string
   profile_id: string
@@ -269,7 +269,7 @@ export interface ApartmentTenantRow {
   updated_at: string
 }
 
-export interface ResidentRow {
+export type ResidentRow = {
   id: string
   condominium_id: string
   apartment_id: string
@@ -287,7 +287,7 @@ export interface ResidentRow {
   updated_at: string
 }
 
-export interface VehicleRow {
+export type VehicleRow = {
   id: string
   condominium_id: string
   apartment_id: string
@@ -303,7 +303,7 @@ export interface VehicleRow {
   updated_at: string
 }
 
-export interface PetRow {
+export type PetRow = {
   id: string
   condominium_id: string
   apartment_id: string
@@ -319,7 +319,7 @@ export interface PetRow {
   updated_at: string
 }
 
-export interface VisitorRow {
+export type VisitorRow = {
   id: string
   condominium_id: string
   apartment_id: string
@@ -339,7 +339,7 @@ export interface VisitorRow {
   updated_at: string
 }
 
-export interface AlertRow {
+export type AlertRow = {
   id: string
   condominium_id: string
   building_id: string | null
@@ -358,7 +358,7 @@ export interface AlertRow {
   updated_at: string
 }
 
-export interface AnnouncementRow {
+export type AnnouncementRow = {
   id: string
   condominium_id: string
   building_id: string | null
@@ -377,7 +377,7 @@ export interface AnnouncementRow {
   updated_at: string
 }
 
-export interface NotificationRow {
+export type NotificationRow = {
   id: string
   condominium_id: string | null
   user_id: string
@@ -393,7 +393,7 @@ export interface NotificationRow {
   created_at: string
 }
 
-export interface ConversationRow {
+export type ConversationRow = {
   id: string
   condominium_id: string
   subject: string
@@ -405,7 +405,7 @@ export interface ConversationRow {
   updated_at: string
 }
 
-export interface ConversationParticipantRow {
+export type ConversationParticipantRow = {
   id: string
   conversation_id: string
   user_id: string
@@ -414,7 +414,7 @@ export interface ConversationParticipantRow {
   updated_at: string
 }
 
-export interface MessageRow {
+export type MessageRow = {
   id: string
   conversation_id: string
   condominium_id: string | null
@@ -426,7 +426,7 @@ export interface MessageRow {
   updated_at: string
 }
 
-export interface RequestRow {
+export type RequestRow = {
   id: string
   condominium_id: string
   building_id: string | null
@@ -445,7 +445,7 @@ export interface RequestRow {
   updated_at: string
 }
 
-export interface RequestCommentRow {
+export type RequestCommentRow = {
   id: string
   request_id: string
   author_id: string | null
@@ -456,7 +456,7 @@ export interface RequestCommentRow {
   updated_at: string
 }
 
-export interface IncidentRow {
+export type IncidentRow = {
   id: string
   condominium_id: string
   building_id: string | null
@@ -478,7 +478,7 @@ export interface IncidentRow {
   updated_at: string
 }
 
-export interface ExpenseCategoryRow {
+export type ExpenseCategoryRow = {
   id: string
   condominium_id: string
   name: string
@@ -489,7 +489,7 @@ export interface ExpenseCategoryRow {
   updated_at: string
 }
 
-export interface ExpenseRow {
+export type ExpenseRow = {
   id: string
   condominium_id: string
   category_id: string | null
@@ -506,7 +506,7 @@ export interface ExpenseRow {
   updated_at: string
 }
 
-export interface PurchaseRow {
+export type PurchaseRow = {
   id: string
   condominium_id: string
   code: string | null
@@ -522,7 +522,7 @@ export interface PurchaseRow {
   updated_at: string
 }
 
-export interface PurchaseItemRow {
+export type PurchaseItemRow = {
   id: string
   purchase_id: string
   product: string
@@ -534,7 +534,7 @@ export interface PurchaseItemRow {
   updated_at: string
 }
 
-export interface AdminFeeRow {
+export type AdminFeeRow = {
   id: string
   condominium_id: string
   apartment_id: string
@@ -552,7 +552,7 @@ export interface AdminFeeRow {
   updated_at: string
 }
 
-export interface PaymentRow {
+export type PaymentRow = {
   id: string
   condominium_id: string
   kind: PaymentKind
@@ -575,7 +575,7 @@ export interface PaymentRow {
   updated_at: string
 }
 
-export interface SubscriptionRow {
+export type SubscriptionRow = {
   id: string
   condominium_id: string
   plan_period: PlanPeriod
@@ -588,7 +588,7 @@ export interface SubscriptionRow {
   created_at: string
 }
 
-export interface FineRow {
+export type FineRow = {
   id: string
   condominium_id: string
   apartment_id: string
@@ -610,7 +610,7 @@ export interface FineRow {
   updated_at: string
 }
 
-export interface DocumentCategoryRow {
+export type DocumentCategoryRow = {
   id: string
   condominium_id: string
   name: string
@@ -619,7 +619,7 @@ export interface DocumentCategoryRow {
   updated_at: string
 }
 
-export interface DocumentRow {
+export type DocumentRow = {
   id: string
   condominium_id: string
   category_id: string | null
@@ -639,7 +639,7 @@ export interface DocumentRow {
   updated_at: string
 }
 
-export interface AuditLogRow {
+export type AuditLogRow = {
   id: string
   condominium_id: string | null
   user_id: string | null
@@ -652,7 +652,7 @@ export interface AuditLogRow {
   created_at: string
 }
 
-export interface MeetingRow {
+export type MeetingRow = {
   id: string
   condominium_id: string
   title: string
@@ -668,7 +668,7 @@ export interface MeetingRow {
   updated_at: string
 }
 
-export interface MeetingSignatureRow {
+export type MeetingSignatureRow = {
   id: string
   meeting_id: string
   profile_id: string | null
@@ -684,7 +684,7 @@ export interface MeetingSignatureRow {
   updated_at: string
 }
 
-export interface ReportRow {
+export type ReportRow = {
   id: string
   condominium_id: string
   title: string
@@ -698,7 +698,7 @@ export interface ReportRow {
   updated_at: string
 }
 
-export interface ReportImageRow {
+export type ReportImageRow = {
   id: string
   report_id: string
   caption: string | null
@@ -711,7 +711,7 @@ export interface ReportImageRow {
   created_at: string
 }
 
-export interface RegistrationRequestRow {
+export type RegistrationRequestRow = {
   id: string
   condominium_id: string
   profile_id: string
@@ -728,7 +728,7 @@ export interface RegistrationRequestRow {
   updated_at: string
 }
 
-export interface CondominiumInvitationRow {
+export type CondominiumInvitationRow = {
   id: string
   condominium_id: string
   email: string
@@ -941,6 +941,17 @@ export interface Database {
         Returns: Json
       }
       platform_overview: { Args: Record<string, never>; Returns: Json }
+      my_disabled_modules: { Args: { p_condominium: string }; Returns: string[] }
+      role_modules_matrix: { Args: { p_condominium?: string | null }; Returns: Json }
+      set_role_module: {
+        Args: { p_condominium: string | null; p_role: string; p_module: string; p_enabled: boolean }
+        Returns: undefined
+      }
+      reset_role_modules: { Args: { p_condominium: string | null }; Returns: number }
+      module_enabled: {
+        Args: { p_condominium: string; p_module: string; p_user?: string | null }
+        Returns: boolean
+      }
       fines_summary: {
         Args: {
           p_condominium: string

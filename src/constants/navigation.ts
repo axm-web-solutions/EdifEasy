@@ -1,8 +1,10 @@
 import type { RoleCode } from '@/types/database'
 import type { PermissionKey } from './roles'
+import type { ModuleKey } from './modules'
 
 type HasRole = (roles: RoleCode[]) => boolean
 type HasPermission = (permission: PermissionKey) => boolean
+type IsModuleEnabled = (module: ModuleKey) => boolean
 
 export interface NavItem {
   key: string
@@ -13,6 +15,8 @@ export interface NavItem {
   roles?: RoleCode[]
   /** Permiso necesario (ademas del rol). */
   permission?: PermissionKey
+  /** Modulo configurable: se oculta si el SUPER_ADMIN lo desactivo para el rol. */
+  module?: ModuleKey
   children?: NavItem[]
 }
 
@@ -24,9 +28,17 @@ export const NAVIGATION: NavItem[] = [
   {
     key: 'platform',
     label: 'Plataforma',
-    path: '/platform',
     icon: 'Globe',
     roles: ['SUPER_ADMIN'],
+    children: [
+      { key: 'platform-condominiums', label: 'Conjuntos', path: '/platform', icon: 'Building' },
+      {
+        key: 'platform-modules',
+        label: 'Modulos por rol',
+        path: '/platform/modules',
+        icon: 'SlidersHorizontal',
+      },
+    ],
   },
 
   { key: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: 'LayoutDashboard' },
@@ -41,6 +53,7 @@ export const NAVIGATION: NavItem[] = [
 
   {
     key: 'admin-fees',
+    module: 'admin_fees',
     label: 'Cuotas de administracion',
     path: '/admin-fees',
     icon: 'CreditCard',
@@ -56,7 +69,13 @@ export const NAVIGATION: NavItem[] = [
       { key: 'condominiums', label: 'Condominios', path: '/condominiums', icon: 'Building' },
       { key: 'buildings', label: 'Bloques', path: '/buildings', icon: 'Blocks' },
       { key: 'apartments', label: 'Apartamentos', path: '/apartments', icon: 'DoorOpen' },
-      { key: 'users', label: 'Usuarios', path: '/users', icon: 'Users', permission: 'manageMembers' },
+      {
+        key: 'users',
+        label: 'Usuarios',
+        path: '/users',
+        icon: 'Users',
+        permission: 'manageMembers',
+      },
       {
         key: 'approvals',
         label: 'Aprobaciones',
@@ -69,6 +88,7 @@ export const NAVIGATION: NavItem[] = [
 
   {
     key: 'residents',
+    module: 'residents',
     label: 'Residentes',
     path: '/residents',
     icon: 'UsersRound',
@@ -77,6 +97,7 @@ export const NAVIGATION: NavItem[] = [
 
   {
     key: 'visitors',
+    module: 'visitors',
     label: 'Visitantes',
     path: '/visitors',
     icon: 'IdCard',
@@ -88,9 +109,21 @@ export const NAVIGATION: NavItem[] = [
     label: 'Comunicacion',
     icon: 'MessagesSquare',
     children: [
-      { key: 'alerts', label: 'Alertas', path: '/alerts', icon: 'Siren' },
-      { key: 'announcements', label: 'Comunicados', path: '/announcements', icon: 'Megaphone' },
-      { key: 'messages', label: 'Mensajes', path: '/messages', icon: 'MessageCircle' },
+      { key: 'alerts', module: 'alerts', label: 'Alertas', path: '/alerts', icon: 'Siren' },
+      {
+        key: 'announcements',
+        module: 'announcements',
+        label: 'Comunicados',
+        path: '/announcements',
+        icon: 'Megaphone',
+      },
+      {
+        key: 'messages',
+        module: 'messages',
+        label: 'Mensajes',
+        path: '/messages',
+        icon: 'MessageCircle',
+      },
     ],
   },
 
@@ -99,10 +132,23 @@ export const NAVIGATION: NavItem[] = [
     label: 'Gestion',
     icon: 'ClipboardList',
     children: [
-      { key: 'requests', label: 'Solicitudes', path: '/requests', icon: 'FileQuestion' },
-      { key: 'incidents', label: 'Incidentes', path: '/incidents', icon: 'ShieldAlert' },
+      {
+        key: 'requests',
+        module: 'requests',
+        label: 'Solicitudes',
+        path: '/requests',
+        icon: 'FileQuestion',
+      },
+      {
+        key: 'incidents',
+        module: 'incidents',
+        label: 'Incidentes',
+        path: '/incidents',
+        icon: 'ShieldAlert',
+      },
       {
         key: 'fines',
+        module: 'fines',
         label: 'Multas',
         path: '/fines',
         icon: 'Gavel',
@@ -117,15 +163,36 @@ export const NAVIGATION: NavItem[] = [
     icon: 'Wallet',
     permission: 'viewFinance',
     children: [
-      { key: 'expenses', label: 'Gastos', path: '/expenses', icon: 'Receipt', permission: 'viewFinance' },
-      { key: 'purchases', label: 'Compras', path: '/purchases', icon: 'ShoppingCart', permission: 'viewFinance' },
+      {
+        key: 'expenses',
+        module: 'expenses',
+        label: 'Gastos',
+        path: '/expenses',
+        icon: 'Receipt',
+        permission: 'viewFinance',
+      },
+      {
+        key: 'purchases',
+        module: 'purchases',
+        label: 'Compras',
+        path: '/purchases',
+        icon: 'ShoppingCart',
+        permission: 'viewFinance',
+      },
     ],
   },
 
-  { key: 'documents', label: 'Documentos', path: '/documents', icon: 'FolderOpen' },
+  {
+    key: 'documents',
+    module: 'documents',
+    label: 'Documentos',
+    path: '/documents',
+    icon: 'FolderOpen',
+  },
 
   {
     key: 'reports',
+    module: 'reports',
     label: 'Reportes',
     path: '/reports',
     icon: 'BarChart3',
@@ -152,9 +219,15 @@ export const NAVIGATION: NavItem[] = [
 ]
 
 /** Regla unica de visibilidad: rol y permiso del usuario en el condominio activo. */
-export function isNavItemVisible(item: NavItem, hasRole: HasRole, hasPermission: HasPermission): boolean {
+export function isNavItemVisible(
+  item: NavItem,
+  hasRole: HasRole,
+  hasPermission: HasPermission,
+  isModuleEnabled: IsModuleEnabled = () => true,
+): boolean {
   if (item.roles && item.roles.length > 0 && !hasRole(item.roles)) return false
   if (item.permission && !hasPermission(item.permission)) return false
+  if (item.module && !isModuleEnabled(item.module)) return false
   return true
 }
 
@@ -162,13 +235,18 @@ export function isNavItemVisible(item: NavItem, hasRole: HasRole, hasPermission:
 export function visibleNavPaths(
   hasRole: HasRole,
   hasPermission: HasPermission,
+  isModuleEnabled: IsModuleEnabled = () => true,
   items: NavItem[] = NAVIGATION,
 ): Set<string> {
   const paths = new Set<string>()
   for (const item of items) {
-    if (!isNavItemVisible(item, hasRole, hasPermission)) continue
+    if (!isNavItemVisible(item, hasRole, hasPermission, isModuleEnabled)) continue
     if (item.path) paths.add(item.path)
-    if (item.children) visibleNavPaths(hasRole, hasPermission, item.children).forEach((path) => paths.add(path))
+    if (item.children) {
+      visibleNavPaths(hasRole, hasPermission, isModuleEnabled, item.children).forEach((path) =>
+        paths.add(path),
+      )
+    }
   }
   return paths
 }
