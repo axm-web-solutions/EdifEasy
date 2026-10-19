@@ -21,3 +21,6 @@ pnpm-debug.log*
 
 # Registros locales del servidor de desarrollo
 *.log
+
+# Cloudflare Wrangler (cache local)
+.wrangler

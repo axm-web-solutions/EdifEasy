@@ -1,0 +1,16 @@
+// Despliegue en Cloudflare Workers como sitio estatico (SPA de Vite).
+// El servidor ya corre `pnpm run build`; `wrangler deploy` solo publica `dist`.
+// Con este archivo Wrangler no intenta autoconfigurarse (fallaba al detectar
+// pnpm-workspace.yaml como monorepo y generar un build con --filter).
+{
+  "name": "edifeasy",
+  "compatibility_date": "2026-10-12",
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": "./dist",
+    // Rutas como /dashboard o /payments/result sirven index.html (React Router).
+    "not_found_handling": "single-page-application"
+  }
+}
