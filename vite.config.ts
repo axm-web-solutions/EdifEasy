@@ -35,8 +35,30 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,woff2}'],
-        // pdf.js solo lo usa el super admin (alta desde el RUT): se baja bajo demanda.
-        globIgnores: ['**/assets/pdf-*.js', '**/assets/pdf.worker*'],
+        // Lo pesado que no todos usan se baja bajo demanda (y queda en cache al usarse):
+        // pdf.js (alta desde el RUT), Three.js (login de escritorio), graficas,
+        // mapa y paginas legales.
+        globIgnores: [
+          '**/assets/pdf-*.js',
+          '**/assets/pdf.worker*',
+          '**/assets/three-*.js',
+          '**/assets/GlassTowers3D-*.js',
+          '**/assets/charts-*.js',
+          '**/assets/map-*.js',
+          '**/assets/LegalPage-*.js',
+          '**/assets/CreateFromRutPage-*.js',
+        ],
+        runtimeCaching: [
+          {
+            urlPattern: ({ url, sameOrigin }) =>
+              sameOrigin && /^\/assets\/.*\.(js|css)$/.test(url.pathname),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'edifeasy-assets',
+              expiration: { maxEntries: 120, maxAgeSeconds: 60 * 60 * 24 * 30 },
+            },
+          },
+        ],
         navigateFallbackDenylist: [/^\/api/],
         cleanupOutdatedCaches: true,
       },

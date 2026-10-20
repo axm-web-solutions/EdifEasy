@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { Button, Card, Input, Skeleton, Switch, Tag } from 'antd'
 import {
   BadgeCheck,
@@ -13,6 +14,13 @@ import {
 } from 'lucide-react'
 import { EmptyState, ErrorState } from '@/components/ui/states'
 import { ContactFormDrawer } from './ContactFormDrawer'
+
+// El mapa (leaflet) se descarga solo al abrir esta pestana.
+const NearbyPlacesCard = lazy(() =>
+  import('@/features/dashboard/components/NearbyPlacesCard').then((m) => ({
+    default: m.NearbyPlacesCard,
+  })),
+)
 import { useMarketplaceViewModel } from '../viewmodels/useMarketplaceViewModel'
 import { useContactFormViewModel } from '../viewmodels/useContactFormViewModel'
 import type { MarketItem } from '../viewmodels/marketplace.logic'
@@ -150,6 +158,20 @@ export function ServicesPanel() {
           </Button>
         ) : null}
       </div>
+
+      {vm.condominiumId ? (
+        <div className="mb-4">
+          <Suspense
+            fallback={
+              <Card className="surface-card">
+                <Skeleton active paragraph={{ rows: 6 }} />
+              </Card>
+            }
+          >
+            <NearbyPlacesCard condominiumId={vm.condominiumId} dataTour="marketplace-map" />
+          </Suspense>
+        </div>
+      ) : null}
 
       <Card
         className="surface-card mb-4"

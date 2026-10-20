@@ -1,11 +1,21 @@
-import { Card, Col, List, Row, Tag } from 'antd'
+import { lazy, Suspense } from 'react'
+import { Button, Card, Col, List, Row, Skeleton, Tag } from 'antd'
 import { Link } from 'react-router-dom'
-import { ClipboardList, DoorOpen, ShieldAlert, Siren, UsersRound, Wrench } from 'lucide-react'
+import {
+  ClipboardList,
+  DoorOpen,
+  NotebookPen,
+  ShieldAlert,
+  Siren,
+  UserRoundCheck,
+  UsersRound,
+  Wrench,
+} from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { StatCard } from '@/components/ui/StatCard'
 import { EmptyState } from '@/components/ui/states'
 import { useAuth } from '@/hooks/useAuth'
-import { NearbyPlacesCard } from '../components/NearbyPlacesCard'
+import { useModuleAccess } from '@/hooks/useModules'
 import { useAdminDashboard } from '@/hooks/useDashboard'
 import { useRecentIncidents } from '@/hooks/useIncidents'
 import { useRecentRequests } from '@/hooks/useRequests'
@@ -20,6 +30,11 @@ import {
 import { formatNumber, formatRelative } from '@/utils/format'
 import { roleLabel } from '@/constants/roles'
 
+// El mapa (leaflet) no bloquea las tarjetas del panel.
+const NearbyPlacesCard = lazy(() =>
+  import('../components/NearbyPlacesCard').then((m) => ({ default: m.NearbyPlacesCard })),
+)
+
 /**
  * Dashboard operativo compartido por SECURITY y SERVICE_STAFF.
  * Muestra unicamente la informacion necesaria para sus funciones
@@ -28,6 +43,7 @@ import { roleLabel } from '@/constants/roles'
 export function OperationalDashboard() {
   const { currentCondominiumId, currentMembership, role } = useAuth()
   const isSecurity = role === 'SECURITY'
+  const { isModuleEnabled } = useModuleAccess()
 
   const statsQuery = useAdminDashboard(currentCondominiumId)
   const incidentsQuery = useRecentIncidents(currentCondominiumId, 6)
@@ -42,6 +58,22 @@ export function OperationalDashboard() {
         title={`Panel operativo · ${roleLabel(role)}`}
         subtitle={currentMembership?.condominium_name ?? 'Condominio'}
         dataTour="page-header"
+        actions={
+          <>
+            {isModuleEnabled('staff') ? (
+              <Link to="/staff">
+                <Button type="primary" icon={<UserRoundCheck size={16} />}>
+                  Ingreso y salida
+                </Button>
+              </Link>
+            ) : null}
+            {isSecurity && isModuleEnabled('logbook') ? (
+              <Link to="/logbook">
+                <Button icon={<NotebookPen size={16} />}>Minuta</Button>
+              </Link>
+            ) : null}
+          </>
+        }
       />
 
       <Row gutter={[16, 16]}>
@@ -221,7 +253,9 @@ export function OperationalDashboard() {
       </Row>
 
       <div className="mt-4">
-        <NearbyPlacesCard condominiumId={currentCondominiumId} dataTour="nearby-map" />
+        <Suspense fallback={<Skeleton active paragraph={{ rows: 6 }} />}>
+          <NearbyPlacesCard condominiumId={currentCondominiumId} dataTour="nearby-map" />
+        </Suspense>
       </div>
     </>
   )

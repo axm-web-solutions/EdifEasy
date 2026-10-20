@@ -51,6 +51,7 @@ export function useMarketplaceViewModel() {
   const resetPaging = () => setLimit(PAGE)
 
   return {
+    condominiumId: currentCondominiumId,
     status,
     canManage: hasRole(['ADMINISTRATOR', 'SUPER_ADMIN']),
     hasLocation: Boolean(point),

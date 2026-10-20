@@ -1,5 +1,6 @@
 import { Avatar, Button, Dropdown, Select, Space, Tag, Tooltip, Typography } from 'antd'
 import { Building2, LogOut, Menu as MenuIcon, Settings, User } from 'lucide-react'
+import { BrandLogo } from '@/components/ui/BrandLogo'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { roleColor, roleLabel } from '@/constants/roles'
@@ -36,10 +37,11 @@ export function Topbar({ onOpenDrawer }: { onOpenDrawer: () => void }) {
     return (
       <span className="flex min-w-0 items-center gap-2">
         {membership?.condominium_logo_url ? (
-          <img
+          <BrandLogo
             src={membership.condominium_logo_url}
-            alt=""
-            className="h-5 w-5 shrink-0 rounded object-contain"
+            name={membership.condominium_name}
+            className="h-5 w-5 text-[9px]"
+            fallbackClassName="bg-slate-100 text-slate-500"
           />
         ) : (
           <Building2 size={16} className="shrink-0 text-slate-400" />

@@ -1,14 +1,18 @@
-import { Alert, Card, Skeleton } from 'antd'
+import { Card, Skeleton } from 'antd'
 import { Link } from 'react-router-dom'
 import {
+  BellRing,
   CalendarClock,
+  ChevronDown,
   ChevronRight,
   FileQuestion,
   Gavel,
   Home,
+  MapPinned,
   MessageCircle,
   Siren,
   Store,
+  Vote,
 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type {
@@ -23,28 +27,59 @@ const ICONS: Record<QuickAccessKey, ReactNode> = {
   requests: <FileQuestion size={18} />,
   reservations: <CalendarClock size={18} />,
   messages: <MessageCircle size={18} />,
+  surveys: <Vote size={18} />,
+  services: <MapPinned size={18} />,
 }
 
-/** Alertas importantes arriba del feed. */
-export function CriticalAlerts({ vm }: { vm: ResidentSummaryViewModel }) {
-  if (vm.criticalAlerts.length === 0) return null
+/**
+ * Aviso suave de alertas importantes: tono ambar, colapsado y descartable.
+ * Va en la columna lateral, no encima del feed.
+ */
+export function AlertsNotice({ vm }: { vm: ResidentSummaryViewModel }) {
+  const notice = vm.notice
+  if (!notice) return null
   return (
-    <Alert
-      type="error"
-      showIcon
-      className="mb-4"
-      message={`Tienes ${vm.criticalAlerts.length} alerta(s) importante(s)`}
-      description={
-        <ul className="m-0 list-disc pl-5">
-          {vm.criticalAlerts.map((alert) => (
-            <li key={alert.id} className="text-sm">
-              <strong>{alert.title}</strong> — {alert.description}
-            </li>
-          ))}
-        </ul>
-      }
-      action={<Link to="/alerts">Ver alertas</Link>}
-    />
+    <section className="rounded-xl border border-amber-200 bg-amber-50/70 p-3" aria-live="polite">
+      <div className="flex items-start gap-2">
+        <BellRing size={18} className="mt-0.5 shrink-0 text-amber-600" aria-hidden />
+        <div className="min-w-0 flex-1">
+          <button
+            type="button"
+            onClick={vm.toggleNotice}
+            aria-expanded={notice.expanded}
+            className="flex w-full cursor-pointer items-center justify-between gap-2 border-0 bg-transparent p-0 text-left text-sm font-medium text-amber-900"
+          >
+            {notice.title}
+            <ChevronDown
+              size={16}
+              className={`shrink-0 transition-transform ${notice.expanded ? 'rotate-180' : ''}`}
+            />
+          </button>
+          {notice.expanded ? (
+            <ul className="m-0 mt-2 list-none space-y-1 p-0">
+              {notice.alerts.map((alert) => (
+                <li key={alert.id} className="text-sm text-amber-900">
+                  <strong className="font-medium">{alert.title}</strong>
+                  <span className="block text-xs text-amber-800">{alert.description}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          <div className="mt-2 flex gap-3 text-xs">
+            <Link to="/alerts" className="font-medium text-amber-800">
+              Ver alertas
+            </Link>
+            <button
+              type="button"
+              onClick={vm.dismissNotice}
+              className="cursor-pointer border-0 bg-transparent p-0 text-amber-700 hover:underline"
+            >
+              Ocultar
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
   )
 }
 

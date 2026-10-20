@@ -1,4 +1,5 @@
-import { Button, Col, Row, Skeleton } from 'antd'
+import { lazy, Suspense } from 'react'
+import { Button, Card, Col, Row, Skeleton } from 'antd'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState, ErrorState } from '@/components/ui/states'
 import { ContactFormDrawer } from '@/features/marketplace/components/ContactFormDrawer'
@@ -6,10 +7,17 @@ import { useContactFormViewModel } from '@/features/marketplace/viewmodels/useCo
 import { FeedComposer } from '../components/FeedComposer'
 import { FeedPostCard } from '../components/FeedPostCard'
 import { EmergencyCard } from '../components/EmergencyCard'
-import { CriticalAlerts, QuickAccessCard } from '../components/ResidentSummary'
+import { AlertsNotice, QuickAccessCard } from '../components/ResidentSummary'
 import { useFeedViewModel } from '../viewmodels/useFeedViewModel'
 import { useEmergencyViewModel } from '../viewmodels/useEmergencyViewModel'
 import { useResidentSummaryViewModel } from '../viewmodels/useResidentSummaryViewModel'
+
+// El mapa (leaflet) se descarga aparte para no demorar las publicaciones.
+const NearbyPlacesCard = lazy(() =>
+  import('@/features/dashboard/components/NearbyPlacesCard').then((m) => ({
+    default: m.NearbyPlacesCard,
+  })),
+)
 
 /**
  * Inicio tipo feed: publicaciones de la administracion, numeros de emergencia
@@ -25,8 +33,6 @@ export function FeedPage() {
   return (
     <>
       <PageHeader title={feed.greeting} subtitle={feed.subtitle} dataTour="page-header" />
-
-      {summary.visible ? <CriticalAlerts vm={summary} /> : null}
 
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={15} xl={16}>
@@ -74,6 +80,7 @@ export function FeedPage() {
 
         <Col xs={24} lg={9} xl={8}>
           <div className="space-y-4 lg:sticky lg:top-4">
+            {summary.visible ? <AlertsNotice vm={summary} /> : null}
             <EmergencyCard
               vm={emergency}
               onAdd={() => contactForm.openNew('EMERGENCY')}
@@ -83,6 +90,20 @@ export function FeedPage() {
           </div>
         </Col>
       </Row>
+
+      {summary.visible && summary.condominiumId ? (
+        <div className="mt-6" id="mapa">
+          <Suspense
+            fallback={
+              <Card className="surface-card">
+                <Skeleton active paragraph={{ rows: 6 }} />
+              </Card>
+            }
+          >
+            <NearbyPlacesCard condominiumId={summary.condominiumId} dataTour="nearby-map" />
+          </Suspense>
+        </div>
+      ) : null}
 
       {contactForm.canManage ? <ContactFormDrawer form={contactForm} /> : null}
     </>

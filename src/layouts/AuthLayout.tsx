@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom'
 import { Building2, ShieldCheck, Sparkles } from 'lucide-react'
 import { GlassTowers } from '@/components/ui/GlassTowers'
 import { LegalLinks } from '@/features/legal/components/LegalLinks'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 
 /**
  * Escena 3D cargada bajo demanda: mantiene Three.js fuera del bundle inicial
@@ -32,6 +33,8 @@ const HIGHLIGHTS = [
 ]
 
 export function AuthLayout() {
+  // El panel solo se ve desde 1024 px: en movil no se descarga Three.js.
+  const isDesktop = useMediaQuery('(min-width: 1024px)')
   return (
     <div className="flex min-h-screen items-start bg-surface">
       {/*
@@ -54,11 +57,15 @@ export function AuthLayout() {
           texto ilegible; con este, la escena respira por la derecha y el texto
           conserva contraste.
         */}
-        <Suspense
-          fallback={<GlassTowers className="pointer-events-none absolute inset-0 h-full w-full" />}
-        >
-          <GlassTowers3D className="pointer-events-none absolute inset-0 h-full w-full" />
-        </Suspense>
+        {isDesktop ? (
+          <Suspense
+            fallback={
+              <GlassTowers className="pointer-events-none absolute inset-0 h-full w-full" />
+            }
+          >
+            <GlassTowers3D className="pointer-events-none absolute inset-0 h-full w-full" />
+          </Suspense>
+        ) : null}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/60 to-transparent" />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-slate-950/25" />
 

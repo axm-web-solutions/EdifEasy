@@ -133,3 +133,23 @@ export function nearestEmergencyPlaces(
 export function formatDistance(meters: number): string {
   return meters < 1000 ? `${Math.round(meters / 10) * 10} m` : `${(meters / 1000).toFixed(1)} km`
 }
+
+/** Saludo segun la hora local: "Buenos dias", "Buenas tardes" o "Buenas noches". */
+export function greetingFor(firstName: string, now = new Date()): string {
+  const hour = now.getHours()
+  const base =
+    hour >= 5 && hour < 12
+      ? 'Buenos dias'
+      : hour >= 12 && hour < 19
+        ? 'Buenas tardes'
+        : 'Buenas noches'
+  return firstName ? `${base}, ${firstName}` : base
+}
+
+/**
+ * Aviso de alertas del residente: suave y descartable. Una vez descartado no
+ * vuelve en la sesion, salvo que llegue una alerta nueva (cambia la firma).
+ */
+export function noticeSignature(ids: string[]): string {
+  return [...ids].sort().join(',')
+}

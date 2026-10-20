@@ -15,21 +15,26 @@ import {
   Home,
   IdCard,
   LayoutDashboard,
+  MapPinned,
   Megaphone,
   MessageCircle,
   MessagesSquare,
   Newspaper,
+  NotebookPen,
   Receipt,
   Scale,
   Store,
   Settings,
   ShieldAlert,
+  ShieldCheck,
   ShoppingCart,
   SlidersHorizontal,
   Siren,
   UserCheck,
+  UserRoundCheck,
   Users,
   UsersRound,
+  Vote,
   Wallet,
   type LucideIcon,
 } from 'lucide-react'
@@ -67,10 +72,27 @@ const ICONS: Record<string, LucideIcon> = {
   BarChart3,
   History,
   Settings,
+  MapPinned,
+  NotebookPen,
+  ShieldCheck,
+  UserRoundCheck,
+  Vote,
 }
 
-export function Icon({ name, size = 18 }: { name?: string; size?: number }) {
+/**
+ * Icono del menu. Reenvia `className`: antd le pasa `ant-menu-item-icon`, que es
+ * lo que oculta el texto cuando el menu esta colapsado.
+ */
+export function Icon({
+  name,
+  size = 18,
+  className,
+}: {
+  name?: string
+  size?: number
+  className?: string
+}) {
   const Component = name ? ICONS[name] : undefined
   if (!Component) return null
-  return <Component size={size} />
+  return <Component size={size} className={className} aria-hidden />
 }

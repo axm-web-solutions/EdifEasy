@@ -5,6 +5,8 @@ import type { NearbyPlace } from '@/services/placesService'
 import {
   audienceLabel,
   formatDistance,
+  greetingFor,
+  noticeSignature,
   initials,
   nearestEmergencyPlaces,
   toEmergencyContacts,
@@ -146,5 +148,17 @@ describe('formatDistance', () => {
   it('metros y kilometros', () => {
     expect(formatDistance(234)).toBe('230 m')
     expect(formatDistance(1530)).toBe('1.5 km')
+  })
+})
+
+describe('saludo y aviso', () => {
+  it('saluda segun la hora', () => {
+    expect(greetingFor('Ana', new Date('2026-10-19T08:00:00'))).toBe('Buenos dias, Ana')
+    expect(greetingFor('Ana', new Date('2026-10-19T15:00:00'))).toBe('Buenas tardes, Ana')
+    expect(greetingFor('Ana', new Date('2026-10-19T22:00:00'))).toBe('Buenas noches, Ana')
+    expect(greetingFor('', new Date('2026-10-19T02:00:00'))).toBe('Buenas noches')
+  })
+  it('la firma del aviso no depende del orden', () => {
+    expect(noticeSignature(['b', 'a'])).toBe(noticeSignature(['a', 'b']))
   })
 })

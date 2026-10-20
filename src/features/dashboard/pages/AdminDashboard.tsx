@@ -1,4 +1,5 @@
-import { Card, Col, List, Row, Tag, Timeline, Typography } from 'antd'
+import { lazy, Suspense } from 'react'
+import { Card, Col, List, Row, Skeleton, Tag, Timeline, Typography } from 'antd'
 import { Link } from 'react-router-dom'
 import {
   Building2,
@@ -21,7 +22,6 @@ import { useAdminDashboard, useRecentActivity } from '@/hooks/useDashboard'
 import { useExpensesByCategory, useExpensesMonthly } from '@/hooks/useExpenses'
 import { useFinesByStatus, useIncidentsByType, useRequestsByStatus } from '@/hooks/useReports'
 import { useActiveAlerts } from '@/hooks/useAlerts'
-import { NearbyPlacesCard } from '../components/NearbyPlacesCard'
 import {
   FINE_STATUS,
   INCIDENT_TYPE,
@@ -31,6 +31,11 @@ import {
 } from '@/constants/enums'
 import { formatCompactCurrency, formatDateTime, formatNumber } from '@/utils/format'
 import type { RequestStatus, IncidentType, FineStatus } from '@/types/database'
+
+// El mapa (leaflet) no bloquea las tarjetas ni las graficas del panel.
+const NearbyPlacesCard = lazy(() =>
+  import('../components/NearbyPlacesCard').then((m) => ({ default: m.NearbyPlacesCard })),
+)
 
 const { Text } = Typography
 
@@ -262,11 +267,13 @@ export function AdminDashboard() {
       </Row>
 
       <div className="mt-4">
-        <NearbyPlacesCard
-          condominiumId={currentCondominiumId}
-          editAddressPath="/settings"
-          dataTour="nearby-map"
-        />
+        <Suspense fallback={<Skeleton active paragraph={{ rows: 6 }} />}>
+          <NearbyPlacesCard
+            condominiumId={currentCondominiumId}
+            editAddressPath="/settings"
+            dataTour="nearby-map"
+          />
+        </Suspense>
       </div>
 
       <Row gutter={[16, 16]} className="mt-4">

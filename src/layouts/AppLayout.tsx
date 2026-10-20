@@ -9,6 +9,7 @@ import { useNotificationsRealtime } from '@/hooks/useNotifications'
 import { GlobalSearch } from '@/components/layout/GlobalSearch'
 import { TourAutoStart } from '@/components/tour/TourAutoStart'
 import { PageSkeleton } from '@/components/ui/states'
+import { BrandLogo } from '@/components/ui/BrandLogo'
 import { preloadPages } from '@/routes/lazyPage'
 
 const { Header, Sider, Content } = Layout
@@ -21,11 +22,7 @@ function Brand({ collapsed }: { collapsed: boolean }) {
 
   return (
     <div className={`flex h-16 items-center gap-2 ${collapsed ? 'justify-center px-0' : 'px-4'}`}>
-      <img
-        src={logoSrc}
-        alt={name}
-        className="h-8 w-8 shrink-0 rounded bg-white/10 object-contain p-0.5"
-      />
+      <BrandLogo src={logoSrc} name={name} className="h-8 w-8 bg-white/10 p-0.5" />
       {!collapsed ? (
         <div className="min-w-0">
           <p className="m-0 truncate text-base font-semibold text-white">{name}</p>

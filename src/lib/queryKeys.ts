@@ -185,6 +185,21 @@ export const queryKeys = {
     cached: (condominiumId: string) => ['places', 'cached', condominiumId] as const,
   },
 
+  logbook: {
+    list: (condominiumId: string, from: string) => ['logbook', condominiumId, from] as const,
+  },
+
+  staff: {
+    roster: (condominiumId: string) => ['staff', 'roster', condominiumId] as const,
+    shifts: (condominiumId: string, from: string) => ['staff', 'shifts', condominiumId, from] as const,
+  },
+
+  surveys: {
+    list: (condominiumId: string) => ['surveys', 'list', condominiumId] as const,
+    ballots: (userId: string) => ['surveys', 'ballots', userId] as const,
+    results: (surveyId: string) => ['surveys', 'results', surveyId] as const,
+  },
+
   legal: {
     entity: ['legal', 'entity'] as const,
     acceptances: (userId: string) => ['legal', 'acceptances', userId] as const,

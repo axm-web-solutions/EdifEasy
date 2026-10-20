@@ -24,6 +24,9 @@ export type ModuleKey =
   | 'reports'
   | 'marketplace'
   | 'reservations'
+  | 'logbook'
+  | 'staff'
+  | 'surveys'
 
 export interface ModuleMeta {
   key: ModuleKey
@@ -53,6 +56,9 @@ export const MODULES: ModuleMeta[] = [
   { key: 'purchases', label: 'Compras', description: 'Ordenes de compra e insumos' },
   { key: 'documents', label: 'Documentos', description: 'Reglamentos, actas y archivos' },
   { key: 'reports', label: 'Reportes', description: 'Indicadores y graficas' },
+  { key: 'logbook', label: 'Minuta de porteria', description: 'Bitacora digital de los celadores' },
+  { key: 'staff', label: 'Personal', description: 'Ingreso y salida del personal' },
+  { key: 'surveys', label: 'Encuestas', description: 'Encuestas y votaciones de la comunidad' },
   {
     key: 'reservations',
     label: 'Reservas',

@@ -59,6 +59,13 @@ export const NAVIGATION: NavItem[] = [
   },
 
   {
+    key: 'nearby',
+    label: 'Mapa',
+    path: '/nearby',
+    icon: 'MapPinned',
+  },
+
+  {
     key: 'marketplace',
     module: 'marketplace',
     label: 'Marketplace',
@@ -128,6 +135,30 @@ export const NAVIGATION: NavItem[] = [
   },
 
   {
+    key: 'gatehouse',
+    label: 'Porteria',
+    icon: 'ShieldCheck',
+    roles: ['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY', 'SERVICE_STAFF'],
+    children: [
+      {
+        key: 'logbook',
+        module: 'logbook',
+        label: 'Minuta',
+        path: '/logbook',
+        icon: 'NotebookPen',
+        roles: ['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY'],
+      },
+      {
+        key: 'staff',
+        module: 'staff',
+        label: 'Personal',
+        path: '/staff',
+        icon: 'UserRoundCheck',
+      },
+    ],
+  },
+
+  {
     key: 'communication',
     label: 'Comunicacion',
     icon: 'MessagesSquare',
@@ -147,6 +178,7 @@ export const NAVIGATION: NavItem[] = [
         path: '/messages',
         icon: 'MessageCircle',
       },
+      { key: 'surveys', module: 'surveys', label: 'Encuestas', path: '/surveys', icon: 'Vote' },
     ],
   },
 

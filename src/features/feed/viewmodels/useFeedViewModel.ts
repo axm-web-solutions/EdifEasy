@@ -8,7 +8,7 @@ import { useAllBuildings } from '@/hooks/useBuildings'
 import { useRoles } from '@/hooks/useMembers'
 import { feedPostSchema, type FeedPostFormValues } from '@/schemas/communication'
 import { roleLabel } from '@/constants/roles'
-import { audienceLabel, toPostView } from './feed.logic'
+import { audienceLabel, greetingFor, toPostView } from './feed.logic'
 
 const EMPTY_POST: FeedPostFormValues = {
   title: '',
@@ -102,7 +102,7 @@ export function useFeedViewModel() {
   const firstName = profile?.full_name?.split(' ')[0] ?? 'vecino'
 
   return {
-    greeting: `Hola, ${firstName}`,
+    greeting: greetingFor(firstName),
     subtitle: `${currentMembership?.condominium_name ?? 'Condominio'} · ${roleLabel(role)}`,
     status,
     posts,

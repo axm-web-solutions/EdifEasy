@@ -101,6 +101,18 @@ const MarketplacePage = lazyPage(() =>
     default: m.MarketplacePage,
   })),
 )
+const NearbyPage = lazyPage(() =>
+  import('@/features/nearby/pages/NearbyPage').then((m) => ({ default: m.NearbyPage })),
+)
+const LogbookPage = lazyPage(() =>
+  import('@/features/logbook/pages/LogbookPage').then((m) => ({ default: m.LogbookPage })),
+)
+const StaffPage = lazyPage(() =>
+  import('@/features/staff/pages/StaffPage').then((m) => ({ default: m.StaffPage })),
+)
+const SurveysPage = lazyPage(() =>
+  import('@/features/surveys/pages/SurveysPage').then((m) => ({ default: m.SurveysPage })),
+)
 const AdminFeesPage = lazyPage(() =>
   import('@/features/payments/pages/AdminFeesPage').then((m) => ({ default: m.AdminFeesPage })),
 )
@@ -260,6 +272,37 @@ export function AppRoutes() {
               element={
                 <RoleGuard module="messages">
                   <MessagesPage />
+                </RoleGuard>
+              }
+            />
+            <Route path="/nearby" element={<NearbyPage />} />
+            <Route
+              path="/surveys"
+              element={
+                <RoleGuard module="surveys">
+                  <SurveysPage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/logbook"
+              element={
+                <RoleGuard
+                  roles={['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY']}
+                  module="logbook"
+                >
+                  <LogbookPage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/staff"
+              element={
+                <RoleGuard
+                  roles={['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY', 'SERVICE_STAFF']}
+                  module="staff"
+                >
+                  <StaffPage />
                 </RoleGuard>
               }
             />

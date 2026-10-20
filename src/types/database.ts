@@ -345,6 +345,99 @@ export type SellerRegistryRow = {
   created_at: string
 }
 
+export type GuardLogCategory =
+  | 'TURNO_INICIO'
+  | 'TURNO_FIN'
+  | 'RONDA'
+  | 'NOVEDAD'
+  | 'VISITANTE'
+  | 'PAQUETE'
+  | 'MANTENIMIENTO'
+  | 'SEGURIDAD'
+  | 'OTRO'
+export type GuardLogPriority = 'NORMAL' | 'IMPORTANTE' | 'URGENTE'
+
+/** Anotacion de la minuta de porteria (inmutable). */
+export type GuardLogEntryRow = {
+  id: string
+  condominium_id: string
+  category: GuardLogCategory
+  priority: GuardLogPriority
+  description: string
+  apartment_id: string | null
+  occurred_at: string
+  attachments: Json
+  created_by: string | null
+  created_at: string
+}
+
+/** Jornada de una persona del personal (ingreso y salida). */
+export type StaffShiftRow = {
+  id: string
+  condominium_id: string
+  profile_id: string | null
+  person_name: string
+  role_label: string
+  check_in_at: string
+  check_out_at: string | null
+  check_in_by: string | null
+  check_out_by: string | null
+  notes: string | null
+  created_at: string
+}
+
+export type StaffRosterRow = {
+  profile_id: string
+  full_name: string
+  role_label: string
+  phone: string | null
+  open_shift_id: string | null
+  check_in_at: string | null
+  last_check_out_at: string | null
+}
+
+export type SurveyStatus = 'DRAFT' | 'OPEN' | 'CLOSED'
+export type SurveyScope = 'PERSON' | 'UNIT'
+
+export type SurveyRow = {
+  id: string
+  condominium_id: string
+  title: string
+  description: string | null
+  status: SurveyStatus
+  vote_scope: SurveyScope
+  anonymous: boolean
+  show_results: boolean
+  closes_at: string | null
+  opened_at: string | null
+  closed_at: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type SurveyQuestionRow = {
+  id: string
+  survey_id: string
+  position: number
+  text: string
+  multiple: boolean
+}
+
+export type SurveyOptionRow = {
+  id: string
+  question_id: string
+  position: number
+  text: string
+}
+
+export type SurveyBallotRow = {
+  survey_id: string
+  voter_id: string
+  apartment_id: string | null
+  voted_at: string
+}
+
 export type CommunityContactKind = 'EMERGENCY' | 'SERVICE'
 
 /** Directorio del conjunto: emergencias propias y servicios del marketplace. */
@@ -957,6 +1050,12 @@ export interface Database {
         ReservationRow,
         'condominium_id' | 'common_area_id' | 'apartment_id' | 'starts_at' | 'ends_at'
       >
+      guard_log_entries: TableDef<GuardLogEntryRow, 'condominium_id' | 'description'>
+      staff_shifts: TableDef<StaffShiftRow, 'condominium_id' | 'person_name' | 'role_label'>
+      surveys: TableDef<SurveyRow, 'condominium_id' | 'title'>
+      survey_questions: TableDef<SurveyQuestionRow, 'survey_id' | 'text'>
+      survey_options: TableDef<SurveyOptionRow, 'question_id' | 'text'>
+      survey_ballots: TableDef<SurveyBallotRow, 'survey_id' | 'voter_id'>
       platform_settings: TableDef<PlatformSettingsRow, 'key'>
       legal_acceptances: TableDef<LegalAcceptanceRow, 'email' | 'document' | 'version'>
       data_requests: TableDef<DataRequestRow, 'email' | 'type' | 'due_at'>
@@ -1165,6 +1264,24 @@ export interface Database {
         Args: { p_reservation: string; p_reason?: string | null }
         Returns: string
       }
+      staff_check_in: {
+        Args: {
+          p_condominium: string
+          p_profile?: string | null
+          p_name?: string | null
+          p_role_label?: string | null
+          p_notes?: string | null
+        }
+        Returns: string
+      }
+      staff_check_out: { Args: { p_shift: string; p_notes?: string | null }; Returns: string }
+      staff_roster: { Args: { p_condominium: string }; Returns: StaffRosterRow[] }
+      set_survey_status: { Args: { p_survey: string; p_status: string }; Returns: string }
+      submit_survey_vote: {
+        Args: { p_survey: string; p_answers: Json; p_apartment?: string | null }
+        Returns: number
+      }
+      survey_results: { Args: { p_survey: string }; Returns: Json }
       accept_legal_documents: {
         Args: { p_documents: string[]; p_version: string; p_user_agent?: string | null }
         Returns: number
