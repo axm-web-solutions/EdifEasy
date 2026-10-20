@@ -41,8 +41,8 @@ export function BrandThemeProvider({ children }: { children: ReactNode }) {
   }, [brand])
 
   useEffect(() => {
-    const logoUrl = currentMembership?.condominium_logo_url
-    if (!logoUrl) return
+    // Sin logo propio (o al cambiar a un conjunto sin logo) vuelve el de EdiFeasy.
+    const logoUrl = currentMembership?.condominium_logo_url || '/favicon.png'
     let link = document.head.querySelector<HTMLLinkElement>("link[rel='icon']")
     if (!link) {
       link = document.createElement('link')

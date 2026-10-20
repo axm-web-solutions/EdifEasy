@@ -3,6 +3,7 @@
  * feed y logo del conjunto. Solo la administracion sube; se leen por URL publica.
  */
 import { supabase } from '@/lib/supabase'
+import { AppError } from '@/lib/errors'
 import { storageService } from './storageService'
 import { compressImage } from '@/utils/image'
 
@@ -12,7 +13,7 @@ const ALLOWED = ['image/png', 'image/jpeg', 'image/webp']
 
 export const mediaService = {
   async uploadImage(condominiumId: string, entity: MediaEntity, file: File): Promise<string> {
-    if (!ALLOWED.includes(file.type)) throw new Error('Usa una imagen PNG, JPG o WEBP')
+    if (!ALLOWED.includes(file.type)) throw new AppError('Usa una imagen PNG, JPG o WEBP')
     // El logo conserva PNG (transparencia); las fotos se reducen a JPG.
     const prepared = entity === 'logo' ? file : await compressImage(file)
     const extension =

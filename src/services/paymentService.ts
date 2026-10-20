@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import { toAppError } from '@/lib/errors'
+import { AppError, toAppError } from '@/lib/errors'
 import { filterText, runList } from './query'
 import type { AdminFeeRow, PaymentKind, PlanPeriod, TablesUpdate } from '@/types/database'
 import type {
@@ -41,12 +41,17 @@ async function invokePayments(body: Record<string, unknown>): Promise<FunctionRe
       'No se pudo conectar con el servicio de pagos. Verifica que la Edge Function `wompi-payments` este desplegada.'
     const context = (error as { context?: unknown }).context
     if (context instanceof Response) {
-      const parsed = (await context.json().catch(() => null)) as FunctionResponse | null
+      const parsed = (await context.json().catch(() => null)) as
+        (FunctionResponse & { code?: string }) | null
       if (parsed?.error) message = parsed.error
+      else if (context.status === 404)
+        message =
+          'Los pagos en linea aun no estan activos: falta desplegar el servicio de pagos (wompi-payments). Avisa a la administracion.'
     }
-    throw toAppError({ message, code: 'EDGE_FUNCTION' })
+    throw new AppError(message, { code: 'EDGE_FUNCTION' })
   }
-  if (!data?.ok) throw toAppError({ message: data?.error ?? 'No se pudo procesar el pago' })
+  if (!data?.ok)
+    throw new AppError(data?.error ?? 'No se pudo procesar el pago', { code: 'PAYMENT' })
   return data
 }
 
@@ -68,7 +73,10 @@ export const paymentService = {
   },
 
   /** Totales de todas las cuotas que cumplen los filtros (calculados en la base). */
-  async adminFeesSummary(condominiumId: string, filters: SummaryFilters): Promise<AdminFeesSummary> {
+  async adminFeesSummary(
+    condominiumId: string,
+    filters: SummaryFilters,
+  ): Promise<AdminFeesSummary> {
     const { data, error } = await supabase.rpc('admin_fees_summary', {
       p_condominium: condominiumId,
       p_status: filterText(filters.filters, 'status'),
@@ -203,7 +211,7 @@ export const paymentService = {
   /** Consulta en Wompi el resultado de la transaccion y lo aplica. */
   async verify(transactionId: string): Promise<NonNullable<FunctionResponse['payment']>> {
     const data = await invokePayments({ action: 'verify', transaction_id: transactionId })
-    if (!data.payment) throw toAppError({ message: 'No se encontro el pago' })
+    if (!data.payment) throw new AppError('No se encontro el pago', { code: 'PAYMENT' })
     return data.payment
   },
 }

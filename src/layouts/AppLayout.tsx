@@ -16,7 +16,7 @@ const { useBreakpoint } = Grid
 
 function Brand({ collapsed }: { collapsed: boolean }) {
   const { currentMembership } = useAuth()
-  const logoSrc = currentMembership?.condominium_logo_url ?? '/favicon.svg'
+  const logoSrc = currentMembership?.condominium_logo_url ?? '/brand/edifeasy-mark-white.png'
   const name = currentMembership?.condominium_name ?? 'EdiFeasy'
 
   return (

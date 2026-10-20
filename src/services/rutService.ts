@@ -4,14 +4,16 @@
  * descarga solo al usar esta funcion.
  */
 import type { RutTextItem } from '@/features/platform/viewmodels/rut.logic'
+import { AppError } from '@/lib/errors'
 
 const MAX_BYTES = 10 * 1024 * 1024
 const MAX_PAGES = 10
 
 export const rutService = {
   async extractText(file: File): Promise<RutTextItem[]> {
-    if (file.type && file.type !== 'application/pdf') throw new Error('El archivo debe ser un PDF')
-    if (file.size > MAX_BYTES) throw new Error('El PDF supera 10 MB')
+    if (file.type && file.type !== 'application/pdf')
+      throw new AppError('El archivo debe ser un PDF')
+    if (file.size > MAX_BYTES) throw new AppError('El PDF supera 10 MB')
 
     const [pdfjs, worker] = await Promise.all([
       import('pdfjs-dist'),
@@ -23,7 +25,9 @@ export const rutService = {
     try {
       doc = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise
     } catch {
-      throw new Error('No se pudo abrir el PDF. Verifica que no este danado ni protegido con clave.')
+      throw new AppError(
+        'No se pudo abrir el PDF. Verifica que no este danado ni protegido con clave.',
+      )
     }
 
     const items: RutTextItem[] = []

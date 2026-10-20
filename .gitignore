@@ -24,3 +24,6 @@ pnpm-debug.log*
 
 # Cloudflare Wrangler (cache local)
 .wrangler
+
+# Datos locales de la CLI de Supabase (proyecto vinculado)
+supabase/.temp

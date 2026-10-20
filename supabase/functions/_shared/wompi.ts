@@ -16,7 +16,10 @@ export const DB_SCHEMA = 'tribuia'
 
 export const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  // x-application-name: lo envia el cliente de Supabase de la app (src/lib/supabase.ts).
+  // Si falta aqui, el navegador bloquea la llamada por CORS antes de llegar a la funcion.
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, apikey, content-type, x-application-name',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 

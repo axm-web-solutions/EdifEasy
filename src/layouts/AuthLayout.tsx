@@ -63,7 +63,11 @@ export function AuthLayout() {
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-slate-950/25" />
 
         <div className="relative z-10 flex items-center gap-3 p-10 pb-0">
-          <img src="/favicon.svg" alt="EdiFeasy" className="h-10 w-10" />
+          <img
+            src="/brand/edifeasy-mark-white.png"
+            alt="EdiFeasy"
+            className="h-11 w-11 object-contain"
+          />
           <div>
             <p className="m-0 text-lg font-semibold">EdiFeasy</p>
             <p className="m-0 text-xs text-slate-400">Administracion de condominios</p>
@@ -103,7 +107,11 @@ export function AuthLayout() {
       <main className="flex w-full items-start justify-center bg-gradient-to-b from-white via-surface to-brand-50/60 px-4 py-10 lg:w-1/2 xl:w-[45%]">
         <div className="w-full max-w-md">
           <div className="mb-8 flex items-center gap-3 lg:hidden">
-            <img src="/favicon.svg" alt="EdiFeasy" className="h-9 w-9" />
+            <img
+              src="/brand/edifeasy-mark.png"
+              alt="EdiFeasy"
+              className="h-10 w-10 object-contain"
+            />
             <div>
               <p className="m-0 text-base font-semibold text-slate-800">EdiFeasy</p>
               <p className="m-0 text-xs text-slate-500">Administracion de condominios</p>

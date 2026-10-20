@@ -4,6 +4,7 @@
  * administrador y una cuenta de propietario por unidad.
  */
 import { supabase } from '@/lib/supabase'
+import { AppError } from '@/lib/errors'
 
 export interface ProvisionInput {
   condominium: {
@@ -48,10 +49,14 @@ async function invokeProvision<T>(body: Record<string, unknown>): Promise<T> {
     if (context instanceof Response) {
       const parsed = (await context.json().catch(() => null)) as { error?: string } | null
       if (parsed?.error) message = parsed.error
+      else if (context.status === 404)
+        message =
+          'Falta desplegar la Edge Function provision-condominium (supabase functions deploy provision-condominium).'
     }
-    throw new Error(message)
+    throw new AppError(message, { code: 'EDGE_FUNCTION' })
   }
-  if (!data || data.error) throw new Error(data?.error ?? 'Respuesta vacia del servicio de alta')
+  if (!data || data.error)
+    throw new AppError(data?.error ?? 'Respuesta vacia del servicio de alta', { code: 'PROVISION' })
   return data
 }
 

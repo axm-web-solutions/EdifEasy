@@ -10,7 +10,7 @@
  * base (`replace_condominium_location`); el resto de usuarios lee de la base.
  */
 import { supabase } from '@/lib/supabase'
-import { toAppError } from '@/lib/errors'
+import { AppError, toAppError } from '@/lib/errors'
 import type { CondominiumRow } from '@/types/database'
 
 export interface GeoPoint {
@@ -166,7 +166,7 @@ async function searchNominatim(query: string, signal?: AbortSignal) {
     'accept-language': 'es',
   })
   const response = await fetch(`${NOMINATIM_URL}?${params.toString()}`, { signal })
-  if (!response.ok) throw new Error('No se pudo consultar el servicio de mapas')
+  if (!response.ok) throw new AppError('No se pudo consultar el servicio de mapas')
   const results = (await response.json()) as { lat: string; lon: string; display_name: string }[]
   return results[0] ?? null
 }
@@ -481,7 +481,7 @@ export const placesService = {
       return toPlaces(elements, center, radius)
     } catch (error) {
       if (signal?.aborted) throw error
-      throw new Error('No se pudieron cargar los lugares cercanos')
+      throw new AppError('No se pudieron cargar los lugares cercanos')
     } finally {
       clearTimeout(timer)
       abortAll()

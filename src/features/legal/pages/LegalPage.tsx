@@ -12,7 +12,7 @@ export function LegalPage() {
       <div className="mx-auto max-w-3xl">
         <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <Link to="/" className="flex items-center gap-2 no-underline">
-            <img src="/favicon.svg" alt="" className="h-8 w-8" />
+            <img src="/brand/edifeasy-mark.png" alt="" className="h-9 w-9 object-contain" />
             <span className="text-base font-semibold text-slate-800">EdiFeasy</span>
           </Link>
           <Segmented

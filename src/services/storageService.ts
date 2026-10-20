@@ -1,5 +1,5 @@
 import { supabase, type StorageBucket } from '@/lib/supabase'
-import { toAppError } from '@/lib/errors'
+import { AppError, toAppError } from '@/lib/errors'
 import type { AttachmentMeta } from '@/types/models'
 
 /**
@@ -59,14 +59,10 @@ export function buildStoragePath(condominiumId: string, entity: string, fileName
 function validateFile(bucket: StorageBucket, file: File): void {
   const maxSize = BUCKET_MAX_SIZE[bucket]
   if (file.size > maxSize) {
-    throw toAppError({
-      message: `El archivo supera el limite de ${Math.round(maxSize / 1024 / 1024)} MB.`,
-    })
+    throw new AppError(`El archivo supera el limite de ${Math.round(maxSize / 1024 / 1024)} MB.`)
   }
   if (file.type && !ALLOWED_MIME.has(file.type)) {
-    throw toAppError({
-      message: 'Tipo de archivo no permitido. Usa PDF, imagenes, Word, Excel o texto.',
-    })
+    throw new AppError('Tipo de archivo no permitido. Usa PDF, imagenes, Word, Excel o texto.')
   }
 }
 
