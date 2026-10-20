@@ -14,9 +14,9 @@
 
 | Indicador | Valor |
 |---|---|
-| Brechas abiertas | 24 · 🔴 1 · 🟠 5 · 🟡 11 · ⚪ 7 |
-| Funciones en paridad con la competencia | 19 |
-| Brechas cerradas desde el comparativo inicial (2026-10-17) | 6 (reservas, clasificados, alta rapida, minuta de porteria, encuestas, ingreso del personal) |
+| Brechas abiertas | 23 · 🔴 1 · 🟠 5 · 🟡 10 · ⚪ 7 |
+| Funciones en paridad con la competencia | 20 |
+| Brechas cerradas desde el comparativo inicial (2026-10-17) | 7 (reservas, clasificados, alta rapida, minuta de porteria, encuestas, ingreso del personal, prueba gratis) |
 | Diferenciadores de EdiFeasy | 17 |
 | Siguiente recomendado | G01 cuenta Wompi por conjunto → G02/G03 estado de cuenta y mora → G07 importar Excel |
 
@@ -40,7 +40,6 @@
 | G14 | Confirmacion de lectura de comunicados | 🟡 | Bajo | ✅ | ➖ | ❌ | Saber quien leyo cada publicacion del feed. |
 | G15 | Notificaciones push al celular | 🟡 | Medio | ✅ | ➖ | 🟡 | Hay notificaciones en la app en tiempo real; push depende de la app movil (proyecto aparte). |
 | G16 | Mantenimiento con fotos y costo de materiales | 🟡 | Bajo | ✅ | ➖ | 🟡 | Las solicitudes ya aceptan adjuntos; falta costo y cierre con evidencia. |
-| G17 | Prueba gratis | 🟡 | Bajo | ✅ (7 dias) | ➖ | ❌ | Decision comercial. En desarrollo (sin commit): `20261020000000_prueba_gratis.sql` (7 dias, `start_trial`). |
 | G18 | Asistente por WhatsApp (PQRS, deuda, reservas) | 🟡 | Alto | ✅ | ✅ | ❌ | WhatsApp Business API. Hoy solo hay enlaces wa.me. |
 | G19 | Facturacion electronica y contabilidad | ⚪ | Muy alto | ➖ | ✅ | ❌ | Proveedor de factura electronica DIAN. |
 | G20 | Parqueaderos de visitantes y cobro por tiempo | ⚪ | Medio | ✅ | ➖ | 🟡 | Hay puesto por apartamento en vehiculos. |
@@ -74,6 +73,7 @@
 | C17 | Minuta digital de porteria (antes G11) | ✅ | Tabla `guard_log_entries` en `20261019400000_minuta_personal_encuestas.sql` (inmutable, urgentes notifican a la administracion), `src/features/logbook`, `/logbook` (`src/routes/index.tsx:288`) · commit a179668 | 2026-10-20 |
 | C18 | Encuestas (antes G13) | ✅ | Tablas `surveys`, `survey_questions`, `survey_options`, `survey_votes`, `survey_ballots` y RPCs `set_survey_status`, `submit_survey_vote`, `survey_results` en `20261019400000_minuta_personal_encuestas.sql`, `src/features/surveys`, `/surveys` (`src/routes/index.tsx:280`) · commit a179668 | 2026-10-20 |
 | C19 | Ingreso y salida de empleados y contratistas (antes G26) | ✅ | Tabla `staff_shifts` y RPCs `staff_check_in`, `staff_check_out`, `staff_roster` en `20261019400000_minuta_personal_encuestas.sql`, `src/features/staff`, `/staff` (`src/routes/index.tsx:299`) · commit a179668 | 2026-10-20 |
+| C20 | Prueba gratis de 7 dias para administradores (antes G17) | ✅ | `20261020000000_prueba_gratis.sql` (`start_trial`, `trial_ends_at`, bloqueo por RLS al vencer), `20261020100000_prueba_gratis_ajustes.sql`, seccion 25 de `supabase/schema.sql`, `src/features/trial`; arranque desde la landing en `NoCondominiumPage` (`src/features/misc/pages/MiscPages.tsx:35`), aviso de dias restantes y pantalla de prueba vencida en `src/layouts/AppLayout.tsx:97` · commit a999662 | 2026-10-20 |
 
 ## 3. Diferenciadores (lo que tenemos y ellos no)
 
@@ -123,3 +123,4 @@
 | 2026-10-19 | Cerradas: reservas, clasificados, alta rapida. Nuevos diferenciadores: emergencias, servicios cercanos, alta por RUT, cumplimiento legal, feed. Pago en linea desplegado (sandbox). Checklist movido al repositorio. |
 | 2026-10-19 | Revision de trabajo en curso: minuta de porteria (G11), ingreso y salida del personal (G26), encuestas (G13), prueba gratis (G17), mapa de servicios para residentes e inicio del residente (saludo por hora, aviso de alertas descartable). Todo sin commit en `main`: anotado como en desarrollo, sin cambiar estados ni conteos. G04/G05 siguen abiertas (encuestas sin coeficiente ni quorum). |
 | 2026-10-20 | Cerradas con el commit a179668: minuta de porteria (G11 → C17), encuestas (G13 → C18), ingreso y salida del personal (G26 → C19). Mapa de servicios cercanos para todos en `/nearby` (D02, D10). G04/G05 bajan de esfuerzo Alto a Medio-Alto por el motor de encuestas. G17 sigue abierta (`20261020000000_prueba_gratis.sql` sin commit). Abiertas 27 → 24, paridad 16 → 19. |
+| 2026-10-20 | Cerrada con el commit a999662: prueba gratis de 7 dias (G17 → C20). Abiertas 24 → 23, paridad 19 → 20, cerradas desde el comparativo 6 → 7. |
