@@ -1,4 +1,4 @@
-import { Avatar, Button, Dropdown, Select, Space, Tag, Tooltip, Typography } from 'antd'
+import { Avatar, Button, Dropdown, Select, Tag, Tooltip, Typography } from 'antd'
 import { Building2, LogOut, Menu as MenuIcon, Settings, User } from 'lucide-react'
 import { BrandLogo } from '@/components/ui/BrandLogo'
 import { useNavigate } from 'react-router-dom'
@@ -52,7 +52,7 @@ export function Topbar({ onOpenDrawer }: { onOpenDrawer: () => void }) {
   }
 
   return (
-    <div className="flex h-full items-center gap-3 px-3 md:px-5">
+    <div className="flex h-full min-w-0 items-center gap-2 px-3 md:gap-3 md:px-5">
       <Button
         type="text"
         className="lg:hidden"
@@ -64,16 +64,20 @@ export function Topbar({ onOpenDrawer }: { onOpenDrawer: () => void }) {
       <div className="hidden flex-1 md:block">
         <GlobalSearch />
       </div>
-      <div className="flex-1 md:hidden" />
-
-      <Space size="middle" align="center">
+      {/*
+        En el telefono el selector del conjunto ocupa el espacio libre y se
+        encoge (min-w-0): antes tenia ancho minimo fijo y empujaba la campana y
+        el avatar fuera de la pantalla, causando scroll lateral en toda la app.
+      */}
+      <div className="flex min-w-0 flex-1 items-center justify-end gap-2 md:flex-none md:gap-4">
         {uniqueOptions.length > 0 ? (
           <Tooltip title="Condominio activo">
             <Select
               value={currentCondominiumId ?? undefined}
               options={uniqueOptions}
               onChange={setCurrentCondominium}
-              className="min-w-[150px] max-w-[220px]"
+              className="min-w-0 flex-1 md:w-[220px] md:flex-none"
+              popupMatchSelectWidth={false}
               size="middle"
               showSearch
               optionFilterProp="label"
@@ -153,7 +157,7 @@ export function Topbar({ onOpenDrawer }: { onOpenDrawer: () => void }) {
             </div>
           </button>
         </Dropdown>
-      </Space>
+      </div>
     </div>
   )
 }
