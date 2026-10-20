@@ -40,6 +40,12 @@ Codigo nuevo debe seguir esta separacion. El codigo existente se migra por modul
   `::text` o leer `pg_enum`.
 - Probar SQL antes de entregarlo (ver agente `database-expert`).
 
+## Producto
+
+- `docs/checklist-competencia.md` es la fuente unica de lo que tenemos y lo que falta frente a
+  ConjuntosApp y PH en Linea. Al terminar una funcionalidad, actualizalo con el agente
+  `product-roadmap` (estados con evidencia en el codigo, resumen e historial).
+
 ## Diseno
 
 - Color de marca por condominio en `settings.primaryColor`, expuesto como
