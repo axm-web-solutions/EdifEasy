@@ -8,6 +8,8 @@ import { registrationService } from '@/services/registrationService'
 import type { SelfRegisterRole } from '@/schemas/auth'
 import { formatDateTime } from '@/utils/format'
 import { CompleteInscriptionForm } from '@/features/auth/components/CompleteInscriptionForm'
+import { TrialStartScreen } from '@/features/trial/components/TrialStartScreen'
+import { useTrialStartViewModel } from '@/features/trial/viewmodels/useTrialStartViewModel'
 
 const { Paragraph, Text } = Typography
 
@@ -26,7 +28,17 @@ const REQUESTED_ROLE_LABEL: Record<string, string> = {
  *   - solicitud PENDING                -> pantalla de espera (el admin aprueba)
  *   - solicitud REJECTED               -> motivo del rechazo y opcion de reintentar
  */
+/**
+ * Usuario sin conjunto. Si se registro para la prueba gratis (landing), se le
+ * crea su conjunto de prueba; si no, sigue el flujo de solicitud de inscripcion.
+ */
 export function NoCondominiumPage() {
+  const trial = useTrialStartViewModel()
+  if (trial.isTrialSignup) return <TrialStartScreen vm={trial} />
+  return <RegistrationRequestFlow />
+}
+
+function RegistrationRequestFlow() {
   const { profile, session, initializing, signOut, refreshContext } = useAuth()
   const navigate = useNavigate()
   const [defaultUserType, setDefaultUserType] = useState<SelfRegisterRole | undefined>()
@@ -122,7 +134,10 @@ export function NoCondominiumPage() {
   if (initializing || request.isLoading || autoSending) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-surface p-4">
-        <Spin size="large" tip={autoSending ? 'Enviando tu solicitud...' : 'Consultando tu inscripcion...'}>
+        <Spin
+          size="large"
+          tip={autoSending ? 'Enviando tu solicitud...' : 'Consultando tu inscripcion...'}
+        >
           <div className="h-24 w-24" />
         </Spin>
       </div>
@@ -153,7 +168,9 @@ export function NoCondominiumPage() {
                 Pendiente de aprobacion
               </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Enviada">{formatDateTime(current.created_at)}</Descriptions.Item>
+            <Descriptions.Item label="Enviada">
+              {formatDateTime(current.created_at)}
+            </Descriptions.Item>
           </Descriptions>
 
           <div className="mt-4 flex flex-wrap justify-center gap-2">
@@ -251,4 +268,3 @@ export function NotFoundPage() {
     />
   )
 }
-

@@ -10,6 +10,8 @@ import { GlobalSearch } from '@/components/layout/GlobalSearch'
 import { TourAutoStart } from '@/components/tour/TourAutoStart'
 import { PageSkeleton } from '@/components/ui/states'
 import { BrandLogo } from '@/components/ui/BrandLogo'
+import { TrialBanner, TrialExpiredState } from '@/features/trial/components/TrialNotices'
+import { useTrialViewModel } from '@/features/trial/viewmodels/useTrialViewModel'
 import { preloadPages } from '@/routes/lazyPage'
 
 const { Header, Sider, Content } = Layout
@@ -39,6 +41,7 @@ export function AppLayout() {
   const [collapsed, setCollapsed] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const { currentCondominiumId } = useAuth()
+  const trial = useTrialViewModel()
 
   // Suscripciones Realtime activas mientras el usuario navega la aplicacion.
   useAlertsRealtime(currentCondominiumId)
@@ -91,9 +94,14 @@ export function AppLayout() {
         <Content className="app-shell-content">
           <TourAutoStart />
           {/* El cargador queda dentro del contenido: menu y barra superior no desaparecen. */}
-          <Suspense fallback={<PageSkeleton />}>
-            <Outlet />
-          </Suspense>
+          <TrialBanner vm={trial} />
+          {trial.blocked ? (
+            <TrialExpiredState vm={trial} />
+          ) : (
+            <Suspense fallback={<PageSkeleton />}>
+              <Outlet />
+            </Suspense>
+          )}
         </Content>
       </Layout>
     </Layout>

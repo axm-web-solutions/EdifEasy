@@ -1282,6 +1282,7 @@ export interface Database {
         Returns: number
       }
       survey_results: { Args: { p_survey: string }; Returns: Json }
+      start_trial: { Args: { p_payload?: Json | null }; Returns: string }
       accept_legal_documents: {
         Args: { p_documents: string[]; p_version: string; p_user_agent?: string | null }
         Returns: number
