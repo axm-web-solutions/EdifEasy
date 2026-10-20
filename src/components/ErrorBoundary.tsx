@@ -1,6 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { Button, Result } from 'antd'
 import { logger } from '@/lib/logger'
+import { isChunkLoadError, reloadForNewVersion } from '@/lib/chunkReload'
 
 interface Props {
   children: ReactNode
@@ -23,6 +24,8 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   override componentDidCatch(error: Error, info: ErrorInfo): void {
+    // Version vieja en cache tras un despliegue: se recarga sola una vez.
+    if (isChunkLoadError(error) && reloadForNewVersion()) return
     logger.error('Error no controlado en la interfaz', error, {
       componentStack: info.componentStack,
     })

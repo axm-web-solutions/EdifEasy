@@ -1,3 +1,4 @@
+import { reloadForNewVersion } from '@/lib/chunkReload'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { registerSW } from 'virtual:pwa-register'
@@ -16,6 +17,12 @@ createRoot(container).render(
     <App />
   </StrictMode>,
 )
+
+// Tras un despliegue, Vite avisa cuando no encuentra un archivo de la version
+// anterior: se recarga para traer la nueva en lugar de mostrar un error.
+window.addEventListener('vite:preloadError', (event) => {
+  if (reloadForNewVersion()) event.preventDefault()
+})
 
 // PWA: registra el service worker generado por vite-plugin-pwa.
 if (import.meta.env.PROD) {
