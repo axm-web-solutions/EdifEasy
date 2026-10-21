@@ -68,7 +68,7 @@ const EMPTY_EXPENSE: ExpenseFormValues = {
 
 export function ExpensesPage() {
   const { currentCondominiumId, hasPermission, user } = useAuth()
-  const canManage = hasPermission('manageFinance')
+  const canManage = hasPermission('manageExpenses')
 
   const table = useTableParams({ pageSize: 10 })
   const query = useExpenses(currentCondominiumId, table.params)

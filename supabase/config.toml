@@ -51,3 +51,12 @@ verify_jwt = true
 # Wompi no envia JWT de Supabase; la autenticidad se valida con el checksum.
 [functions.wompi-webhook]
 verify_jwt = false
+
+# Alarmas: los paneles y centrales no envian JWT; la autenticidad la da el token
+# secreto de cada alarma (solo se guarda su hash).
+[functions.alarm-webhook]
+verify_jwt = false
+
+# Contabilidad por API (Siigo, Alegra): solo la administracion (se verifica dentro).
+[functions.accounting-sync]
+verify_jwt = true

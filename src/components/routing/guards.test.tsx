@@ -41,7 +41,18 @@ describe('RoleGuard', () => {
     expect(screen.queryByText('Contenido financiero')).not.toBeInTheDocument()
   })
 
-  it('permite al propietario consultar informacion financiera', () => {
+  it('el contador entra a gastos y compras', () => {
+    renderWithProviders(
+      <RoleGuard permission="viewFinance">
+        <Secret />
+      </RoleGuard>,
+      { authValue: { role: 'ACCOUNTANT' } },
+    )
+
+    expect(screen.getByText('Contenido financiero')).toBeInTheDocument()
+  })
+
+  it('el propietario ve las finanzas en los reportes, no en gastos', () => {
     renderWithProviders(
       <RoleGuard permission="viewFinance">
         <Secret />
@@ -49,7 +60,7 @@ describe('RoleGuard', () => {
       { authValue: { role: 'OWNER' } },
     )
 
-    expect(screen.getByText('Contenido financiero')).toBeInTheDocument()
+    expect(screen.queryByText('Contenido financiero')).not.toBeInTheDocument()
   })
 
   it('el super admin accede a todo', () => {

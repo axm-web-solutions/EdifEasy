@@ -7,11 +7,12 @@ function can(role: RoleCode, permission: keyof typeof PERMISSIONS): boolean {
 }
 
 describe('catalogo de roles', () => {
-  it('define los siete roles del sistema', () => {
+  it('define los ocho roles del sistema', () => {
     expect(Object.keys(ROLES)).toEqual([
       'SUPER_ADMIN',
       'ADMINISTRATOR',
       'SPOKESPERSON',
+      'ACCOUNTANT',
       'OWNER',
       'TENANT',
       'SECURITY',
@@ -21,7 +22,7 @@ describe('catalogo de roles', () => {
 
   it('no ofrece SUPER_ADMIN al vincular usuarios a un condominio', () => {
     expect(ROLE_OPTIONS.some((option) => option.value === 'SUPER_ADMIN')).toBe(false)
-    expect(ROLE_OPTIONS).toHaveLength(6)
+    expect(ROLE_OPTIONS).toHaveLength(7)
   })
 
   it('devuelve etiquetas legibles', () => {
@@ -43,8 +44,17 @@ describe('matriz de permisos', () => {
   it('el arrendatario nunca accede a informacion financiera', () => {
     expect(can('TENANT', 'viewFinance')).toBe(false)
     expect(can('TENANT', 'manageFinance')).toBe(false)
-    expect(can('OWNER', 'viewFinance')).toBe(true)
+    expect(can('OWNER', 'viewFinance')).toBe(false)
     expect(can('OWNER', 'manageFinance')).toBe(false)
+  })
+
+  it('el contador maneja contabilidad, gastos y compras, pero no la administracion', () => {
+    expect(can('ACCOUNTANT', 'viewFinance')).toBe(true)
+    expect(can('ACCOUNTANT', 'manageExpenses')).toBe(true)
+    expect(can('ACCOUNTANT', 'manageAccounting')).toBe(true)
+    expect(can('ACCOUNTANT', 'manageFinance')).toBe(false)
+    expect(can('ACCOUNTANT', 'viewResidents')).toBe(false)
+    expect(can('ACCOUNTANT', 'manageMembers')).toBe(false)
   })
 
   it('celaduria no accede a finanzas pero si gestiona incidentes y residentes', () => {

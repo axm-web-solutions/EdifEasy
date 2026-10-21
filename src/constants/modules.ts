@@ -27,6 +27,8 @@ export type ModuleKey =
   | 'logbook'
   | 'staff'
   | 'surveys'
+  | 'alarms'
+  | 'accounting'
 
 export interface ModuleMeta {
   key: ModuleKey
@@ -60,6 +62,16 @@ export const MODULES: ModuleMeta[] = [
   { key: 'staff', label: 'Personal', description: 'Ingreso y salida del personal' },
   { key: 'surveys', label: 'Encuestas', description: 'Encuestas y votaciones de la comunidad' },
   {
+    key: 'alarms',
+    label: 'Alarmas',
+    description: 'Alarmas conectadas de cada casa o apartamento',
+  },
+  {
+    key: 'accounting',
+    label: 'Finanzas del conjunto',
+    description: 'Estado de cuenta, estados financieros y presupuesto desde la contabilidad',
+  },
+  {
     key: 'reservations',
     label: 'Reservas',
     description: 'Reserva de zonas comunes con fecha y pago',
@@ -79,4 +91,5 @@ export const CONFIGURABLE_ROLES: RoleCode[] = [
   'TENANT',
   'SECURITY',
   'SERVICE_STAFF',
+  'ACCOUNTANT',
 ]

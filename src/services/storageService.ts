@@ -19,6 +19,7 @@ const BUCKET_MAX_SIZE: Record<StorageBucket, number> = {
   'report-images': 25 * 1024 * 1024,
   marketplace: 5 * 1024 * 1024,
   media: 5 * 1024 * 1024,
+  accounting: 15 * 1024 * 1024,
 }
 
 const ALLOWED_MIME = new Set([

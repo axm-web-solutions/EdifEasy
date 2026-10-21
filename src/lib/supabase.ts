@@ -51,6 +51,7 @@ export const STORAGE_BUCKETS = {
   reportImages: 'report-images',
   marketplace: 'marketplace',
   media: 'media',
+  accounting: 'accounting',
 } as const
 
 export type StorageBucket = (typeof STORAGE_BUCKETS)[keyof typeof STORAGE_BUCKETS]

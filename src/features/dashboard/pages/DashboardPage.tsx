@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react'
+import { Navigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { PageSkeleton } from '@/components/ui/states'
 
@@ -35,6 +36,12 @@ export function DashboardPage() {
     case 'SERVICE_STAFF':
       content = <OperationalDashboard />
       break
+    // El contador trabaja solo en Finanzas; los residentes tienen el feed.
+    case 'ACCOUNTANT':
+      return <Navigate to="/finances" replace />
+    case 'OWNER':
+    case 'TENANT':
+      return <Navigate to="/feed" replace />
     default:
       content = <FeedPage />
   }

@@ -933,6 +933,7 @@ export function getTourById(id: string): TourConfig | undefined {
 
 const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON']
 const OPERATIONAL_ROLES = ['SECURITY', 'SERVICE_STAFF']
+const RESIDENT_ROLES = ['OWNER', 'TENANT']
 const DASHBOARD_TOURS = ['dashboard-admin', 'dashboard-resident', 'dashboard-operational']
 
 /** Ruta de cada seccion y el tour que la explica (el dashboard se resuelve por rol). */
@@ -976,11 +977,14 @@ export function getTourIdForRoute(pathname: string, role?: string | null): strin
     if (role && OPERATIONAL_ROLES.includes(role)) return 'dashboard-operational'
     return 'dashboard-resident'
   }
+  // Propietarios y arrendatarios entran por /feed: es su inicio.
+  if (pathname === '/feed' && role && RESIDENT_ROLES.includes(role)) return 'dashboard-resident'
   return ROUTE_TOURS[pathname]
 }
 
 /** Pagina donde vive un tour: a donde hay que ir antes de iniciarlo. */
 export function getRouteForTour(tourId: string): string | undefined {
+  if (tourId === 'dashboard-resident') return '/feed'
   if (DASHBOARD_TOURS.includes(tourId)) return '/dashboard'
   return Object.keys(ROUTE_TOURS).find((path) => ROUTE_TOURS[path] === tourId)
 }

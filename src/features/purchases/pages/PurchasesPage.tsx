@@ -51,7 +51,7 @@ const EMPTY: PurchaseFormValues = {
 
 export function PurchasesPage() {
   const { currentCondominiumId, hasPermission, user } = useAuth()
-  const canManage = hasPermission('manageFinance')
+  const canManage = hasPermission('manageExpenses')
 
   const table = useTableParams({ pageSize: 10 })
   const query = usePurchases(currentCondominiumId, table.params)

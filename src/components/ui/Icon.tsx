@@ -1,6 +1,7 @@
 import {
   BadgeCheck,
   BarChart3,
+  BellRing,
   Blocks,
   Building,
   Building2,
@@ -14,6 +15,7 @@ import {
   History,
   Home,
   IdCard,
+  Landmark,
   LayoutDashboard,
   MapPinned,
   Megaphone,
@@ -77,6 +79,8 @@ const ICONS: Record<string, LucideIcon> = {
   ShieldCheck,
   UserRoundCheck,
   Vote,
+  BellRing,
+  Landmark,
 }
 
 /**

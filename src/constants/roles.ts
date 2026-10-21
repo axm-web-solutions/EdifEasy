@@ -30,6 +30,13 @@ export const ROLES: Record<RoleCode, RoleMeta> = {
     color: 'purple',
     level: 60,
   },
+  ACCOUNTANT: {
+    code: 'ACCOUNTANT',
+    label: 'Contador',
+    description: 'Informacion contable, gastos, compras y obligaciones fiscales',
+    color: 'gold',
+    level: 50,
+  },
   OWNER: {
     code: 'OWNER',
     label: 'Propietario',
@@ -87,10 +94,21 @@ export const PERMISSIONS = {
   manageAnnouncements: ['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON'] as RoleCode[],
   manageRequests: ['SUPER_ADMIN', 'ADMINISTRATOR', 'SERVICE_STAFF'] as RoleCode[],
   manageIncidents: ['SUPER_ADMIN', 'ADMINISTRATOR', 'SECURITY'] as RoleCode[],
-  viewFinance: ['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON', 'OWNER'] as RoleCode[],
+  // Gastos y compras. Los propietarios ven las finanzas en los reportes publicados.
+  viewFinance: ['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON', 'ACCOUNTANT'] as RoleCode[],
+  manageExpenses: ['SUPER_ADMIN', 'ADMINISTRATOR', 'ACCOUNTANT'] as RoleCode[],
+  /** Contabilidad, reportes publicados y obligaciones fiscales. */
+  manageAccounting: ['SUPER_ADMIN', 'ADMINISTRATOR', 'ACCOUNTANT'] as RoleCode[],
   manageFinance: ['SUPER_ADMIN', 'ADMINISTRATOR'] as RoleCode[],
   manageFines: ['SUPER_ADMIN', 'ADMINISTRATOR'] as RoleCode[],
-  viewVisitors: ['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY', 'OWNER', 'TENANT'] as RoleCode[],
+  viewVisitors: [
+    'SUPER_ADMIN',
+    'ADMINISTRATOR',
+    'SPOKESPERSON',
+    'SECURITY',
+    'OWNER',
+    'TENANT',
+  ] as RoleCode[],
   manageVisitors: ['SUPER_ADMIN', 'ADMINISTRATOR', 'SECURITY', 'OWNER', 'TENANT'] as RoleCode[],
   manageDocuments: ['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON'] as RoleCode[],
   viewResidents: ['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY'] as RoleCode[],

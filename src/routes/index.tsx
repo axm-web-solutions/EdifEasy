@@ -101,6 +101,12 @@ const MarketplacePage = lazyPage(() =>
     default: m.MarketplacePage,
   })),
 )
+const AlarmsPage = lazyPage(() =>
+  import('@/features/alarms/pages/AlarmsPage').then((m) => ({ default: m.AlarmsPage })),
+)
+const FinancesPage = lazyPage(() =>
+  import('@/features/finances/pages/FinancesPage').then((m) => ({ default: m.FinancesPage })),
+)
 const NearbyPage = lazyPage(() =>
   import('@/features/nearby/pages/NearbyPage').then((m) => ({ default: m.NearbyPage })),
 )
@@ -276,6 +282,28 @@ export function AppRoutes() {
               }
             />
             <Route path="/nearby" element={<NearbyPage />} />
+            <Route
+              path="/alarms"
+              element={
+                <RoleGuard
+                  roles={['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY', 'OWNER', 'TENANT']}
+                  module="alarms"
+                >
+                  <AlarmsPage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/finances"
+              element={
+                <RoleGuard
+                  roles={['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON', 'OWNER', 'ACCOUNTANT']}
+                  module="accounting"
+                >
+                  <FinancesPage />
+                </RoleGuard>
+              }
+            />
             <Route
               path="/surveys"
               element={

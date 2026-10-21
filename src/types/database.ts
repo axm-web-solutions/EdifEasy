@@ -121,6 +121,7 @@ export type SelfRegisterRoleCode = 'OWNER' | 'TENANT' | 'BOTH'
 
 export type RoleCode =
   | 'SUPER_ADMIN'
+  | 'ACCOUNTANT'
   | 'ADMINISTRATOR'
   | 'SPOKESPERSON'
   | 'OWNER'
@@ -394,6 +395,231 @@ export type StaffRosterRow = {
   open_shift_id: string | null
   check_in_at: string | null
   last_check_out_at: string | null
+}
+
+export type AlarmProvider =
+  | 'GENERIC'
+  | 'AJAX'
+  | 'HIKVISION'
+  | 'DAHUA'
+  | 'PARADOX'
+  | 'DSC'
+  | 'HONEYWELL'
+  | 'TEXECOM'
+  | 'MONITORING_CENTER'
+  | 'OTHER'
+export type AlarmEventType =
+  | 'PANIC'
+  | 'FIRE'
+  | 'INTRUSION'
+  | 'MEDICAL'
+  | 'GAS'
+  | 'FLOOD'
+  | 'DURESS'
+  | 'TAMPER'
+  | 'LOW_BATTERY'
+  | 'POWER_FAILURE'
+  | 'COMMUNICATION_FAILURE'
+  | 'ARMED'
+  | 'DISARMED'
+  | 'PARTIAL_ARMED'
+  | 'ALARM_RESTORED'
+  | 'POWER_RESTORED'
+  | 'TEST'
+  | 'OTHER'
+export type AlarmSeverity = 'CRITICAL' | 'HIGH' | 'TECHNICAL' | 'INFO'
+
+/** Alarma conectada (el hash del token no se expone al navegador). */
+export type AlarmDeviceRow = {
+  id: string
+  condominium_id: string
+  apartment_id: string | null
+  building_id: string | null
+  name: string
+  provider: AlarmProvider
+  location: string | null
+  notes: string | null
+  token_hint: string
+  is_active: boolean
+  armed_state: 'ARMED' | 'DISARMED' | 'PARTIAL' | null
+  last_event_at: string | null
+  last_event_type: AlarmEventType | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type AlarmEventRow = {
+  id: string
+  condominium_id: string
+  device_id: string
+  apartment_id: string | null
+  building_id: string | null
+  event_type: AlarmEventType
+  severity: AlarmSeverity
+  zone: string | null
+  raw_code: string | null
+  message: string | null
+  occurred_at: string
+  received_at: string
+  payload: Json
+  alert_id: string | null
+  acknowledged_at: string | null
+  acknowledged_by: string | null
+  resolution_note: string | null
+}
+
+export type AccountingProvider =
+  | 'SIIGO'
+  | 'ALEGRA'
+  | 'WORLD_OFFICE'
+  | 'HELISA'
+  | 'CONTAPYME'
+  | 'OTHER'
+export type AccountingImportKind =
+  | 'UNIT_STATEMENTS'
+  | 'UNIT_MOVEMENTS'
+  | 'FINANCIAL_STATEMENTS'
+  | 'BUDGET'
+
+export type AccountingIntegrationRow = {
+  id: string
+  condominium_id: string
+  provider: AccountingProvider
+  mode: 'API' | 'FILE'
+  status: 'PENDING' | 'CONNECTED' | 'ERROR' | 'DISABLED'
+  display_name: string | null
+  settings: Json
+  last_sync_at: string | null
+  last_error: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type AccountingSyncRunRow = {
+  id: string
+  condominium_id: string
+  integration_id: string | null
+  source: 'API' | 'FILE'
+  kind: string
+  status: 'OK' | 'PARTIAL' | 'ERROR'
+  stats: Json
+  error: string | null
+  created_by: string | null
+  created_at: string
+}
+
+export type AccountingUnitLinkRow = {
+  condominium_id: string
+  external_code: string
+  apartment_id: string
+  created_at: string
+}
+
+export type UnitAccountStatementRow = {
+  apartment_id: string
+  condominium_id: string
+  balance: number
+  overdue: number
+  interest: number
+  last_payment_at: string | null
+  last_payment_amount: number | null
+  as_of: string
+  source: string | null
+  synced_at: string
+}
+
+export type UnitAccountMovementRow = {
+  id: string
+  condominium_id: string
+  apartment_id: string
+  external_id: string
+  movement_date: string
+  document: string | null
+  concept: string
+  debit: number
+  credit: number
+  synced_at: string
+}
+
+export type FinancialStatementRow = {
+  condominium_id: string
+  period: string
+  kind: 'BALANCE' | 'RESULTS'
+  lines: Json
+  synced_at: string
+}
+
+export type BudgetLineRow = {
+  condominium_id: string
+  year: number
+  code: string
+  name: string
+  kind: 'INCOME' | 'EXPENSE'
+  budget: number
+  executed: number
+  synced_at: string
+}
+
+export type PortfolioSnapshotRow = {
+  condominium_id: string
+  as_of: string
+  total_overdue: number
+  total_balance: number
+  units_overdue: number
+  units_total: number
+  synced_at: string
+}
+
+export type FinancialReportCategory =
+  | 'FINANCIAL_STATEMENTS'
+  | 'BUDGET'
+  | 'PORTFOLIO'
+  | 'TAXES'
+  | 'AUDIT'
+  | 'ASSEMBLY'
+  | 'OTHER'
+export type FinancialReportType = 'BALANCE' | 'RESULTS' | 'BUDGET' | 'PORTFOLIO' | 'DOCUMENT'
+
+/** Reporte que el contador o la administracion publican para los propietarios. */
+export type FinancialReportRow = {
+  id: string
+  condominium_id: string
+  title: string
+  category: FinancialReportCategory
+  report_type: FinancialReportType
+  period: string | null
+  year: number | null
+  summary: string | null
+  file_path: string | null
+  status: 'DRAFT' | 'PUBLISHED'
+  published_at: string | null
+  published_by: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type TaxAuthority = 'DIAN' | 'MUNICIPIO' | 'UGPP' | 'SUPERSOLIDARIA' | 'OTRA'
+export type TaxObligationStatus = 'PENDING' | 'FILED' | 'PAID' | 'NOT_APPLICABLE'
+
+export type TaxObligationRow = {
+  id: string
+  condominium_id: string
+  name: string
+  authority: TaxAuthority
+  period_label: string | null
+  due_date: string
+  status: TaxObligationStatus
+  amount: number | null
+  reference: string | null
+  notes: string | null
+  file_path: string | null
+  completed_at: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
 }
 
 export type SurveyStatus = 'DRAFT' | 'OPEN' | 'CLOSED'
@@ -1051,6 +1277,33 @@ export interface Database {
         'condominium_id' | 'common_area_id' | 'apartment_id' | 'starts_at' | 'ends_at'
       >
       guard_log_entries: TableDef<GuardLogEntryRow, 'condominium_id' | 'description'>
+      alarm_devices: TableDef<AlarmDeviceRow, 'condominium_id' | 'name' | 'token_hint'>
+      alarm_events: TableDef<
+        AlarmEventRow,
+        'condominium_id' | 'device_id' | 'event_type' | 'severity'
+      >
+      accounting_integrations: TableDef<
+        AccountingIntegrationRow,
+        'condominium_id' | 'provider' | 'mode'
+      >
+      accounting_sync_runs: TableDef<
+        AccountingSyncRunRow,
+        'condominium_id' | 'source' | 'kind' | 'status'
+      >
+      accounting_unit_links: TableDef<
+        AccountingUnitLinkRow,
+        'condominium_id' | 'external_code' | 'apartment_id'
+      >
+      unit_account_statements: TableDef<UnitAccountStatementRow, 'apartment_id' | 'condominium_id'>
+      unit_account_movements: TableDef<
+        UnitAccountMovementRow,
+        'condominium_id' | 'apartment_id' | 'external_id' | 'movement_date' | 'concept'
+      >
+      financial_statements: TableDef<FinancialStatementRow, 'condominium_id' | 'period' | 'kind'>
+      budget_lines: TableDef<BudgetLineRow, 'condominium_id' | 'year' | 'code' | 'name'>
+      portfolio_snapshots: TableDef<PortfolioSnapshotRow, 'condominium_id' | 'as_of'>
+      financial_reports: TableDef<FinancialReportRow, 'condominium_id' | 'title' | 'report_type'>
+      tax_obligations: TableDef<TaxObligationRow, 'condominium_id' | 'name' | 'due_date'>
       staff_shifts: TableDef<StaffShiftRow, 'condominium_id' | 'person_name' | 'role_label'>
       surveys: TableDef<SurveyRow, 'condominium_id' | 'title'>
       survey_questions: TableDef<SurveyQuestionRow, 'survey_id' | 'text'>
@@ -1283,6 +1536,46 @@ export interface Database {
       }
       survey_results: { Args: { p_survey: string }; Returns: Json }
       start_trial: { Args: { p_payload?: Json | null }; Returns: string }
+      create_alarm_device: {
+        Args: {
+          p_condominium: string
+          p_apartment: string | null
+          p_name: string
+          p_provider?: string
+          p_location?: string | null
+          p_notes?: string | null
+        }
+        Returns: Json
+      }
+      rotate_alarm_device_token: { Args: { p_device: string }; Returns: string }
+      update_alarm_device: {
+        Args: {
+          p_device: string
+          p_name: string
+          p_provider: string
+          p_location: string | null
+          p_notes: string | null
+          p_is_active: boolean
+        }
+        Returns: string
+      }
+      delete_alarm_device: { Args: { p_device: string }; Returns: string }
+      test_alarm_device: { Args: { p_device: string }; Returns: string }
+      acknowledge_alarm_event: {
+        Args: { p_event: string; p_note?: string | null }
+        Returns: string
+      }
+      import_accounting_data: {
+        Args: {
+          p_condominium: string
+          p_kind: string
+          p_rows: Json
+          p_source?: string
+          p_integration?: string | null
+          p_as_of?: string | null
+        }
+        Returns: Json
+      }
       accept_legal_documents: {
         Args: { p_documents: string[]; p_version: string; p_user_agent?: string | null }
         Returns: number

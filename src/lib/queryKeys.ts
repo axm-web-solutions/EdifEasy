@@ -200,6 +200,25 @@ export const queryKeys = {
     results: (surveyId: string) => ['surveys', 'results', surveyId] as const,
   },
 
+  alarms: {
+    devices: (condominiumId: string) => ['alarms', 'devices', condominiumId] as const,
+    events: (condominiumId: string, from: string) => ['alarms', 'events', condominiumId, from] as const,
+  },
+
+  accounting: {
+    integrations: (condominiumId: string) => ['accounting', 'integrations', condominiumId] as const,
+    runs: (condominiumId: string) => ['accounting', 'runs', condominiumId] as const,
+    statements: (condominiumId: string) => ['accounting', 'statements', condominiumId] as const,
+    movements: (apartmentId: string) => ['accounting', 'movements', apartmentId] as const,
+    financial: (condominiumId: string) => ['accounting', 'financial', condominiumId] as const,
+    budget: (condominiumId: string) => ['accounting', 'budget', condominiumId] as const,
+    portfolio: (condominiumId: string) => ['accounting', 'portfolio', condominiumId] as const,
+    links: (condominiumId: string) => ['accounting', 'links', condominiumId] as const,
+    reports: (condominiumId: string) => ['accounting', 'reports', condominiumId] as const,
+    obligations: (condominiumId: string) =>
+      ['accounting', 'obligations', condominiumId] as const,
+  },
+
   legal: {
     entity: ['legal', 'entity'] as const,
     acceptances: (userId: string) => ['legal', 'acceptances', userId] as const,

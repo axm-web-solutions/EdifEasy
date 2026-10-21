@@ -99,7 +99,7 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
     css: false,
-    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    include: ['src/**/*.{test,spec}.{ts,tsx}', 'supabase/functions/_shared/**/*.test.ts'],
     // Las pruebas de UI con modales de antd en jsdom superan 5 s cuando la suite
     // corre en paralelo en un equipo cargado; 15 s evita falsos fallos.
     testTimeout: 15_000,

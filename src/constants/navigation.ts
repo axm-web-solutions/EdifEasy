@@ -20,9 +20,24 @@ export interface NavItem {
   children?: NavItem[]
 }
 
+/** Todos menos el contador: su trabajo es solo contable. */
+const COMMUNITY_ROLES: RoleCode[] = [
+  'SUPER_ADMIN',
+  'ADMINISTRATOR',
+  'SPOKESPERSON',
+  'OWNER',
+  'TENANT',
+  'SECURITY',
+  'SERVICE_STAFF',
+]
+
 /**
- * Menu lateral. Se filtra dinamicamente segun el rol activo del usuario
- * en el condominio seleccionado.
+ * Menu lateral por segmentos. Se filtra segun el rol activo del usuario en el
+ * condominio seleccionado. Cada ruta aparece una sola vez (el SUPER_ADMIN ve
+ * todo y no debe ver entradas repetidas).
+ *
+ * Comunicados y alertas ya se ven en el feed: en el menu solo los tiene quien
+ * los gestiona.
  */
 export const NAVIGATION: NavItem[] = [
   {
@@ -47,32 +62,16 @@ export const NAVIGATION: NavItem[] = [
     ],
   },
 
-  { key: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: 'LayoutDashboard' },
-
-  // Propietarios y arrendatarios ya tienen el feed como dashboard.
+  // ---------------------------------------------------------------- Inicio
   {
-    key: 'feed',
-    label: 'Feed',
-    path: '/feed',
-    icon: 'Newspaper',
+    key: 'dashboard',
+    label: 'Dashboard',
+    path: '/dashboard',
+    icon: 'LayoutDashboard',
     roles: ['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY', 'SERVICE_STAFF'],
   },
-
-  {
-    key: 'nearby',
-    label: 'Mapa',
-    path: '/nearby',
-    icon: 'MapPinned',
-  },
-
-  {
-    key: 'marketplace',
-    module: 'marketplace',
-    label: 'Marketplace',
-    path: '/marketplace',
-    icon: 'Store',
-  },
-
+  // Para propietarios y arrendatarios el feed es su inicio.
+  { key: 'feed', label: 'Feed', path: '/feed', icon: 'Newspaper', roles: COMMUNITY_ROLES },
   {
     key: 'my-apartment',
     label: 'Mi apartamento',
@@ -81,18 +80,180 @@ export const NAVIGATION: NavItem[] = [
     roles: ['OWNER', 'TENANT'],
   },
 
+  // ------------------------------------------------------------- Comunidad
   {
-    key: 'admin-fees',
-    module: 'admin_fees',
-    label: 'Cuotas de administracion',
-    path: '/admin-fees',
-    icon: 'CreditCard',
-    roles: ['SUPER_ADMIN', 'ADMINISTRATOR', 'OWNER'],
+    key: 'community',
+    label: 'Comunidad',
+    icon: 'MessagesSquare',
+    children: [
+      {
+        key: 'marketplace',
+        module: 'marketplace',
+        label: 'Marketplace',
+        path: '/marketplace',
+        icon: 'Store',
+        roles: COMMUNITY_ROLES,
+      },
+      { key: 'nearby', label: 'Mapa', path: '/nearby', icon: 'MapPinned', roles: COMMUNITY_ROLES },
+      {
+        key: 'surveys',
+        module: 'surveys',
+        label: 'Encuestas',
+        path: '/surveys',
+        icon: 'Vote',
+        roles: COMMUNITY_ROLES,
+      },
+      {
+        key: 'requests',
+        module: 'requests',
+        label: 'Solicitudes y reservas',
+        path: '/requests',
+        icon: 'FileQuestion',
+        roles: COMMUNITY_ROLES,
+      },
+      {
+        key: 'messages',
+        module: 'messages',
+        label: 'Mensajes',
+        path: '/messages',
+        icon: 'MessageCircle',
+      },
+      {
+        key: 'documents',
+        module: 'documents',
+        label: 'Documentos',
+        path: '/documents',
+        icon: 'FolderOpen',
+      },
+      {
+        key: 'announcements',
+        module: 'announcements',
+        label: 'Comunicados',
+        path: '/announcements',
+        icon: 'Megaphone',
+        permission: 'manageAnnouncements',
+      },
+      {
+        key: 'alerts',
+        module: 'alerts',
+        label: 'Alertas',
+        path: '/alerts',
+        icon: 'Siren',
+        permission: 'manageAlerts',
+      },
+    ],
   },
 
+  // -------------------------------------------------------------- Finanzas
   {
-    key: 'structure',
-    label: 'Estructura',
+    key: 'finance',
+    label: 'Finanzas',
+    icon: 'Wallet',
+    children: [
+      {
+        key: 'finances',
+        module: 'accounting',
+        label: 'Finanzas del conjunto',
+        path: '/finances',
+        icon: 'Landmark',
+        roles: ['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON', 'OWNER', 'ACCOUNTANT'],
+      },
+      {
+        key: 'admin-fees',
+        module: 'admin_fees',
+        label: 'Cuotas de administracion',
+        path: '/admin-fees',
+        icon: 'CreditCard',
+        roles: ['SUPER_ADMIN', 'ADMINISTRATOR', 'OWNER'],
+      },
+      {
+        key: 'fines',
+        module: 'fines',
+        label: 'Multas',
+        path: '/fines',
+        icon: 'Gavel',
+        roles: ['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON', 'OWNER', 'TENANT'],
+      },
+      {
+        key: 'expenses',
+        module: 'expenses',
+        label: 'Gastos',
+        path: '/expenses',
+        icon: 'Receipt',
+        permission: 'viewFinance',
+      },
+      {
+        key: 'purchases',
+        module: 'purchases',
+        label: 'Compras',
+        path: '/purchases',
+        icon: 'ShoppingCart',
+        permission: 'viewFinance',
+      },
+    ],
+  },
+
+  // ------------------------------------------------------------- Seguridad
+  {
+    key: 'security',
+    label: 'Seguridad',
+    icon: 'ShieldCheck',
+    children: [
+      {
+        key: 'visitors',
+        module: 'visitors',
+        label: 'Visitantes',
+        path: '/visitors',
+        icon: 'IdCard',
+        roles: ['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY', 'OWNER', 'TENANT'],
+      },
+      {
+        key: 'alarms',
+        module: 'alarms',
+        label: 'Alarmas',
+        path: '/alarms',
+        icon: 'BellRing',
+        roles: ['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY', 'OWNER', 'TENANT'],
+      },
+      {
+        key: 'residents',
+        module: 'residents',
+        label: 'Residentes',
+        path: '/residents',
+        icon: 'UsersRound',
+        roles: ['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY'],
+      },
+      {
+        key: 'logbook',
+        module: 'logbook',
+        label: 'Minuta',
+        path: '/logbook',
+        icon: 'NotebookPen',
+        roles: ['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY'],
+      },
+      {
+        key: 'staff',
+        module: 'staff',
+        label: 'Personal',
+        path: '/staff',
+        icon: 'UserRoundCheck',
+        roles: ['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY', 'SERVICE_STAFF'],
+      },
+      {
+        key: 'incidents',
+        module: 'incidents',
+        label: 'Incidentes',
+        path: '/incidents',
+        icon: 'ShieldAlert',
+        roles: COMMUNITY_ROLES,
+      },
+    ],
+  },
+
+  // -------------------------------------------------------- Administracion
+  {
+    key: 'administration',
+    label: 'Administracion',
     icon: 'Building2',
     roles: ['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON'],
     children: [
@@ -113,161 +274,29 @@ export const NAVIGATION: NavItem[] = [
         icon: 'UserCheck',
         permission: 'manageMembers',
       },
-    ],
-  },
-
-  {
-    key: 'residents',
-    module: 'residents',
-    label: 'Residentes',
-    path: '/residents',
-    icon: 'UsersRound',
-    roles: ['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY'],
-  },
-
-  {
-    key: 'visitors',
-    module: 'visitors',
-    label: 'Visitantes',
-    path: '/visitors',
-    icon: 'IdCard',
-    roles: ['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY', 'OWNER', 'TENANT'],
-  },
-
-  {
-    key: 'gatehouse',
-    label: 'Porteria',
-    icon: 'ShieldCheck',
-    roles: ['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY', 'SERVICE_STAFF'],
-    children: [
       {
-        key: 'logbook',
-        module: 'logbook',
-        label: 'Minuta',
-        path: '/logbook',
-        icon: 'NotebookPen',
-        roles: ['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY'],
+        key: 'reports',
+        module: 'reports',
+        label: 'Reportes',
+        path: '/reports',
+        icon: 'BarChart3',
+        permission: 'viewReports',
       },
       {
-        key: 'staff',
-        module: 'staff',
-        label: 'Personal',
-        path: '/staff',
-        icon: 'UserRoundCheck',
+        key: 'activity',
+        label: 'Auditoria',
+        path: '/activity',
+        icon: 'History',
+        permission: 'viewAudit',
+      },
+      {
+        key: 'plans',
+        label: 'Planes',
+        path: '/plans',
+        icon: 'BadgeCheck',
+        roles: ['ADMINISTRATOR'],
       },
     ],
-  },
-
-  {
-    key: 'communication',
-    label: 'Comunicacion',
-    icon: 'MessagesSquare',
-    children: [
-      { key: 'alerts', module: 'alerts', label: 'Alertas', path: '/alerts', icon: 'Siren' },
-      {
-        key: 'announcements',
-        module: 'announcements',
-        label: 'Comunicados',
-        path: '/announcements',
-        icon: 'Megaphone',
-      },
-      {
-        key: 'messages',
-        module: 'messages',
-        label: 'Mensajes',
-        path: '/messages',
-        icon: 'MessageCircle',
-      },
-      { key: 'surveys', module: 'surveys', label: 'Encuestas', path: '/surveys', icon: 'Vote' },
-    ],
-  },
-
-  {
-    key: 'management',
-    label: 'Gestion',
-    icon: 'ClipboardList',
-    children: [
-      {
-        key: 'requests',
-        module: 'requests',
-        label: 'Solicitudes',
-        path: '/requests',
-        icon: 'FileQuestion',
-      },
-      {
-        key: 'incidents',
-        module: 'incidents',
-        label: 'Incidentes',
-        path: '/incidents',
-        icon: 'ShieldAlert',
-      },
-      {
-        key: 'fines',
-        module: 'fines',
-        label: 'Multas',
-        path: '/fines',
-        icon: 'Gavel',
-        roles: ['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON', 'OWNER', 'TENANT'],
-      },
-    ],
-  },
-
-  {
-    key: 'finance',
-    label: 'Finanzas',
-    icon: 'Wallet',
-    permission: 'viewFinance',
-    children: [
-      {
-        key: 'expenses',
-        module: 'expenses',
-        label: 'Gastos',
-        path: '/expenses',
-        icon: 'Receipt',
-        permission: 'viewFinance',
-      },
-      {
-        key: 'purchases',
-        module: 'purchases',
-        label: 'Compras',
-        path: '/purchases',
-        icon: 'ShoppingCart',
-        permission: 'viewFinance',
-      },
-    ],
-  },
-
-  {
-    key: 'documents',
-    module: 'documents',
-    label: 'Documentos',
-    path: '/documents',
-    icon: 'FolderOpen',
-  },
-
-  {
-    key: 'reports',
-    module: 'reports',
-    label: 'Reportes',
-    path: '/reports',
-    icon: 'BarChart3',
-    permission: 'viewReports',
-  },
-
-  {
-    key: 'activity',
-    label: 'Auditoria',
-    path: '/activity',
-    icon: 'History',
-    permission: 'viewAudit',
-  },
-
-  {
-    key: 'plans',
-    label: 'Planes',
-    path: '/plans',
-    icon: 'BadgeCheck',
-    roles: ['ADMINISTRATOR'],
   },
 
   { key: 'settings', label: 'Configuracion', path: '/settings', icon: 'Settings' },
