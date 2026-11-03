@@ -24,9 +24,9 @@ export function LocationPicker({
   useEffect(() => {
     if (!element.current || map.current) return
     map.current = L.map(element.current, { scrollWheelZoom: false }).setView([4.711, -74.0721], 11)
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      attribution: '&copy; OpenStreetMap &copy; CARTO',
+      attribution: '&copy; OpenStreetMap',
     }).addTo(map.current)
     map.current.on('click', (event: L.LeafletMouseEvent) => {
       change.current({ lat: event.latlng.lat, lng: event.latlng.lng })
