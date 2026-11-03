@@ -219,6 +219,16 @@ export const queryKeys = {
       ['accounting', 'obligations', condominiumId] as const,
   },
 
+  agency: {
+    properties: (agencyId: string) => ['agency', 'properties', agencyId] as const,
+    leases: (agencyId: string) => ['agency', 'leases', agencyId] as const,
+    charges: (agencyId: string, from: string) => ['agency', 'charges', agencyId, from] as const,
+    leads: (agencyId: string) => ['agency', 'leads', agencyId] as const,
+    store: (agencyId: string) => ['agency', 'store', agencyId] as const,
+    paymentAccount: (agencyId: string) => ['agency', 'payment-account', agencyId] as const,
+    storefront: (slug: string) => ['storefront', slug] as const,
+  },
+
   legal: {
     entity: ['legal', 'entity'] as const,
     acceptances: (userId: string) => ['legal', 'acceptances', userId] as const,

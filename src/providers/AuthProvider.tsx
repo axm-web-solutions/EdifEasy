@@ -135,6 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       condominium_status: condominium.status,
       condominium_logo_url: condominium.logo_url,
       condominium_primary_color: readSetting(condominium.settings, 'primaryColor') as string | null,
+      condominium_kind: condominium.kind ?? 'CONDOMINIUM',
       role_id: 'super-admin',
       role_code: 'SUPER_ADMIN' as RoleCode,
       role_name: 'Super Administrador',

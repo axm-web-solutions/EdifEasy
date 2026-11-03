@@ -9,6 +9,7 @@ import {
   CreditCard,
   DoorOpen,
   FileQuestion,
+  FileSignature,
   FolderOpen,
   Gavel,
   Globe,
@@ -33,6 +34,7 @@ import {
   SlidersHorizontal,
   Siren,
   UserCheck,
+  UserPlus,
   UserRoundCheck,
   Users,
   UsersRound,
@@ -81,6 +83,8 @@ const ICONS: Record<string, LucideIcon> = {
   Vote,
   BellRing,
   Landmark,
+  FileSignature,
+  UserPlus,
 }
 
 /**

@@ -22,6 +22,7 @@ const EMPTY: CondominiumFormValues = {
   primary_color: DEFAULT_BRAND_COLOR,
   description: '',
   status: 'ACTIVE',
+  kind: 'CONDOMINIUM',
 }
 
 export function CondominiumForm({
@@ -58,15 +59,18 @@ export function CondominiumForm({
             primary_color: resolvePrimaryColor(readSetting(condominium.settings, 'primaryColor')),
             description: condominium.description ?? '',
             status: condominium.status,
+            kind: condominium.kind ?? 'CONDOMINIUM',
           }
         : EMPTY,
     )
   }, [open, condominium, reset])
 
   const submit = handleSubmit((values) => {
-    const { primary_color, ...rest } = values
+    const { primary_color, kind, ...rest } = values
     onSubmit({
       ...(emptyToNull(rest) as TablesInsert<'condominiums'>),
+      // El tipo solo se envia al crear: despues la base no deja cambiarlo.
+      ...(condominium ? {} : { kind }),
       settings: mergeSetting(
         condominium?.settings,
         'primaryColor',
@@ -78,14 +82,28 @@ export function CondominiumForm({
   return (
     <FormDrawer
       open={open}
-      title={condominium ? 'Editar condominio' : 'Nuevo condominio'}
-      description="Datos generales del conjunto residencial."
+      title={condominium ? 'Editar' : 'Nuevo conjunto o inmobiliaria'}
+      description="Datos generales del conjunto residencial o de la inmobiliaria."
       onClose={onClose}
       onSubmit={submit}
       submitting={submitting}
       width={560}
     >
       <form onSubmit={submit} noValidate>
+        {condominium ? null : (
+          <SelectField
+            control={control}
+            name="kind"
+            label="Tipo"
+            required
+            showSearch={false}
+            options={[
+              { value: 'CONDOMINIUM', label: 'Conjunto residencial' },
+              { value: 'AGENCY', label: 'Inmobiliaria' },
+            ]}
+            help="Una inmobiliaria administra propiedades sueltas y tiene tienda publica."
+          />
+        )}
         <TextField control={control} name="name" label="Nombre" required />
 
         <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">

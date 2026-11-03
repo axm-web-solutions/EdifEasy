@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { PageSkeleton } from '@/components/ui/states'
+import { useWorkspace } from '@/hooks/useWorkspace'
 
 // Cada variante en su propio chunk: un residente no descarga las graficas
 // (recharts) ni el mapa (leaflet) del panel de administracion.
@@ -10,6 +11,9 @@ const FeedPage = lazy(() =>
 )
 const AdminDashboard = lazy(() =>
   import('./AdminDashboard').then((m) => ({ default: m.AdminDashboard })),
+)
+const AgencyDashboard = lazy(() =>
+  import('@/features/agency/pages/AgencyDashboard').then((m) => ({ default: m.AgencyDashboard })),
 )
 const OperationalDashboard = lazy(() =>
   import('./OperationalDashboard').then((m) => ({ default: m.OperationalDashboard })),
@@ -22,8 +26,20 @@ const OperationalDashboard = lazy(() =>
  */
 export function DashboardPage() {
   const { role, loadingContext } = useAuth()
+  const { isAgency } = useWorkspace()
 
   if (loadingContext) return <PageSkeleton />
+
+  // Inmobiliaria: panel para la administracion; dueno y arrendatario van a lo suyo.
+  if (isAgency) {
+    if (role === 'OWNER') return <Navigate to="/agency/my-properties" replace />
+    if (role === 'TENANT') return <Navigate to="/agency/my-lease" replace />
+    return (
+      <Suspense fallback={<PageSkeleton />}>
+        <AgencyDashboard />
+      </Suspense>
+    )
+  }
 
   let content
   switch (role) {

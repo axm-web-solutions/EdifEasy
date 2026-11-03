@@ -17,6 +17,8 @@ export const condominiumSchema = z.object({
     .default('#2559eb'),
   description: optionalText(1000),
   status: z.enum(['ACTIVE', 'INACTIVE', 'SUSPENDED']).default('ACTIVE'),
+  /** Conjunto o inmobiliaria: se elige al crear y no se cambia despues. */
+  kind: z.enum(['CONDOMINIUM', 'AGENCY']).default('CONDOMINIUM'),
 })
 
 export const buildingSchema = z.object({

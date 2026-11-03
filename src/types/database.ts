@@ -165,6 +165,8 @@ export type UserRoleRow = {
   updated_at: string
 }
 
+export type WorkspaceKind = 'CONDOMINIUM' | 'AGENCY'
+
 export type CondominiumRow = {
   id: string
   name: string
@@ -186,6 +188,10 @@ export type CondominiumRow = {
   /** Direccion que se geocodifico; si cambia, hay que volver a ubicar el conjunto. */
   location_source: string | null
   places_updated_at: string | null
+  /** CONDOMINIUM (conjunto) o AGENCY (inmobiliaria). */
+  kind: WorkspaceKind
+  /** Enlace publico de la tienda de la inmobiliaria: /i/<slug>. */
+  slug: string | null
   created_by: string | null
   created_at: string
   updated_at: string
@@ -620,6 +626,118 @@ export type TaxObligationRow = {
   created_by: string | null
   created_at: string
   updated_at: string
+}
+
+export type PropertyType =
+  | 'CASA'
+  | 'APARTAMENTO'
+  | 'APARTAESTUDIO'
+  | 'LOCAL'
+  | 'OFICINA'
+  | 'BODEGA'
+  | 'LOTE'
+  | 'FINCA'
+  | 'OTRO'
+export type PropertyOperation = 'RENT' | 'SALE' | 'BOTH'
+export type PropertyStatus = 'AVAILABLE' | 'RESERVED' | 'RENTED' | 'SOLD' | 'INACTIVE'
+
+/** Propiedad de una inmobiliaria. */
+export type AgencyPropertyRow = {
+  id: string
+  condominium_id: string
+  code: string | null
+  title: string
+  property_type: PropertyType
+  operation: PropertyOperation
+  status: PropertyStatus
+  is_published: boolean
+  rent_price: number | null
+  admin_fee: number
+  sale_price: number | null
+  address: string | null
+  neighborhood: string | null
+  city: string | null
+  stratum: number | null
+  area_m2: number | null
+  bedrooms: number | null
+  bathrooms: number | null
+  parking: number | null
+  floor: number | null
+  furnished: boolean
+  pets_allowed: boolean
+  amenities: string[]
+  description: string | null
+  images: string[]
+  owner_profile_id: string | null
+  owner_name: string | null
+  owner_phone: string | null
+  linked_apartment_id: string | null
+  published_at: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type PropertyLeaseRow = {
+  id: string
+  condominium_id: string
+  property_id: string
+  tenant_profile_id: string | null
+  tenant_name: string
+  tenant_document: string | null
+  tenant_email: string | null
+  tenant_phone: string | null
+  start_date: string
+  end_date: string | null
+  monthly_rent: number
+  admin_fee: number
+  due_day: number
+  deposit: number | null
+  status: 'ACTIVE' | 'ENDED' | 'CANCELLED'
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type LeaseChargeRow = {
+  id: string
+  condominium_id: string
+  lease_id: string
+  property_id: string
+  period: string
+  concept: 'RENT' | 'ADMIN_FEE' | 'UTILITIES' | 'OTHER'
+  description: string | null
+  amount: number
+  due_date: string
+  status: 'PENDING' | 'PAID' | 'VOID'
+  paid_at: string | null
+  payment_method: 'ONLINE' | 'CASH' | 'TRANSFER' | null
+  payment_id: string | null
+  created_at: string
+}
+
+export type AgencyLeadRow = {
+  id: string
+  condominium_id: string
+  property_id: string | null
+  name: string
+  phone: string
+  email: string | null
+  message: string | null
+  status: 'NEW' | 'CONTACTED' | 'CLOSED'
+  consent_at: string
+  created_at: string
+}
+
+/** Cuenta Wompi propia (las llaves secretas no llegan al navegador). */
+export type PaymentAccountRow = {
+  condominium_id: string
+  provider: 'WOMPI'
+  public_key: string
+  environment: 'SANDBOX' | 'PRODUCTION'
+  connected_by: string | null
+  connected_at: string
 }
 
 export type SurveyStatus = 'DRAFT' | 'OPEN' | 'CLOSED'
@@ -1302,6 +1420,20 @@ export interface Database {
       financial_statements: TableDef<FinancialStatementRow, 'condominium_id' | 'period' | 'kind'>
       budget_lines: TableDef<BudgetLineRow, 'condominium_id' | 'year' | 'code' | 'name'>
       portfolio_snapshots: TableDef<PortfolioSnapshotRow, 'condominium_id' | 'as_of'>
+      agency_properties: TableDef<
+        AgencyPropertyRow,
+        'condominium_id' | 'title' | 'property_type'
+      >
+      property_leases: TableDef<
+        PropertyLeaseRow,
+        'condominium_id' | 'property_id' | 'tenant_name' | 'start_date' | 'monthly_rent'
+      >
+      lease_charges: TableDef<
+        LeaseChargeRow,
+        'condominium_id' | 'lease_id' | 'property_id' | 'period' | 'concept' | 'amount' | 'due_date'
+      >
+      agency_leads: TableDef<AgencyLeadRow, 'condominium_id' | 'name' | 'phone' | 'consent_at'>
+      payment_accounts: TableDef<PaymentAccountRow, 'condominium_id' | 'public_key' | 'environment'>
       financial_reports: TableDef<FinancialReportRow, 'condominium_id' | 'title' | 'report_type'>
       tax_obligations: TableDef<TaxObligationRow, 'condominium_id' | 'name' | 'due_date'>
       staff_shifts: TableDef<StaffShiftRow, 'condominium_id' | 'person_name' | 'role_label'>
@@ -1586,6 +1718,22 @@ export interface Database {
         Returns: string
       }
       export_my_data: { Args: Record<string, never>; Returns: Json }
+      storefront: { Args: { p_slug: string }; Returns: Json }
+      submit_agency_lead: {
+        Args: {
+          p_slug: string
+          p_property: string | null
+          p_name: string
+          p_phone: string
+          p_email: string | null
+          p_message: string | null
+          p_consent: boolean
+        }
+        Returns: string
+      }
+      generate_lease_charges: { Args: { p_condominium: string; p_period: string }; Returns: number }
+      register_lease_payment: { Args: { p_charges: string[]; p_method: string }; Returns: number }
+      void_lease_charge: { Args: { p_charge: string }; Returns: string }
       review_marketplace_listing: {
         Args: { p_listing: string; p_approve: boolean; p_notes?: string | null }
         Returns: string

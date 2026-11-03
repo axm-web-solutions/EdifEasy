@@ -1,4 +1,4 @@
-import { Suspense } from 'react'
+import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { Spin } from 'antd'
 import { AuthLayout } from '@/layouts/AuthLayout'
@@ -101,6 +101,38 @@ const MarketplacePage = lazyPage(() =>
     default: m.MarketplacePage,
   })),
 )
+const PropertiesPage = lazyPage(() =>
+  import('@/features/agency/pages/PropertiesPage').then((m) => ({ default: m.PropertiesPage })),
+)
+const LeasesPage = lazyPage(() =>
+  import('@/features/agency/pages/LeasesPage').then((m) => ({ default: m.LeasesPage })),
+)
+const ChargesPage = lazyPage(() =>
+  import('@/features/agency/pages/ChargesPage').then((m) => ({ default: m.ChargesPage })),
+)
+const LeadsPage = lazyPage(() =>
+  import('@/features/agency/pages/LeadsPage').then((m) => ({ default: m.LeadsPage })),
+)
+const StoreSettingsPage = lazyPage(() =>
+  import('@/features/agency/pages/StoreSettingsPage').then((m) => ({
+    default: m.StoreSettingsPage,
+  })),
+)
+const MyLeasePage = lazyPage(() =>
+  import('@/features/agency/pages/MyLeasePage').then((m) => ({ default: m.MyLeasePage })),
+)
+const MyPropertiesPage = lazyPage(() =>
+  import('@/features/agency/pages/MyPropertiesPage').then((m) => ({ default: m.MyPropertiesPage })),
+)
+// La tienda publica no se precarga con la app: la abre gente sin sesion.
+const StorefrontPage = lazy(() =>
+  import('@/features/agency/pages/StorefrontPage').then((m) => ({ default: m.StorefrontPage })),
+)
+const StorefrontPropertyPage = lazy(() =>
+  import('@/features/agency/pages/StorefrontPage').then((m) => ({
+    default: m.StorefrontPropertyPage,
+  })),
+)
 const AlarmsPage = lazyPage(() =>
   import('@/features/alarms/pages/AlarmsPage').then((m) => ({ default: m.AlarmsPage })),
 )
@@ -174,6 +206,10 @@ export function AppRoutes() {
         {/* Documentos legales: publicos, con o sin sesion. */}
         <Route path="/legal" element={<Navigate to="/legal/terminos" replace />} />
         <Route path="/legal/:doc" element={<LegalPage />} />
+
+        {/* Tienda publica de las inmobiliarias: sin sesion. */}
+        <Route path="/i/:slug" element={<StorefrontPage />} />
+        <Route path="/i/:slug/p/:propertyId" element={<StorefrontPropertyPage />} />
 
         {/* Privadas */}
         <Route element={<ProtectedRoute />}>
@@ -282,11 +318,51 @@ export function AppRoutes() {
               }
             />
             <Route path="/nearby" element={<NearbyPage />} />
+
+            {/* Inmobiliaria */}
+            {(
+              [
+                ['/agency/properties', <PropertiesPage key="p" />],
+                ['/agency/leases', <LeasesPage key="l" />],
+                ['/agency/charges', <ChargesPage key="c" />],
+                ['/agency/leads', <LeadsPage key="d" />],
+                ['/agency/store', <StoreSettingsPage key="s" />],
+              ] as const
+            ).map(([path, page]) => (
+              <Route
+                key={path}
+                path={path}
+                element={<RoleGuard roles={['SUPER_ADMIN', 'ADMINISTRATOR']}>{page}</RoleGuard>}
+              />
+            ))}
+            <Route
+              path="/agency/my-lease"
+              element={
+                <RoleGuard roles={['TENANT']}>
+                  <MyLeasePage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/agency/my-properties"
+              element={
+                <RoleGuard roles={['OWNER']}>
+                  <MyPropertiesPage />
+                </RoleGuard>
+              }
+            />
             <Route
               path="/alarms"
               element={
                 <RoleGuard
-                  roles={['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY', 'OWNER', 'TENANT']}
+                  roles={[
+                    'SUPER_ADMIN',
+                    'ADMINISTRATOR',
+                    'SPOKESPERSON',
+                    'SECURITY',
+                    'OWNER',
+                    'TENANT',
+                  ]}
                   module="alarms"
                 >
                   <AlarmsPage />
@@ -327,7 +403,13 @@ export function AppRoutes() {
               path="/staff"
               element={
                 <RoleGuard
-                  roles={['SUPER_ADMIN', 'ADMINISTRATOR', 'SPOKESPERSON', 'SECURITY', 'SERVICE_STAFF']}
+                  roles={[
+                    'SUPER_ADMIN',
+                    'ADMINISTRATOR',
+                    'SPOKESPERSON',
+                    'SECURITY',
+                    'SERVICE_STAFF',
+                  ]}
                   module="staff"
                 >
                   <StaffPage />

@@ -1,4 +1,4 @@
-import type { RoleCode } from '@/types/database'
+import type { RoleCode, WorkspaceKind } from '@/types/database'
 import type { PermissionKey } from './roles'
 import type { ModuleKey } from './modules'
 
@@ -17,8 +17,13 @@ export interface NavItem {
   permission?: PermissionKey
   /** Modulo configurable: se oculta si el SUPER_ADMIN lo desactivo para el rol. */
   module?: ModuleKey
+  /** Tipos de espacio donde aparece. Sin valor: solo en conjuntos. */
+  kinds?: WorkspaceKind[]
   children?: NavItem[]
 }
+
+const BOTH: WorkspaceKind[] = ['CONDOMINIUM', 'AGENCY']
+const AGENCY: WorkspaceKind[] = ['AGENCY']
 
 /** Todos menos el contador: su trabajo es solo contable. */
 const COMMUNITY_ROLES: RoleCode[] = [
@@ -45,6 +50,7 @@ export const NAVIGATION: NavItem[] = [
     label: 'Plataforma',
     icon: 'Globe',
     roles: ['SUPER_ADMIN'],
+    kinds: BOTH,
     children: [
       { key: 'platform-condominiums', label: 'Conjuntos', path: '/platform', icon: 'Building' },
       {
@@ -299,7 +305,102 @@ export const NAVIGATION: NavItem[] = [
     ],
   },
 
-  { key: 'settings', label: 'Configuracion', path: '/settings', icon: 'Settings' },
+  // ----------------------------------------------------------- Inmobiliaria
+  {
+    key: 'agency-dashboard',
+    label: 'Panel',
+    path: '/dashboard',
+    icon: 'LayoutDashboard',
+    roles: ['SUPER_ADMIN', 'ADMINISTRATOR'],
+    kinds: AGENCY,
+  },
+  {
+    key: 'agency-my-lease',
+    label: 'Mi arriendo',
+    path: '/agency/my-lease',
+    icon: 'Home',
+    roles: ['TENANT'],
+    kinds: AGENCY,
+  },
+  {
+    key: 'agency-my-properties',
+    label: 'Mis propiedades',
+    path: '/agency/my-properties',
+    icon: 'Building2',
+    roles: ['OWNER'],
+    kinds: AGENCY,
+  },
+  {
+    key: 'agency-portfolio',
+    label: 'Inmobiliaria',
+    icon: 'Building',
+    roles: ['SUPER_ADMIN', 'ADMINISTRATOR'],
+    kinds: AGENCY,
+    children: [
+      {
+        key: 'agency-properties',
+        label: 'Propiedades',
+        path: '/agency/properties',
+        icon: 'Building',
+        kinds: AGENCY,
+      },
+      {
+        key: 'agency-leases',
+        label: 'Contratos',
+        path: '/agency/leases',
+        icon: 'FileSignature',
+        kinds: AGENCY,
+      },
+      {
+        key: 'agency-charges',
+        label: 'Cobros y pagos',
+        path: '/agency/charges',
+        icon: 'Receipt',
+        kinds: AGENCY,
+      },
+      {
+        key: 'agency-leads',
+        label: 'Interesados',
+        path: '/agency/leads',
+        icon: 'UserPlus',
+        kinds: AGENCY,
+      },
+      {
+        key: 'agency-store',
+        label: 'Tienda y pagos en linea',
+        path: '/agency/store',
+        icon: 'Store',
+        kinds: AGENCY,
+      },
+    ],
+  },
+  {
+    key: 'agency-admin',
+    label: 'Administracion',
+    icon: 'Building2',
+    roles: ['SUPER_ADMIN', 'ADMINISTRATOR'],
+    kinds: AGENCY,
+    children: [
+      {
+        key: 'agency-users',
+        label: 'Usuarios',
+        path: '/users',
+        icon: 'Users',
+        permission: 'manageMembers',
+        kinds: AGENCY,
+      },
+      {
+        key: 'agency-plans',
+        label: 'Planes',
+        path: '/plans',
+        icon: 'BadgeCheck',
+        roles: ['ADMINISTRATOR'],
+        kinds: AGENCY,
+      },
+    ],
+  },
+
+  { key: 'settings', label: 'Configuracion', path: '/settings', icon: 'Settings', kinds: BOTH },
 ]
 
 /** Regla unica de visibilidad: rol y permiso del usuario en el condominio activo. */
@@ -308,7 +409,9 @@ export function isNavItemVisible(
   hasRole: HasRole,
   hasPermission: HasPermission,
   isModuleEnabled: IsModuleEnabled = () => true,
+  kind: WorkspaceKind = 'CONDOMINIUM',
 ): boolean {
+  if (!(item.kinds ?? ['CONDOMINIUM']).includes(kind)) return false
   if (item.roles && item.roles.length > 0 && !hasRole(item.roles)) return false
   if (item.permission && !hasPermission(item.permission)) return false
   if (item.module && !isModuleEnabled(item.module)) return false
@@ -321,14 +424,15 @@ export function visibleNavPaths(
   hasPermission: HasPermission,
   isModuleEnabled: IsModuleEnabled = () => true,
   items: NavItem[] = NAVIGATION,
+  kind: WorkspaceKind = 'CONDOMINIUM',
 ): Set<string> {
   const paths = new Set<string>()
   for (const item of items) {
-    if (!isNavItemVisible(item, hasRole, hasPermission, isModuleEnabled)) continue
+    if (!isNavItemVisible(item, hasRole, hasPermission, isModuleEnabled, kind)) continue
     if (item.path) paths.add(item.path)
     if (item.children) {
-      visibleNavPaths(hasRole, hasPermission, isModuleEnabled, item.children).forEach((path) =>
-        paths.add(path),
+      visibleNavPaths(hasRole, hasPermission, isModuleEnabled, item.children, kind).forEach(
+        (path) => paths.add(path),
       )
     }
   }

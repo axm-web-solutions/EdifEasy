@@ -162,6 +162,8 @@ export interface Membership {
   condominium_status: string
   condominium_logo_url: string | null
   condominium_primary_color: string | null
+  /** CONDOMINIUM (conjunto) o AGENCY (inmobiliaria). Ausente en sesiones viejas. */
+  condominium_kind?: 'CONDOMINIUM' | 'AGENCY'
   /** Fin de la prueba gratis; null en conjuntos sin prueba. */
   trial_ends_at?: string | null
   /** false cuando la prueba vencio sin un plan vigente (RLS bloquea los datos). */

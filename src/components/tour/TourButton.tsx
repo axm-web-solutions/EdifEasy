@@ -8,6 +8,8 @@ import { useAuth } from '@/hooks/useAuth'
 import { TOURS, getRouteForTour, getTourIdForRoute } from '@/config/tours'
 import { visibleNavPaths } from '@/constants/navigation'
 import { useModuleAccess } from '@/hooks/useModules'
+import { useWorkspace } from '@/hooks/useWorkspace'
+import { NAVIGATION } from '@/constants/navigation'
 
 interface TourButtonProps {
   /** ID del tour a iniciar (si no se especifica, muestra el menú de todos los tours) */
@@ -62,6 +64,7 @@ export function TourButton({ tourId, className }: TourButtonProps) {
   const { startTourForced, resetAllTours, isTourCompleted, requestTour } = useTour()
   const { role, hasRole, hasPermission } = useAuth()
   const { isModuleEnabled } = useModuleAccess()
+  const { kind } = useWorkspace()
   const navigate = useNavigate()
   const location = useLocation()
   const [open, setOpen] = useState(false)
@@ -85,14 +88,15 @@ export function TourButton({ tourId, className }: TourButtonProps) {
 
   // Tours de las secciones visibles en el menu, en el mismo orden del menu.
   const availableTourIds = useMemo(() => {
-    const paths = visibleNavPaths(hasRole, hasPermission, isModuleEnabled)
-    const dashboardTour = getTourIdForRoute('/dashboard', role)
+    const paths = visibleNavPaths(hasRole, hasPermission, isModuleEnabled, NAVIGATION, kind)
+    // Los tours del dashboard describen el de los conjuntos.
+    const dashboardTour = kind === 'CONDOMINIUM' ? getTourIdForRoute('/dashboard', role) : null
     return TOURS.map((tour) => tour.id).filter((id) => {
       if (id.startsWith('dashboard-')) return id === dashboardTour
       const route = getRouteForTour(id)
       return Boolean(route && paths.has(route))
     })
-  }, [hasRole, hasPermission, role, isModuleEnabled])
+  }, [hasRole, hasPermission, role, isModuleEnabled, kind])
 
   if (tourId) {
     if (!TOURS.some((t) => t.id === tourId)) return null

@@ -25,6 +25,8 @@ const condominium: CondominiumRow = {
   location_approximate: false,
   location_source: null,
   places_updated_at: null,
+  kind: 'CONDOMINIUM',
+  slug: null,
   created_by: null,
   created_at: '2026-01-01T00:00:00Z',
   updated_at: '2026-01-01T00:00:00Z',

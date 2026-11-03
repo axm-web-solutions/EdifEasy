@@ -7,7 +7,7 @@ import { AppError } from '@/lib/errors'
 import { storageService } from './storageService'
 import { compressImage } from '@/utils/image'
 
-export type MediaEntity = 'announcements' | 'logo'
+export type MediaEntity = 'announcements' | 'logo' | 'properties'
 
 const ALLOWED = ['image/png', 'image/jpeg', 'image/webp']
 

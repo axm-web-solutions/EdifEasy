@@ -6,6 +6,8 @@ import { NAVIGATION, isNavItemVisible, type NavItem } from '@/constants/navigati
 import { useAuth } from '@/hooks/useAuth'
 import { useModuleAccess } from '@/hooks/useModules'
 import type { ModuleKey } from '@/constants/modules'
+import type { WorkspaceKind } from '@/types/database'
+import { useWorkspace } from '@/hooks/useWorkspace'
 import { usePendingRegistrationCount } from '@/hooks/useRegistrationRequests'
 import { Icon } from '@/components/ui/Icon'
 
@@ -17,9 +19,10 @@ function buildMenu(
   hasPermission: ReturnType<typeof useAuth>['hasPermission'],
   pendingApprovals: number,
   isModuleEnabled: (module: ModuleKey) => boolean,
+  kind: WorkspaceKind,
 ): MenuItem[] {
   return items
-    .filter((item) => isNavItemVisible(item, hasRole, hasPermission, isModuleEnabled))
+    .filter((item) => isNavItemVisible(item, hasRole, hasPermission, isModuleEnabled, kind))
     .map<MenuItem | null>((item) => {
       if (item.children) {
         const children = buildMenu(
@@ -28,6 +31,7 @@ function buildMenu(
           hasPermission,
           pendingApprovals,
           isModuleEnabled,
+          kind,
         )
         if (children.length === 0) return null
         return {
@@ -81,10 +85,11 @@ export function Sidebar({
   )
 
   const { isModuleEnabled } = useModuleAccess()
+  const { kind } = useWorkspace()
 
   const items = useMemo(
-    () => buildMenu(NAVIGATION, hasRole, hasPermission, pendingApprovals, isModuleEnabled),
-    [hasRole, hasPermission, pendingApprovals, isModuleEnabled],
+    () => buildMenu(NAVIGATION, hasRole, hasPermission, pendingApprovals, isModuleEnabled, kind),
+    [hasRole, hasPermission, pendingApprovals, isModuleEnabled, kind],
   )
 
   const selectedKey = useMemo(() => {
