@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import type { AgencyPropertyRow, LeaseChargeRow } from '@/types/database'
 import {
   EMPTY_FILTERS,
+  markerPrice,
+  mapCenter,
   agencyStats,
   chargesSummary,
   cityOptions,
@@ -45,6 +47,8 @@ const property = (overrides: Partial<AgencyPropertyRow> = {}): AgencyPropertyRow
   owner_name: 'Pedro Dueno',
   owner_phone: null,
   linked_apartment_id: null,
+  latitude: null,
+  longitude: null,
   published_at: null,
   created_by: null,
   created_at: '',
@@ -196,5 +200,34 @@ describe('cobros', () => {
       '2026-12-01',
       '2027-01-01',
     ])
+  })
+})
+
+describe('mapa', () => {
+  it('precio corto para los marcadores', () => {
+    expect(markerPrice({ operation: 'RENT', rent_price: 2500000, sale_price: null })).toBe('$2,5 M')
+    expect(markerPrice({ operation: 'RENT', rent_price: 950000, sale_price: null })).toBe(
+      '$950 mil',
+    )
+    expect(markerPrice({ operation: 'SALE', rent_price: null, sale_price: 980000000 })).toBe(
+      '$980 M',
+    )
+    expect(markerPrice({ operation: 'SALE', rent_price: null, sale_price: 1850000000 })).toBe(
+      '$1.850 M',
+    )
+    expect(markerPrice({ operation: 'BOTH', rent_price: 3400000, sale_price: 620000000 })).toBe(
+      '$3,4 M',
+    )
+    expect(markerPrice({ operation: 'RENT', rent_price: null, sale_price: null })).toBe('Ver')
+  })
+  it('centro del mapa', () => {
+    expect(
+      mapCenter([
+        { lat: 4.7, lng: -74.1 },
+        { lat: 4.9, lng: -74.0 },
+        { lat: null, lng: null },
+      ]),
+    ).toEqual({ lat: 4.8, lng: -74.05 })
+    expect(mapCenter([])).toEqual({ lat: 4.711, lng: -74.0721 })
   })
 })

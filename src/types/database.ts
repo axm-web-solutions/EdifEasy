@@ -672,6 +672,9 @@ export type AgencyPropertyRow = {
   owner_name: string | null
   owner_phone: string | null
   linked_apartment_id: string | null
+  /** Ubicacion exacta (privada); la tienda recibe una aproximada. */
+  latitude: number | null
+  longitude: number | null
   published_at: string | null
   created_by: string | null
   created_at: string

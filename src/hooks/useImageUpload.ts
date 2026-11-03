@@ -11,3 +11,13 @@ export function useImageUpload(condominiumId: string | null, entity: MediaEntity
     },
   })
 }
+
+/** Sube un video corto de portada (mp4/webm) y devuelve su URL publica. */
+export function useVideoUpload(condominiumId: string | null) {
+  return useMutation({
+    mutationFn: (file: File) => {
+      if (!condominiumId) throw new AppError('Selecciona un espacio')
+      return mediaService.uploadVideo(condominiumId, file)
+    },
+  })
+}

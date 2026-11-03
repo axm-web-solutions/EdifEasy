@@ -60,6 +60,9 @@ export interface StorefrontProperty {
   description: string | null
   images: string[]
   published_at: string | null
+  /** Ubicacion aproximada (~100 m). */
+  lat: number | null
+  lng: number | null
 }
 
 export interface Storefront {
@@ -74,6 +77,9 @@ export interface Storefront {
     description: string | null
     whatsapp: string | null
     primary_color: string | null
+    hero_image: string | null
+    hero_video: string | null
+    tagline: string | null
   }
   properties: StorefrontProperty[]
 }
@@ -84,6 +90,11 @@ export interface StoreSettings {
   phone: string | null
   email: string | null
   whatsapp: string | null
+  /** Portada de la tienda y color de la marca. */
+  heroImage: string | null
+  heroVideo: string | null
+  tagline: string | null
+  primaryColor: string | null
 }
 
 async function invokePayments<T>(body: Record<string, unknown>): Promise<T> {
@@ -250,12 +261,18 @@ export const agencyService = {
       .single()
     if (error) throw toAppError(error)
     const settings = (data.settings ?? {}) as Record<string, unknown>
+    const store = (settings.store ?? {}) as Record<string, unknown>
+    const text = (value: unknown) => (typeof value === 'string' && value ? value : null)
     return {
       slug: data.slug,
       description: data.description,
       phone: data.phone,
       email: data.email,
-      whatsapp: typeof settings.whatsapp === 'string' ? settings.whatsapp : null,
+      whatsapp: text(settings.whatsapp),
+      heroImage: text(store.heroImage),
+      heroVideo: text(store.heroVideo),
+      tagline: text(store.tagline),
+      primaryColor: text(settings.primaryColor),
     }
   },
 
@@ -269,6 +286,8 @@ export const agencyService = {
     const settings = {
       ...((current.settings ?? {}) as Record<string, Json>),
       whatsapp: values.whatsapp,
+      ...(values.primaryColor ? { primaryColor: values.primaryColor } : {}),
+      store: { heroImage: values.heroImage, heroVideo: values.heroVideo, tagline: values.tagline },
     }
     const { error } = await supabase
       .from('condominiums')

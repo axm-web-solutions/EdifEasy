@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useAuth } from '@/hooks/useAuth'
 import { useAgencyMutations, usePaymentAccount, useStoreSettings } from '@/hooks/useAgency'
+import { useVideoUpload } from '@/hooks/useImageUpload'
 import { env } from '@/lib/env'
 import { getErrorMessage } from '@/lib/errors'
 import {
@@ -11,35 +12,59 @@ import {
   wompiAccountSchema,
   type WompiAccountFormValues,
 } from '@/schemas/agency'
+import { resolvePrimaryColor } from '@/utils/brand'
 import { formatDate } from '@/utils/format'
 import { slugify } from '../agency.logic'
 
 /**
- * Tienda publica (enlace, descripcion, WhatsApp) y cuenta Wompi propia de la
- * inmobiliaria para recibir los pagos en linea directo en su cuenta.
+ * Tienda publica (enlace, portada con foto o video, frase, color, WhatsApp) y
+ * cuenta Wompi propia de la inmobiliaria para recibir los pagos en linea.
  */
 export function useStoreSettingsViewModel() {
   const { currentCondominiumId, currentMembership } = useAuth()
   const storeQuery = useStoreSettings(currentCondominiumId)
   const accountQuery = usePaymentAccount(currentCondominiumId)
   const mutations = useAgencyMutations()
+  const videoUpload = useVideoUpload(currentCondominiumId)
 
   const storeForm = useForm<StoreFormValues>({
     resolver: zodResolver(storeSchema),
-    defaultValues: { slug: '', description: '', phone: '', email: '', whatsapp: '' },
+    defaultValues: {
+      slug: '',
+      description: '',
+      phone: '',
+      email: '',
+      whatsapp: '',
+      hero_image: '',
+      hero_video: '',
+      tagline: '',
+      primary_color: resolvePrimaryColor(null),
+    },
   })
   const [loaded, setLoaded] = useState(false)
   useEffect(() => {
     if (loaded || !storeQuery.data) return
+    const data = storeQuery.data
     storeForm.reset({
-      slug: storeQuery.data.slug ?? slugify(currentMembership?.condominium_name ?? ''),
-      description: storeQuery.data.description ?? '',
-      phone: storeQuery.data.phone ?? '',
-      email: storeQuery.data.email ?? '',
-      whatsapp: storeQuery.data.whatsapp ?? '',
+      slug: data.slug ?? slugify(currentMembership?.condominium_name ?? ''),
+      description: data.description ?? '',
+      phone: data.phone ?? '',
+      email: data.email ?? '',
+      whatsapp: data.whatsapp ?? '',
+      hero_image: data.heroImage ?? '',
+      hero_video: data.heroVideo ?? '',
+      tagline: data.tagline ?? '',
+      primary_color: resolvePrimaryColor(
+        data.primaryColor ?? currentMembership?.condominium_primary_color,
+      ),
     })
     setLoaded(true)
-  }, [storeQuery.data, loaded, storeForm, currentMembership?.condominium_name])
+  }, [storeQuery.data, loaded, storeForm, currentMembership])
+
+  const [heroImage, heroVideo, tagline, color] = useWatch({
+    control: storeForm.control,
+    name: ['hero_image', 'hero_video', 'tagline', 'primary_color'],
+  })
 
   const saveStore = storeForm.handleSubmit((values) => {
     if (!currentCondominiumId) return
@@ -52,6 +77,10 @@ export function useStoreSettingsViewModel() {
         phone: text(values.phone),
         email: text(values.email),
         whatsapp: text(values.whatsapp.replace(/\D/g, '')),
+        heroImage: text(values.hero_image),
+        heroVideo: text(values.hero_video),
+        tagline: text(values.tagline),
+        primaryColor: values.primary_color,
       },
     })
   })
@@ -78,11 +107,29 @@ export function useStoreSettingsViewModel() {
 
   return {
     loading: storeQuery.isLoading,
+    condominiumId: currentCondominiumId,
     storeControl: storeForm.control,
     saveStore,
     savingStore: mutations.saveStore.isPending,
     storeError: mutations.saveStore.error ? getErrorMessage(mutations.saveStore.error) : null,
     publicUrl: slug ? `${window.location.origin}/i/${slug}` : null,
+
+    // vista previa de la portada
+    preview: {
+      image: heroImage || null,
+      video: heroVideo || null,
+      tagline:
+        tagline ||
+        `Encuentra tu proximo hogar con ${currentMembership?.condominium_name ?? 'nosotros'}`,
+      color: resolvePrimaryColor(color),
+    },
+    uploadVideo: (file: File) =>
+      videoUpload.mutate(file, {
+        onSuccess: (url) => storeForm.setValue('hero_video', url, { shouldDirty: true }),
+      }),
+    uploadingVideo: videoUpload.isPending,
+    videoError: videoUpload.error ? getErrorMessage(videoUpload.error) : null,
+    removeVideo: () => storeForm.setValue('hero_video', '', { shouldDirty: true }),
 
     account: account
       ? {

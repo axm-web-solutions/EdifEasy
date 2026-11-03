@@ -315,3 +315,51 @@ export function agencyStats(properties: AgencyPropertyRow[]) {
     occupancy: rentable ? Math.round((rented / rentable) * 100) : 0,
   }
 }
+
+// ----------------------------------------------------------------- mapa
+/** Precio corto para los marcadores del mapa: "$2,5 M", "$950 mil", "$980 M". */
+export function markerPrice(item: {
+  operation: PropertyOperation
+  rent_price: number | null
+  sale_price: number | null
+}): string {
+  const value = item.operation === 'SALE' ? item.sale_price : (item.rent_price ?? item.sale_price)
+  if (value === null || value === undefined) return 'Ver'
+  const amount = Number(value)
+  if (amount >= 1_000_000) {
+    const millions = amount / 1_000_000
+    const text =
+      millions >= 100
+        ? Math.round(millions).toLocaleString('es-CO')
+        : millions.toLocaleString('es-CO', { maximumFractionDigits: 1 })
+    return `$${text} M`
+  }
+  return `$${Math.round(amount / 1000).toLocaleString('es-CO')} mil`
+}
+
+/** Centro del mapa: promedio de las propiedades ubicadas, o Bogota. */
+export function mapCenter(points: { lat: number | null; lng: number | null }[]): {
+  lat: number
+  lng: number
+} {
+  const located = points.filter(
+    (point): point is { lat: number; lng: number } => point.lat !== null && point.lng !== null,
+  )
+  if (located.length === 0) return { lat: 4.711, lng: -74.0721 }
+  const lat = located.reduce((sum, point) => sum + Number(point.lat), 0) / located.length
+  const lng = located.reduce((sum, point) => sum + Number(point.lng), 0) / located.length
+  return { lat: Math.round(lat * 1e4) / 1e4, lng: Math.round(lng * 1e4) / 1e4 }
+}
+
+/** Categorias de la tienda (chips con icono, estilo Airbnb). */
+export const STORE_CATEGORIES: { value: PropertyType | 'ALL'; label: string }[] = [
+  { value: 'ALL', label: 'Todo' },
+  { value: 'APARTAMENTO', label: 'Apartamentos' },
+  { value: 'CASA', label: 'Casas' },
+  { value: 'APARTAESTUDIO', label: 'Apartaestudios' },
+  { value: 'LOCAL', label: 'Locales' },
+  { value: 'OFICINA', label: 'Oficinas' },
+  { value: 'BODEGA', label: 'Bodegas' },
+  { value: 'LOTE', label: 'Lotes' },
+  { value: 'FINCA', label: 'Fincas' },
+]

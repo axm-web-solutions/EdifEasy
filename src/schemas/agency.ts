@@ -36,6 +36,8 @@ export const propertySchema = z
     pets_allowed: z.boolean(),
     description: z.string().trim().max(5000),
     images: z.array(z.string().url()).max(15),
+    latitude: z.number().min(-90).max(90).nullable(),
+    longitude: z.number().min(-180).max(180).nullable(),
     owner_profile_id: z.string().nullable(),
     owner_name: z.string().trim().max(140),
     owner_phone: z.string().trim().max(30),
@@ -87,6 +89,10 @@ export const storeSchema = z.object({
   phone: z.string().trim().max(30),
   email: z.string().trim().max(140),
   whatsapp: z.string().trim().max(20),
+  hero_image: z.string().trim().max(500),
+  hero_video: z.string().trim().max(500),
+  tagline: z.string().trim().max(120),
+  primary_color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Usa un color hex, ej. #365959'),
 })
 
 export type StoreFormValues = z.infer<typeof storeSchema>

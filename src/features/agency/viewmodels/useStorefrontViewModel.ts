@@ -3,65 +3,117 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
 import { useStorefront } from '@/hooks/useAgency'
-import { agencyService } from '@/services/agencyService'
+import { agencyService, type StorefrontProperty } from '@/services/agencyService'
 import { getErrorMessage } from '@/lib/errors'
 import { leadSchema, type LeadFormValues } from '@/schemas/agency'
+import { resolvePrimaryColor } from '@/utils/brand'
 import { telHref, whatsappHref } from '@/utils/phone'
+import type { PropertyType } from '@/types/database'
 import {
   EMPTY_FILTERS,
-  PROPERTY_TYPES,
+  STORE_CATEGORIES,
   cityOptions,
   filterStorefront,
   inquiryText,
   locationLabel,
+  markerPrice,
   operationLabel,
   priceLines,
   specs,
   typeLabel,
   type StorefrontFilters,
 } from '../agency.logic'
+import type { StoreMapPoint } from '../components/StoreMap'
 
-/** Tienda publica de una inmobiliaria: listado con filtros. */
+/** Foto de portada por defecto cuando la inmobiliaria no sube la suya. */
+const DEFAULT_HERO =
+  'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=2000&q=75&fm=jpg&fit=crop'
+
+function coordinate(value: unknown): number | null {
+  const number = typeof value === 'number' || typeof value === 'string' ? Number(value) : NaN
+  return Number.isFinite(number) ? number : null
+}
+
+function toCard(item: StorefrontProperty, slug: string) {
+  const price = priceLines(item)
+  return {
+    id: item.id,
+    href: `/i/${slug}/p/${item.id}`,
+    title: item.title,
+    images: item.images,
+    cover: item.images[0] ?? null,
+    badge: operationLabel(item.operation),
+    type: typeLabel(item.property_type),
+    price: price.main,
+    priceExtra: price.extra,
+    location: locationLabel(item),
+    specs: specs(item),
+    reserved: item.status === 'RESERVED',
+    marker: markerPrice(item),
+    // Solo coordenadas numericas validas (la base puede no enviarlas).
+    lat: coordinate(item.lat),
+    lng: coordinate(item.lng),
+  }
+}
+
+/** Tienda publica: portada, categorias, filtros, tarjetas y mapa. */
 export function useStorefrontViewModel(slug: string) {
   const query = useStorefront(slug)
   const store = query.data
   const [filters, setFilters] = useState<StorefrontFilters>(EMPTY_FILTERS)
+  const [activeId, setActiveId] = useState<string | null>(null)
+  const [mapOpen, setMapOpen] = useState(false)
 
   useEffect(() => {
     if (store?.agency.name)
       document.title = `${store.agency.name} | Propiedades en arriendo y venta`
   }, [store?.agency.name])
 
-  const properties = useMemo(
-    () =>
-      filterStorefront(store?.properties ?? [], filters).map((item) => {
-        const price = priceLines(item)
-        return {
-          id: item.id,
-          href: `/i/${slug}/p/${item.id}`,
-          title: item.title,
-          cover: item.images[0] ?? null,
-          badge: operationLabel(item.operation),
-          type: typeLabel(item.property_type),
-          price: price.main,
-          priceExtra: price.extra,
-          location: locationLabel(item),
-          specs: specs(item),
-          reserved: item.status === 'RESERVED',
-        }
-      }),
+  const cards = useMemo(
+    () => filterStorefront(store?.properties ?? [], filters).map((item) => toCard(item, slug)),
     [store?.properties, filters, slug],
+  )
+  const points: StoreMapPoint[] = useMemo(
+    () =>
+      cards
+        .filter((card) => card.lat !== null && card.lng !== null)
+        .map((card) => ({
+          id: card.id,
+          lat: Number(card.lat),
+          lng: Number(card.lng),
+          label: card.marker,
+          title: card.title,
+          subtitle: card.location,
+          cover: card.cover,
+          href: card.href,
+        })),
+    [cards],
   )
 
   const agency = store?.agency
+  const counts = useMemo(() => {
+    const all = store?.properties ?? []
+    return new Map<string, number>(
+      STORE_CATEGORIES.map((category) => [
+        category.value,
+        category.value === 'ALL'
+          ? all.length
+          : all.filter((item) => item.property_type === category.value).length,
+      ]),
+    )
+  }, [store?.properties])
+
   return {
     status: query.isLoading ? 'loading' : query.isError ? 'error' : !store ? 'not-found' : 'ready',
+    accent: resolvePrimaryColor(agency?.primary_color),
     agency: agency
       ? {
           name: agency.name,
           logo: agency.logo_url,
           description: agency.description,
-          city: agency.city,
+          tagline: agency.tagline || `Encuentra tu proximo hogar con ${agency.name}`,
+          heroImage: agency.hero_image || DEFAULT_HERO,
+          heroVideo: agency.hero_video,
           whatsapp: whatsappHref(
             agency.whatsapp,
             `Hola ${agency.name}, vi su tienda y quiero informacion.`,
@@ -71,14 +123,28 @@ export function useStorefrontViewModel(slug: string) {
         }
       : null,
     total: store?.properties.length ?? 0,
-    properties,
+    cards,
+    points,
+    hasMap: points.length > 0,
+    activeId,
+    setActiveId,
+    mapOpen,
+    toggleMap: () => setMapOpen((open) => !open),
+
     filters,
     setFilter: <K extends keyof StorefrontFilters>(key: K, value: StorefrontFilters[K]) =>
       setFilters((current) => ({ ...current, [key]: value })),
     clearFilters: () => setFilters(EMPTY_FILTERS),
-    typeOptions: [{ value: 'ALL', label: 'Todos los tipos' }, ...PROPERTY_TYPES],
+    categories: STORE_CATEGORIES.filter((category) => (counts.get(category.value) ?? 0) > 0).map(
+      (category) => ({
+        ...category,
+        active: filters.type === category.value,
+      }),
+    ),
+    setCategory: (value: PropertyType | 'ALL') =>
+      setFilters((current) => ({ ...current, type: value })),
     cityOptions: [
-      { value: '', label: 'Todas las ciudades' },
+      { value: '', label: 'Cualquier ciudad' },
       ...cityOptions(store?.properties ?? []).map((city) => ({ value: city, label: city })),
     ],
     bedroomOptions: [
@@ -93,11 +159,12 @@ export function useStorefrontViewModel(slug: string) {
 
 export type StorefrontViewModel = ReturnType<typeof useStorefrontViewModel>
 
-/** Ficha publica de una propiedad: fotos, datos, WhatsApp y formulario. */
+/** Ficha publica de una propiedad: galeria, datos, zona en el mapa y contacto. */
 export function useStorefrontPropertyViewModel(slug: string, propertyId: string) {
   const query = useStorefront(slug)
   const store = query.data
   const item = store?.properties.find((property) => property.id === propertyId) ?? null
+  const [galleryOpen, setGalleryOpen] = useState(false)
   const [imageIndex, setImageIndex] = useState(0)
   const [sent, setSent] = useState(false)
 
@@ -124,35 +191,57 @@ export function useStorefrontPropertyViewModel(slug: string, propertyId: string)
   })
 
   const url = typeof window !== 'undefined' ? window.location.href : ''
-  const price = item ? priceLines(item) : null
+  const card = item ? toCard(item, slug) : null
   const agency = store?.agency
+  const similar = (store?.properties ?? [])
+    .filter(
+      (property) => property.id !== propertyId && property.property_type === item?.property_type,
+    )
+    .slice(0, 3)
+    .map((property) => toCard(property, slug))
 
   return {
     status: query.isLoading ? 'loading' : query.isError ? 'error' : !item ? 'not-found' : 'ready',
+    accent: resolvePrimaryColor(agency?.primary_color),
     backHref: `/i/${slug}`,
     agency: agency ? { name: agency.name, logo: agency.logo_url } : null,
-    property: item
-      ? {
-          title: item.title,
-          type: typeLabel(item.property_type),
-          badge: operationLabel(item.operation),
-          price: price?.main ?? '',
-          priceExtra: price?.extra ?? null,
-          location: locationLabel(item),
-          specs: specs(item),
-          features: [
-            item.furnished ? 'Amoblado' : null,
-            item.pets_allowed ? 'Admite mascotas' : null,
-            item.floor ? `Piso ${item.floor}` : null,
-            ...item.amenities,
-          ].filter((feature): feature is string => Boolean(feature)),
-          description: item.description,
-          images: item.images,
-          code: item.code,
-          reserved: item.status === 'RESERVED',
-        }
-      : null,
-    imageIndex: Math.min(imageIndex, Math.max(0, (item?.images.length ?? 1) - 1)),
+    property:
+      item && card
+        ? {
+            ...card,
+            features: [
+              item.furnished ? 'Amoblado' : null,
+              item.pets_allowed ? 'Admite mascotas' : null,
+              item.floor ? `Piso ${item.floor}` : null,
+              ...item.amenities,
+            ].filter((feature): feature is string => Boolean(feature)),
+            description: item.description,
+            code: item.code,
+          }
+        : null,
+    zone:
+      card && card.lat !== null && card.lng !== null
+        ? [
+            {
+              id: card.id,
+              lat: Number(card.lat),
+              lng: Number(card.lng),
+              label: card.marker,
+              title: card.title,
+              subtitle: card.location,
+              cover: card.cover,
+              href: card.href,
+            },
+          ]
+        : [],
+    similar,
+    galleryOpen,
+    openGallery: (index = 0) => {
+      setImageIndex(index)
+      setGalleryOpen(true)
+    },
+    closeGallery: () => setGalleryOpen(false),
+    imageIndex,
     setImageIndex,
     whatsapp:
       item && agency

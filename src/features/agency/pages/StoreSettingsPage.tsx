@@ -1,8 +1,9 @@
-import { Alert, Button, Card, Skeleton, Tag, Typography } from 'antd'
-import { CheckCircle2, Copy, ExternalLink, Unplug } from 'lucide-react'
+import { Alert, Button, Card, Skeleton, Tag, Typography, Upload } from 'antd'
+import { CheckCircle2, Copy, ExternalLink, Film, Trash2, Unplug } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { confirmDelete } from '@/components/ui/FormDrawer'
-import { TextAreaField, TextField } from '@/components/forms/fields'
+import { ColorField, TextAreaField, TextField } from '@/components/forms/fields'
+import { ImageUploadField } from '@/components/forms/ImageUploadField'
 import { useStoreSettingsViewModel } from '../viewmodels/useStoreSettingsViewModel'
 
 const { Paragraph } = Typography
@@ -72,6 +73,90 @@ export function StoreSettingsPage() {
                 <TextField control={vm.storeControl} name="phone" label="Telefono" />
                 <TextField control={vm.storeControl} name="email" label="Correo" />
               </div>
+              <p className="mb-2 mt-4 text-sm font-semibold text-slate-700">Portada</p>
+              <div
+                className="relative mb-4 flex h-44 items-end overflow-hidden rounded-xl bg-slate-800 p-4"
+                aria-label="Vista previa de la portada"
+              >
+                {vm.preview.video ? (
+                  <video
+                    src={vm.preview.video}
+                    poster={vm.preview.image ?? undefined}
+                    className="absolute inset-0 h-full w-full object-cover"
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                  />
+                ) : vm.preview.image ? (
+                  <img
+                    src={vm.preview.image}
+                    alt=""
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
+                ) : null}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-black/10" />
+                <div className="relative">
+                  <p className="m-0 text-lg font-semibold text-white">{vm.preview.tagline}</p>
+                  <span
+                    className="mt-2 inline-block rounded-full px-3 py-1 text-xs font-semibold text-white"
+                    style={{ background: vm.preview.color }}
+                  >
+                    Buscar
+                  </span>
+                </div>
+              </div>
+              <TextField
+                control={vm.storeControl}
+                name="tagline"
+                label="Frase principal"
+                maxLength={120}
+                placeholder="Ej: Encuentra tu proximo hogar en Bogota"
+              />
+              <ImageUploadField
+                control={vm.storeControl}
+                name="hero_image"
+                label="Foto de portada"
+                condominiumId={vm.condominiumId}
+                entity="store"
+                help="Horizontal, de buena calidad. Si no subes una, usamos una por defecto."
+              />
+              <div className="mb-4">
+                <span className="mb-1 block text-sm text-slate-700">
+                  Video de portada (opcional)
+                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Upload
+                    accept="video/mp4,video/webm"
+                    showUploadList={false}
+                    beforeUpload={(file) => {
+                      vm.uploadVideo(file)
+                      return false
+                    }}
+                  >
+                    <Button icon={<Film size={16} />} loading={vm.uploadingVideo}>
+                      {vm.preview.video ? 'Cambiar video' : 'Subir video'}
+                    </Button>
+                  </Upload>
+                  {vm.preview.video ? (
+                    <Button danger icon={<Trash2 size={16} />} onClick={vm.removeVideo}>
+                      Quitar
+                    </Button>
+                  ) : null}
+                </div>
+                <p className="m-0 mt-1 text-xs text-slate-500">
+                  MP4 o WEBM, maximo 25 MB y sin sonido (se reproduce en silencio y en bucle). 10 a
+                  20 segundos funciona mejor.
+                </p>
+                {vm.videoError ? (
+                  <p className="m-0 mt-1 text-xs text-red-600">{vm.videoError}</p>
+                ) : null}
+              </div>
+              <ColorField
+                control={vm.storeControl}
+                name="primary_color"
+                label="Color de la marca"
+              />
               <Button type="primary" htmlType="submit" loading={vm.savingStore}>
                 Guardar tienda
               </Button>

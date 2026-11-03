@@ -7,6 +7,21 @@ export default {
   },
   theme: {
     extend: {
+      // Tienda de inmobiliarias: aparicion suave y zoom lento de la portada.
+      keyframes: {
+        'fade-up': {
+          '0%': { opacity: '0', transform: 'translateY(16px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        'ken-burns': {
+          '0%': { transform: 'scale(1)' },
+          '100%': { transform: 'scale(1.12)' },
+        },
+      },
+      animation: {
+        'fade-up': 'fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both',
+        'ken-burns': 'ken-burns 18s ease-out both alternate infinite',
+      },
       colors: {
         // Paleta de marca del conjunto activo: la publica BrandThemeProvider como
         // variables CSS (valores por defecto de EdiFeasy en src/styles/index.css).

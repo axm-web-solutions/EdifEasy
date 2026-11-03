@@ -10,7 +10,16 @@ import {
   Switch,
   Tag,
 } from 'antd'
-import { ExternalLink, ImageOff, MoreVertical, Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import {
+  ExternalLink,
+  ImageOff,
+  MapPin,
+  MoreVertical,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+} from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState, ErrorState } from '@/components/ui/states'
 import { FormDrawer, confirmDelete } from '@/components/ui/FormDrawer'
@@ -22,6 +31,11 @@ import {
   TextField,
 } from '@/components/forms/fields'
 import { ImageGalleryField } from '@/components/forms/ImageGalleryField'
+import { lazy, Suspense } from 'react'
+
+const LocationPicker = lazy(() =>
+  import('../components/LocationPicker').then((m) => ({ default: m.LocationPicker })),
+)
 import type { PropertyView } from '../agency.logic'
 import {
   usePropertiesViewModel,
@@ -221,6 +235,37 @@ function PropertyForm({ vm }: { vm: PropertiesViewModel }) {
           label="Direccion (privada)"
           help="Solo la ve la inmobiliaria."
         />
+        <div className="mb-4">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <span className="text-sm text-slate-700">Ubicacion en el mapa</span>
+            <div className="flex gap-2">
+              <Button
+                size="small"
+                icon={<MapPin size={14} />}
+                loading={vm.locating}
+                onClick={vm.locate}
+              >
+                Buscar la direccion
+              </Button>
+              {vm.location ? (
+                <Button size="small" onClick={vm.clearLocation}>
+                  Quitar
+                </Button>
+              ) : null}
+            </div>
+          </div>
+          <Suspense fallback={<div className="h-56 animate-pulse rounded-xl bg-slate-100" />}>
+            <LocationPicker
+              lat={vm.location?.lat ?? null}
+              lng={vm.location?.lng ?? null}
+              onChange={vm.setLocation}
+            />
+          </Suspense>
+          <p className="m-0 mt-1 text-xs text-slate-500">
+            {vm.locateMessage ??
+              'Toca el mapa o arrastra el punto. En la tienda solo se ve la zona aproximada, nunca la direccion.'}
+          </p>
+        </div>
 
         <Divider className="!my-2" orientation="left" plain>
           Caracteristicas

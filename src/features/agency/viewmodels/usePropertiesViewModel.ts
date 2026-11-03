@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react'
+import { useMutation } from '@tanstack/react-query'
+import { placesService } from '@/services/placesService'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useAuth } from '@/hooks/useAuth'
@@ -31,6 +33,8 @@ const EMPTY: PropertyFormValues = {
   pets_allowed: false,
   description: '',
   images: [],
+  latitude: null,
+  longitude: null,
   owner_profile_id: null,
   owner_name: '',
   owner_phone: '',
@@ -88,6 +92,22 @@ export function usePropertiesViewModel() {
     defaultValues: EMPTY,
   })
   const operation = useWatch({ control: form.control, name: 'operation' })
+  const [latitude, longitude] = useWatch({ control: form.control, name: ['latitude', 'longitude'] })
+
+  // Ubica la propiedad a partir de la direccion (OpenStreetMap).
+  const geocode = useMutation({
+    mutationFn: () =>
+      placesService.geocode({
+        address: form.getValues('address') || null,
+        city: form.getValues('city') || null,
+        country: 'Colombia',
+      }),
+    onSuccess: (point) => {
+      if (!point) return
+      form.setValue('latitude', point.lat, { shouldDirty: true })
+      form.setValue('longitude', point.lon, { shouldDirty: true })
+    },
+  })
 
   const openNew = () => {
     form.reset(EMPTY)
@@ -121,6 +141,8 @@ export function usePropertiesViewModel() {
       pets_allowed: row.pets_allowed,
       description: row.description ?? '',
       images: row.images,
+      latitude: row.latitude === null ? null : Number(row.latitude),
+      longitude: row.longitude === null ? null : Number(row.longitude),
       owner_profile_id: row.owner_profile_id,
       owner_name: row.owner_name ?? '',
       owner_phone: row.owner_phone ?? '',
@@ -160,6 +182,8 @@ export function usePropertiesViewModel() {
           pets_allowed: values.pets_allowed,
           description: text(values.description),
           images: values.images,
+          latitude: values.latitude,
+          longitude: values.longitude,
           owner_profile_id: values.owner_profile_id || null,
           owner_name: text(values.owner_name),
           owner_phone: text(values.owner_phone),
@@ -213,6 +237,24 @@ export function usePropertiesViewModel() {
       value: member.user_id,
       label: member.profile?.full_name ?? member.profile?.email ?? 'Propietario',
     })),
+    location: latitude !== null && longitude !== null ? { lat: latitude, lng: longitude } : null,
+    setLocation: (point: { lat: number; lng: number }) => {
+      form.setValue('latitude', Math.round(point.lat * 1e6) / 1e6, { shouldDirty: true })
+      form.setValue('longitude', Math.round(point.lng * 1e6) / 1e6, { shouldDirty: true })
+    },
+    clearLocation: () => {
+      form.setValue('latitude', null, { shouldDirty: true })
+      form.setValue('longitude', null, { shouldDirty: true })
+    },
+    locate: () => geocode.mutate(),
+    locating: geocode.isPending,
+    locateMessage: geocode.isError
+      ? 'No pudimos buscar la direccion. Toca el mapa para ubicarla.'
+      : geocode.isSuccess && !geocode.data
+        ? 'No encontramos esa direccion. Toca el mapa para ubicarla.'
+        : geocode.data?.approximate
+          ? 'Ubicamos solo la ciudad: ajusta el punto tocando el mapa.'
+          : null,
     submit,
     submitting: mutations.saveProperty.isPending,
     submitError: mutations.saveProperty.error
