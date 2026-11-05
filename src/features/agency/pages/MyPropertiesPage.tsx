@@ -1,6 +1,7 @@
 import { Card, Skeleton, Tag } from 'antd'
 import { ImageOff } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { PendingSignatures } from '../components/PendingSignatures'
 import { EmptyState } from '@/components/ui/states'
 import { useMyPropertiesViewModel } from '../viewmodels/useMyPropertiesViewModel'
 
@@ -13,6 +14,7 @@ export function MyPropertiesPage() {
         subtitle="Como va cada propiedad que administra la inmobiliaria por ti."
         dataTour="agency-my-properties"
       />
+      <PendingSignatures />
       {vm.loading ? (
         <Skeleton active paragraph={{ rows: 6 }} />
       ) : vm.properties.length === 0 ? (

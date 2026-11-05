@@ -124,6 +124,31 @@ const MyLeasePage = lazyPage(() =>
 const MyPropertiesPage = lazyPage(() =>
   import('@/features/agency/pages/MyPropertiesPage').then((m) => ({ default: m.MyPropertiesPage })),
 )
+const AgreementsPage = lazyPage(() =>
+  import('@/features/agency/pages/AgreementsPage').then((m) => ({ default: m.AgreementsPage })),
+)
+const SettlementsPage = lazyPage(() =>
+  import('@/features/agency/pages/SettlementsPage').then((m) => ({ default: m.SettlementsPage })),
+)
+const RenewalsPage = lazyPage(() =>
+  import('@/features/agency/pages/RenewalsPage').then((m) => ({ default: m.RenewalsPage })),
+)
+const LeaseContractPage = lazyPage(() =>
+  import('@/features/agency/pages/LeaseContractPage').then((m) => ({
+    default: m.LeaseContractPage,
+  })),
+)
+const OwnerStatementsPage = lazyPage(() =>
+  import('@/features/agency/pages/OwnerStatementsPage').then((m) => ({
+    default: m.OwnerStatementsPage,
+  })),
+)
+// La firma de contratos es publica (el enlace es la credencial).
+const SignContractPage = lazy(() =>
+  import('@/features/agency/pages/SignContractPage').then((m) => ({
+    default: m.SignContractPage,
+  })),
+)
 // La tienda publica no se precarga con la app: la abre gente sin sesion.
 const StorefrontPage = lazy(() =>
   import('@/features/agency/pages/StorefrontPage').then((m) => ({ default: m.StorefrontPage })),
@@ -210,6 +235,7 @@ export function AppRoutes() {
         {/* Tienda publica de las inmobiliarias: sin sesion. */}
         <Route path="/i/:slug" element={<StorefrontPage />} />
         <Route path="/i/:slug/p/:propertyId" element={<StorefrontPropertyPage />} />
+        <Route path="/firmar/:token" element={<SignContractPage />} />
 
         {/* Privadas */}
         <Route element={<ProtectedRoute />}>
@@ -324,6 +350,10 @@ export function AppRoutes() {
               [
                 ['/agency/properties', <PropertiesPage key="p" />],
                 ['/agency/leases', <LeasesPage key="l" />],
+                ['/agency/leases/:leaseId/contract', <LeaseContractPage key="lc" />],
+                ['/agency/renewals', <RenewalsPage key="r" />],
+                ['/agency/agreements', <AgreementsPage key="a" />],
+                ['/agency/settlements', <SettlementsPage key="st" />],
                 ['/agency/charges', <ChargesPage key="c" />],
                 ['/agency/leads', <LeadsPage key="d" />],
                 ['/agency/store', <StoreSettingsPage key="s" />],
@@ -348,6 +378,14 @@ export function AppRoutes() {
               element={
                 <RoleGuard roles={['OWNER']}>
                   <MyPropertiesPage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/agency/statements"
+              element={
+                <RoleGuard roles={['OWNER']}>
+                  <OwnerStatementsPage />
                 </RoleGuard>
               }
             />

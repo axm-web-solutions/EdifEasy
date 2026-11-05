@@ -40,6 +40,9 @@ export interface StorefrontProperty {
   id: string
   code: string | null
   title: string
+  /** Textos en ingles (opcionales; si faltan se usa el espanol). */
+  title_en?: string | null
+  description_en?: string | null
   property_type: AgencyPropertyRow['property_type']
   operation: AgencyPropertyRow['operation']
   status: AgencyPropertyRow['status']
@@ -75,11 +78,13 @@ export interface Storefront {
     phone: string | null
     email: string | null
     description: string | null
+    description_en?: string | null
     whatsapp: string | null
     primary_color: string | null
     hero_image: string | null
     hero_video: string | null
     tagline: string | null
+    tagline_en?: string | null
   }
   properties: StorefrontProperty[]
 }
@@ -94,6 +99,9 @@ export interface StoreSettings {
   heroImage: string | null
   heroVideo: string | null
   tagline: string | null
+  /** Version en ingles de la frase y la descripcion de la tienda. */
+  taglineEn: string | null
+  descriptionEn: string | null
   primaryColor: string | null
 }
 
@@ -272,6 +280,8 @@ export const agencyService = {
       heroImage: text(store.heroImage),
       heroVideo: text(store.heroVideo),
       tagline: text(store.tagline),
+      taglineEn: text(store.taglineEn),
+      descriptionEn: text(store.descriptionEn),
       primaryColor: text(settings.primaryColor),
     }
   },
@@ -287,7 +297,13 @@ export const agencyService = {
       ...((current.settings ?? {}) as Record<string, Json>),
       whatsapp: values.whatsapp,
       ...(values.primaryColor ? { primaryColor: values.primaryColor } : {}),
-      store: { heroImage: values.heroImage, heroVideo: values.heroVideo, tagline: values.tagline },
+      store: {
+        heroImage: values.heroImage,
+        heroVideo: values.heroVideo,
+        tagline: values.tagline,
+        taglineEn: values.taglineEn,
+        descriptionEn: values.descriptionEn,
+      },
     }
     const { error } = await supabase
       .from('condominiums')

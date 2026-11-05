@@ -6,6 +6,13 @@ import type {
   PropertyType,
 } from '@/types/database'
 import { formatCurrency, formatDate } from '@/utils/format'
+import {
+  CATEGORY_LABELS,
+  OPERATION_LABELS,
+  PRICE_TEXT,
+  TYPE_LABELS,
+  type StoreLang,
+} from './storefront.i18n'
 
 // ------------------------------------------------------------ etiquetas
 export const PROPERTY_TYPES: { value: PropertyType; label: string }[] = [
@@ -34,10 +41,22 @@ export const PROPERTY_STATUS: Record<PropertyStatus, { label: string; color: str
   INACTIVE: { label: 'Inactiva', color: 'default' },
 }
 
-export const typeLabel = (type: PropertyType) =>
-  PROPERTY_TYPES.find((item) => item.value === type)?.label ?? type
-export const operationLabel = (operation: PropertyOperation) =>
-  OPERATIONS.find((item) => item.value === operation)?.label ?? operation
+export const typeLabel = (type: PropertyType, lang: StoreLang = 'es') =>
+  TYPE_LABELS[lang][type] ?? type
+export const operationLabel = (operation: PropertyOperation, lang: StoreLang = 'es') =>
+  OPERATION_LABELS[lang][operation] ?? operation
+
+const englishMoney = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'COP',
+  currencyDisplay: 'code',
+  maximumFractionDigits: 0,
+})
+
+/** Pesos colombianos: "$ 2.500.000" en espanol, "COP 2,500,000" en ingles. */
+export function money(value: number, lang: StoreLang = 'es'): string {
+  return lang === 'en' ? englishMoney.format(value).replace(/\s/g, ' ') : formatCurrency(value)
+}
 
 /** Campos comunes de la propiedad privada y la publica (tienda). */
 type PropertyLike = Pick<
@@ -56,37 +75,60 @@ type PropertyLike = Pick<
   | 'images'
 >
 
-export function priceLines(property: PropertyLike): { main: string; extra: string | null } {
+export function priceLines(
+  property: PropertyLike,
+  lang: StoreLang = 'es',
+): { main: string; extra: string | null } {
+  const text = PRICE_TEXT[lang]
   const rent =
-    property.rent_price !== null ? `${formatCurrency(Number(property.rent_price))} / mes` : null
-  const sale = property.sale_price !== null ? formatCurrency(Number(property.sale_price)) : null
+    property.rent_price !== null
+      ? `${money(Number(property.rent_price), lang)} ${text.perMonth}`
+      : null
+  const sale = property.sale_price !== null ? money(Number(property.sale_price), lang) : null
   const admin =
-    Number(property.admin_fee) > 0 ? `Adm. ${formatCurrency(Number(property.admin_fee))}` : null
-  if (property.operation === 'SALE') return { main: sale ?? 'Precio a convenir', extra: admin }
+    Number(property.admin_fee) > 0
+      ? `${text.admin} ${money(Number(property.admin_fee), lang)}`
+      : null
+  if (property.operation === 'SALE') return { main: sale ?? text.priceOnRequest, extra: admin }
   if (property.operation === 'BOTH') {
     return {
-      main: rent ?? 'Canon a convenir',
-      extra: [sale ? `Venta ${sale}` : null, admin].filter(Boolean).join(' · ') || null,
+      main: rent ?? text.rentOnRequest,
+      extra: [sale ? `${text.sale} ${sale}` : null, admin].filter(Boolean).join(' · ') || null,
     }
   }
-  return { main: rent ?? 'Canon a convenir', extra: admin }
+  return { main: rent ?? text.rentOnRequest, extra: admin }
 }
 
-export function specs(property: PropertyLike): string[] {
-  return [
-    property.bedrooms ? `${property.bedrooms} hab.` : null,
-    property.bathrooms
-      ? `${property.bathrooms} ${property.bathrooms === 1 ? 'bano' : 'banos'}`
-      : null,
-    property.area_m2 ? `${Number(property.area_m2)} m2` : null,
-    property.parking ? `${property.parking} parq.` : null,
-    property.stratum ? `Estrato ${property.stratum}` : null,
-  ].filter((item): item is string => Boolean(item))
+export type SpecKind = 'bedrooms' | 'bathrooms' | 'area' | 'parking' | 'stratum'
+export interface SpecItem {
+  kind: SpecKind
+  label: string
 }
 
-export function locationLabel(property: Pick<PropertyLike, 'neighborhood' | 'city'>): string {
+/** Caracteristicas principales con su tipo (la vista elige el icono por tipo). */
+export function specItems(property: PropertyLike, lang: StoreLang = 'es'): SpecItem[] {
+  const text = PRICE_TEXT[lang]
+  const items: (SpecItem | null)[] = [
+    property.bedrooms ? { kind: 'bedrooms', label: text.bedrooms(property.bedrooms) } : null,
+    property.bathrooms ? { kind: 'bathrooms', label: text.bathrooms(property.bathrooms) } : null,
+    property.area_m2 ? { kind: 'area', label: `${Number(property.area_m2)} m2` } : null,
+    property.parking ? { kind: 'parking', label: text.parking(property.parking) } : null,
+    property.stratum ? { kind: 'stratum', label: text.stratum(property.stratum) } : null,
+  ]
+  return items.filter((item): item is SpecItem => item !== null)
+}
+
+export function specs(property: PropertyLike, lang: StoreLang = 'es'): string[] {
+  return specItems(property, lang).map((item) => item.label)
+}
+
+export function locationLabel(
+  property: Pick<PropertyLike, 'neighborhood' | 'city'>,
+  lang: StoreLang = 'es',
+): string {
   return (
-    [property.neighborhood, property.city].filter(Boolean).join(', ') || 'Ubicacion por confirmar'
+    [property.neighborhood, property.city].filter(Boolean).join(', ') ||
+    PRICE_TEXT[lang].noLocation
   )
 }
 
@@ -197,8 +239,13 @@ export function cityOptions(items: { city: string | null }[]): string[] {
 }
 
 /** Mensaje de WhatsApp para preguntar por una propiedad. */
-export function inquiryText(title: string, code: string | null, url: string): string {
-  return `Hola, me interesa la propiedad "${title}"${code ? ` (ref. ${code})` : ''}: ${url}`
+export function inquiryText(
+  title: string,
+  code: string | null,
+  url: string,
+  lang: StoreLang = 'es',
+): string {
+  return PRICE_TEXT[lang].inquiry(title, code, url)
 }
 
 export function slugify(value: string): string {
@@ -216,6 +263,7 @@ export const CONCEPT_LABELS: Record<LeaseChargeRow['concept'], string> = {
   RENT: 'Canon de arrendamiento',
   ADMIN_FEE: 'Cuota de administracion',
   UTILITIES: 'Servicios publicos',
+  LATE_FEE: 'Intereses de mora',
   OTHER: 'Otro cobro',
 }
 
@@ -318,23 +366,29 @@ export function agencyStats(properties: AgencyPropertyRow[]) {
 
 // ----------------------------------------------------------------- mapa
 /** Precio corto para los marcadores del mapa: "$2,5 M", "$950 mil", "$980 M". */
-export function markerPrice(item: {
-  operation: PropertyOperation
-  rent_price: number | null
-  sale_price: number | null
-}): string {
+export function markerPrice(
+  item: {
+    operation: PropertyOperation
+    rent_price: number | null
+    sale_price: number | null
+  },
+  lang: StoreLang = 'es',
+): string {
+  const words = PRICE_TEXT[lang].marker
+  const locale = lang === 'en' ? 'en-US' : 'es-CO'
   const value = item.operation === 'SALE' ? item.sale_price : (item.rent_price ?? item.sale_price)
-  if (value === null || value === undefined) return 'Ver'
+  if (value === null || value === undefined) return words.see
   const amount = Number(value)
   if (amount >= 1_000_000) {
     const millions = amount / 1_000_000
     const text =
       millions >= 100
-        ? Math.round(millions).toLocaleString('es-CO')
-        : millions.toLocaleString('es-CO', { maximumFractionDigits: 1 })
-    return `$${text} M`
+        ? Math.round(millions).toLocaleString(locale)
+        : millions.toLocaleString(locale, { maximumFractionDigits: 1 })
+    return `$${text} ${words.million}`
   }
-  return `$${Math.round(amount / 1000).toLocaleString('es-CO')} mil`
+  const thousands = Math.round(amount / 1000).toLocaleString(locale)
+  return lang === 'en' ? `$${thousands}${words.thousand}` : `$${thousands} ${words.thousand}`
 }
 
 /** Centro del mapa: promedio de las propiedades ubicadas, o Bogota. */
@@ -352,14 +406,22 @@ export function mapCenter(points: { lat: number | null; lng: number | null }[]):
 }
 
 /** Categorias de la tienda (chips con icono, estilo Airbnb). */
-export const STORE_CATEGORIES: { value: PropertyType | 'ALL'; label: string }[] = [
-  { value: 'ALL', label: 'Todo' },
-  { value: 'APARTAMENTO', label: 'Apartamentos' },
-  { value: 'CASA', label: 'Casas' },
-  { value: 'APARTAESTUDIO', label: 'Apartaestudios' },
-  { value: 'LOCAL', label: 'Locales' },
-  { value: 'OFICINA', label: 'Oficinas' },
-  { value: 'BODEGA', label: 'Bodegas' },
-  { value: 'LOTE', label: 'Lotes' },
-  { value: 'FINCA', label: 'Fincas' },
+const CATEGORY_ORDER: (PropertyType | 'ALL')[] = [
+  'ALL',
+  'APARTAMENTO',
+  'CASA',
+  'APARTAESTUDIO',
+  'LOCAL',
+  'OFICINA',
+  'BODEGA',
+  'LOTE',
+  'FINCA',
 ]
+
+export function storeCategories(
+  lang: StoreLang = 'es',
+): { value: PropertyType | 'ALL'; label: string }[] {
+  return CATEGORY_ORDER.map((value) => ({ value, label: CATEGORY_LABELS[lang][value] }))
+}
+
+export const STORE_CATEGORIES = storeCategories('es')

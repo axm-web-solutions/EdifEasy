@@ -38,6 +38,8 @@ export function useStoreSettingsViewModel() {
       hero_image: '',
       hero_video: '',
       tagline: '',
+      tagline_en: '',
+      description_en: '',
       primary_color: resolvePrimaryColor(null),
     },
   })
@@ -54,6 +56,8 @@ export function useStoreSettingsViewModel() {
       hero_image: data.heroImage ?? '',
       hero_video: data.heroVideo ?? '',
       tagline: data.tagline ?? '',
+      tagline_en: data.taglineEn ?? '',
+      description_en: data.descriptionEn ?? '',
       primary_color: resolvePrimaryColor(
         data.primaryColor ?? currentMembership?.condominium_primary_color,
       ),
@@ -80,6 +84,8 @@ export function useStoreSettingsViewModel() {
         heroImage: text(values.hero_image),
         heroVideo: text(values.hero_video),
         tagline: text(values.tagline),
+        taglineEn: text(values.tagline_en),
+        descriptionEn: text(values.description_en),
         primaryColor: values.primary_color,
       },
     })

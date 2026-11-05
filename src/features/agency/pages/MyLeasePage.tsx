@@ -1,6 +1,7 @@
 import { Alert, Button, Card, Checkbox, Skeleton, Tag } from 'antd'
 import { CreditCard, Home } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { PendingSignatures } from '../components/PendingSignatures'
 import { EmptyState } from '@/components/ui/states'
 import { useMyLeaseViewModel } from '../viewmodels/useMyLeaseViewModel'
 
@@ -14,6 +15,7 @@ export function MyLeasePage() {
         subtitle="Tu contrato y tus pagos, en un solo lugar."
         dataTour="agency-my-lease"
       />
+      <PendingSignatures />
       {vm.loading ? (
         <Skeleton active paragraph={{ rows: 6 }} />
       ) : !vm.hasLease ? (

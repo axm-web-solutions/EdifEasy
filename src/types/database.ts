@@ -667,6 +667,9 @@ export type AgencyPropertyRow = {
   pets_allowed: boolean
   amenities: string[]
   description: string | null
+  /** Textos para la tienda en ingles (migracion 20261106000000). */
+  title_en?: string | null
+  description_en?: string | null
   images: string[]
   owner_profile_id: string | null
   owner_name: string | null
@@ -698,9 +701,165 @@ export type PropertyLeaseRow = {
   deposit: number | null
   status: 'ACTIVE' | 'ENDED' | 'CANCELLED'
   notes: string | null
+  /** Condiciones del contrato (migracion 20261107000000). */
+  lease_use: LeaseUse
+  term_months: number
+  auto_renew: boolean
+  notice_months: number
+  notice_given_at: string | null
+  notice_by: 'ARRENDADOR' | 'ARRENDATARIO' | null
+  increase_rule: IncreaseRule
+  increase_points: number
+  last_increase_at: string | null
+  /** Interes de mora mensual pactado (%). */
+  late_interest_pct: number | null
+  insurer: string | null
+  policy_number: string | null
+  policy_expires_at: string | null
+  /** Firma electronica del contrato. */
+  contract_status: ContractStatus
+  contract_text: string | null
+  contract_hash: string | null
+  contract_sent_at: string | null
+  contract_signed_at: string | null
   created_by: string | null
   created_at: string
   updated_at: string
+}
+
+export type LeaseUse = 'VIVIENDA' | 'COMERCIAL'
+export type IncreaseRule = 'IPC' | 'IPC_PLUS' | 'FIXED'
+export type ContractStatus = 'NONE' | 'SENT' | 'SIGNED'
+
+/** Mandato de administracion con el propietario (comision y cuenta de giro). */
+export type ManagementAgreementRow = {
+  id: string
+  condominium_id: string
+  property_id: string
+  owner_profile_id: string | null
+  owner_name: string
+  owner_document_type: 'CC' | 'CE' | 'NIT' | 'PASAPORTE'
+  owner_document: string | null
+  owner_email: string | null
+  owner_phone: string | null
+  commission_pct: number
+  charges_vat: boolean
+  vat_pct: number
+  withholding_pct: number
+  bank_name: string | null
+  account_type: 'AHORROS' | 'CORRIENTE' | null
+  account_number: string | null
+  account_holder: string | null
+  start_date: string
+  end_date: string | null
+  status: 'ACTIVE' | 'ENDED'
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type LeaseGuarantorRow = {
+  id: string
+  condominium_id: string
+  lease_id: string
+  name: string
+  document: string | null
+  phone: string | null
+  email: string | null
+  created_at: string
+}
+
+export type LeaseRentAdjustmentRow = {
+  id: string
+  condominium_id: string
+  lease_id: string
+  effective_date: string
+  previous_rent: number
+  new_rent: number
+  index_type: IncreaseRule
+  index_value: number
+  created_by: string | null
+  created_at: string
+}
+
+export type PropertyExpenseRow = {
+  id: string
+  condominium_id: string
+  property_id: string
+  description: string
+  amount: number
+  expense_date: string
+  receipt_url: string | null
+  approved_at: string | null
+  approved_by: string | null
+  settlement_id: string | null
+  created_by: string | null
+  created_at: string
+}
+
+export type SettlementStatus = 'DRAFT' | 'APPROVED' | 'PAID' | 'VOID'
+
+export type OwnerSettlementRow = {
+  id: string
+  condominium_id: string
+  agreement_id: string
+  property_id: string
+  owner_profile_id: string | null
+  owner_name: string
+  period: string
+  gross_collected: number
+  commission: number
+  vat: number
+  withholding: number
+  expenses: number
+  net_payable: number
+  commission_pct: number
+  vat_pct: number
+  withholding_pct: number
+  status: SettlementStatus
+  approved_at: string | null
+  paid_at: string | null
+  transfer_reference: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type OwnerSettlementLineRow = {
+  id: string
+  condominium_id: string
+  settlement_id: string
+  kind: 'RENT' | 'COMMISSION' | 'VAT' | 'WITHHOLDING' | 'EXPENSE'
+  description: string
+  amount: number
+  lease_charge_id: string | null
+  expense_id: string | null
+}
+
+export type SignerRole = 'AGENCY' | 'TENANT' | 'OWNER' | 'GUARANTOR'
+
+/** Firmante de un contrato (el hash del token nunca llega al navegador). */
+export type LeaseSignerRow = {
+  id: string
+  condominium_id: string
+  lease_id: string
+  role: SignerRole
+  name: string
+  document: string | null
+  email: string | null
+  phone: string | null
+  profile_id: string | null
+  sort_order: number
+  token_hint: string | null
+  signed_at: string | null
+  signed_name: string | null
+  signed_document: string | null
+  signature_image: string | null
+  content_hash: string | null
+  ip: string | null
+  user_agent: string | null
+  created_at: string
 }
 
 export type LeaseChargeRow = {
@@ -709,7 +868,7 @@ export type LeaseChargeRow = {
   lease_id: string
   property_id: string
   period: string
-  concept: 'RENT' | 'ADMIN_FEE' | 'UTILITIES' | 'OTHER'
+  concept: 'RENT' | 'ADMIN_FEE' | 'UTILITIES' | 'LATE_FEE' | 'OTHER'
   description: string | null
   amount: number
   due_date: string
@@ -717,6 +876,8 @@ export type LeaseChargeRow = {
   paid_at: string | null
   payment_method: 'ONLINE' | 'CASH' | 'TRANSFER' | null
   payment_id: string | null
+  /** Liquidacion al propietario donde entro este canon. */
+  settlement_id?: string | null
   created_at: string
 }
 
@@ -1436,6 +1597,41 @@ export interface Database {
         'condominium_id' | 'lease_id' | 'property_id' | 'period' | 'concept' | 'amount' | 'due_date'
       >
       agency_leads: TableDef<AgencyLeadRow, 'condominium_id' | 'name' | 'phone' | 'consent_at'>
+      management_agreements: TableDef<
+        ManagementAgreementRow,
+        'condominium_id' | 'property_id' | 'owner_name'
+      >
+      lease_guarantors: TableDef<LeaseGuarantorRow, 'condominium_id' | 'lease_id' | 'name'>
+      lease_rent_adjustments: TableDef<
+        LeaseRentAdjustmentRow,
+        | 'condominium_id'
+        | 'lease_id'
+        | 'effective_date'
+        | 'previous_rent'
+        | 'new_rent'
+        | 'index_type'
+        | 'index_value'
+      >
+      property_expenses: TableDef<
+        PropertyExpenseRow,
+        'condominium_id' | 'property_id' | 'description' | 'amount'
+      >
+      owner_settlements: TableDef<
+        OwnerSettlementRow,
+        | 'condominium_id'
+        | 'agreement_id'
+        | 'property_id'
+        | 'owner_name'
+        | 'period'
+        | 'commission_pct'
+        | 'vat_pct'
+        | 'withholding_pct'
+      >
+      owner_settlement_lines: TableDef<
+        OwnerSettlementLineRow,
+        'condominium_id' | 'settlement_id' | 'kind' | 'description' | 'amount'
+      >
+      lease_signers: TableDef<LeaseSignerRow, 'condominium_id' | 'lease_id' | 'role' | 'name'>
       payment_accounts: TableDef<PaymentAccountRow, 'condominium_id' | 'public_key' | 'environment'>
       financial_reports: TableDef<FinancialReportRow, 'condominium_id' | 'title' | 'report_type'>
       tax_obligations: TableDef<TaxObligationRow, 'condominium_id' | 'name' | 'due_date'>
@@ -1737,6 +1933,49 @@ export interface Database {
       generate_lease_charges: { Args: { p_condominium: string; p_period: string }; Returns: number }
       register_lease_payment: { Args: { p_charges: string[]; p_method: string }; Returns: number }
       void_lease_charge: { Args: { p_charge: string }; Returns: string }
+      apply_rent_increase: {
+        Args: { p_lease: string; p_index_pct: number; p_effective: string }
+        Returns: Json
+      }
+      create_lease_charge: {
+        Args: {
+          p_lease: string
+          p_concept: string
+          p_amount: number
+          p_description: string | null
+          p_due_date: string
+        }
+        Returns: string
+      }
+      approve_property_expense: { Args: { p_expense: string }; Returns: string }
+      generate_owner_settlement: { Args: { p_agreement: string; p_period: string }; Returns: string }
+      generate_owner_settlements: {
+        Args: { p_condominium: string; p_period: string }
+        Returns: number
+      }
+      set_owner_settlement_status: {
+        Args: { p_settlement: string; p_status: string; p_reference?: string | null }
+        Returns: string
+      }
+      send_lease_for_signature: {
+        Args: { p_lease: string; p_text: string; p_signers: Json }
+        Returns: Json
+      }
+      cancel_lease_signature: { Args: { p_lease: string }; Returns: string }
+      lease_signing_link: { Args: { p_signer: string }; Returns: string }
+      lease_contract_for_signing: { Args: { p_token: string }; Returns: Json }
+      sign_lease_contract: {
+        Args: {
+          p_token: string
+          p_name: string
+          p_document: string
+          p_signature: string
+          p_hash: string
+          p_accept: boolean
+          p_user_agent?: string | null
+        }
+        Returns: Json
+      }
       review_marketplace_listing: {
         Args: { p_listing: string; p_approve: boolean; p_notes?: string | null }
         Returns: string

@@ -22,6 +22,7 @@ import {
   Car,
   ChevronLeft,
   ChevronRight,
+  Globe,
   Home,
   ImageOff,
   Images,
@@ -42,6 +43,8 @@ import {
 } from 'lucide-react'
 import { TextAreaField, TextField } from '@/components/forms/fields'
 import type { PropertyType } from '@/types/database'
+import type { SpecKind } from '../agency.logic'
+import type { StoreText } from '../storefront.i18n'
 import {
   useStorefrontPropertyViewModel,
   useStorefrontViewModel,
@@ -64,14 +67,59 @@ const CATEGORY_ICONS: Record<string, LucideIcon> = {
   FINCA: Trees,
 }
 
-const SPEC_ICONS: [RegExp, LucideIcon][] = [
-  [/hab\./, BedDouble],
-  [/bano/, Bath],
-  [/m2/, Ruler],
-  [/parq\./, Car],
-]
-const specIcon = (spec: string) =>
-  SPEC_ICONS.find(([pattern]) => pattern.test(spec))?.[1] ?? Building2
+const SPEC_ICONS: Record<SpecKind, LucideIcon> = {
+  bedrooms: BedDouble,
+  bathrooms: Bath,
+  area: Ruler,
+  parking: Car,
+  stratum: Building2,
+}
+
+type LanguageOption = { value: 'es' | 'en'; short: string; label: string; active: boolean }
+
+/** Selector ES / EN de la tienda. `dark` para ponerlo sobre la foto de portada. */
+function LanguageSwitch({
+  languages,
+  onChange,
+  label,
+  dark = false,
+}: {
+  languages: LanguageOption[]
+  onChange: (value: 'es' | 'en') => void
+  label: string
+  dark?: boolean
+}) {
+  return (
+    <div
+      role="group"
+      aria-label={label}
+      className={`inline-flex shrink-0 items-center gap-0.5 rounded-full p-1 text-xs font-semibold ${
+        dark ? 'bg-white/15 text-white backdrop-blur' : 'bg-slate-100 text-slate-600'
+      }`}
+    >
+      <Globe size={14} className="mx-1 opacity-80" aria-hidden />
+      {languages.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          lang={option.value}
+          title={option.label}
+          aria-pressed={option.active}
+          onClick={() => onChange(option.value)}
+          className={`min-h-[32px] min-w-[36px] cursor-pointer rounded-full border-0 px-2 transition ${
+            option.active
+              ? dark
+                ? 'bg-white text-slate-900'
+                : 'bg-white text-slate-900 shadow'
+              : 'bg-transparent text-inherit hover:opacity-80'
+          }`}
+        >
+          {option.short}
+        </button>
+      ))}
+    </div>
+  )
+}
 
 /** Tema de antd con el color de la marca de la inmobiliaria. */
 function Brand({ accent, children }: { accent: string; children: ReactNode }) {
@@ -84,7 +132,7 @@ function Brand({ accent, children }: { accent: string; children: ReactNode }) {
   )
 }
 
-function Footer({ name }: { name: string }) {
+function Footer({ name, t }: { name: string; t: StoreText }) {
   return (
     <footer className="border-t border-slate-100 bg-slate-50">
       <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 py-8 text-xs text-slate-500 sm:flex-row">
@@ -92,9 +140,9 @@ function Footer({ name }: { name: string }) {
           © {new Date().getFullYear()} {name}
         </span>
         <span>
-          Tienda creada con <strong className="text-slate-700">EdiFeasy</strong> ·{' '}
+          {t.madeWith} <strong className="text-slate-700">EdiFeasy</strong> ·{' '}
           <Link to="/legal/privacidad" className="text-slate-500 underline">
-            Tratamiento de datos
+            {t.privacy}
           </Link>
         </span>
       </div>
@@ -155,9 +203,15 @@ function Hero({ vm }: { vm: StorefrontViewModel }) {
               rel="noopener noreferrer"
               className="hidden items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white no-underline backdrop-blur transition hover:bg-white/25 sm:inline-flex"
             >
-              <MessageCircle size={16} /> Escribenos
+              <MessageCircle size={16} /> {vm.t.writeUs}
             </a>
           ) : null}
+          <LanguageSwitch
+            dark
+            languages={vm.languages}
+            onChange={vm.setLang}
+            label={vm.t.language}
+          />
         </div>
       </header>
 
@@ -179,24 +233,19 @@ function Hero({ vm }: { vm: StorefrontViewModel }) {
           style={{ animationDelay: '120ms' }}
         >
           <div className="flex rounded-full bg-slate-100 p-1">
-            {(
-              [
-                ['ALL', 'Todas'],
-                ['RENT', 'Arriendo'],
-                ['SALE', 'Venta'],
-              ] as const
-            ).map(([value, label]) => (
+            {vm.operations.map((operation) => (
               <button
-                key={value}
+                key={operation.value}
                 type="button"
-                onClick={() => vm.setFilter('operation', value)}
+                aria-pressed={operation.active}
+                onClick={() => vm.setFilter('operation', operation.value)}
                 className={`flex-1 cursor-pointer rounded-full border-0 px-4 py-2 text-sm font-medium transition md:flex-none ${
-                  vm.filters.operation === value
+                  operation.active
                     ? 'bg-white text-slate-900 shadow'
                     : 'bg-transparent text-slate-600'
                 }`}
               >
-                {label}
+                {operation.label}
               </button>
             ))}
           </div>
@@ -206,12 +255,12 @@ function Hero({ vm }: { vm: StorefrontViewModel }) {
             value={vm.filters.city}
             onChange={(value: string) => vm.setFilter('city', value)}
             options={vm.cityOptions}
-            aria-label="Ciudad"
+            aria-label={vm.t.city}
           />
           <Input
             variant="borderless"
             className="flex-1"
-            placeholder="Barrio, zona o palabra clave"
+            placeholder={vm.t.searchPlaceholder}
             value={vm.filters.search}
             onChange={(event) => vm.setFilter('search', event.target.value)}
           />
@@ -220,7 +269,7 @@ function Hero({ vm }: { vm: StorefrontViewModel }) {
             className="flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white no-underline transition hover:brightness-110"
             style={{ background: 'var(--store-accent)' }}
           >
-            <Search size={18} /> Buscar
+            <Search size={18} /> {vm.t.search}
           </a>
         </div>
       </div>
@@ -232,7 +281,7 @@ function Categories({ vm }: { vm: StorefrontViewModel }) {
   return (
     <nav
       className="sticky top-0 z-20 border-b border-slate-100 bg-white/90 backdrop-blur"
-      aria-label="Categorias"
+      aria-label={vm.t.categories}
     >
       <div className="mx-auto flex max-w-7xl gap-6 overflow-x-auto px-4">
         {vm.categories.map((category) => {
@@ -293,7 +342,7 @@ function PropertyCard({
         </span>
         {card.reserved ? (
           <span className="absolute right-3 top-3 rounded-full bg-amber-400 px-3 py-1 text-xs font-semibold text-slate-900">
-            Reservada
+            {vm.t.reserved}
           </span>
         ) : null}
         {card.images.length > 1 ? (
@@ -339,8 +388,8 @@ export function StorefrontPage() {
       <div className="flex min-h-screen items-center justify-center bg-white p-4">
         <Result
           status={vm.status === 'error' ? 'warning' : '404'}
-          title={vm.status === 'error' ? 'No pudimos cargar la tienda' : 'Tienda no disponible'}
-          subTitle="Revisa el enlace o escribe a la inmobiliaria."
+          title={vm.status === 'error' ? vm.t.errorTitle : vm.t.notFoundTitle}
+          subTitle={vm.t.notFoundHint}
         />
       </div>
     )
@@ -354,7 +403,7 @@ export function StorefrontPage() {
       <main id="propiedades" className="mx-auto max-w-7xl scroll-mt-20 px-4 py-8">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <h2 className="m-0 text-xl font-semibold text-slate-900">
-            {vm.cards.length} {vm.cards.length === 1 ? 'propiedad' : 'propiedades'}
+            {vm.t.count(vm.cards.length)}
           </h2>
           <div className="flex items-center gap-2">
             <Select
@@ -362,17 +411,17 @@ export function StorefrontPage() {
               value={vm.filters.minBedrooms ?? 0}
               onChange={(value: number) => vm.setFilter('minBedrooms', value || null)}
               options={vm.bedroomOptions}
-              aria-label="Habitaciones"
+              aria-label={vm.t.bedrooms}
             />
-            <Button onClick={vm.clearFilters}>Limpiar</Button>
+            <Button onClick={vm.clearFilters}>{vm.t.clear}</Button>
           </div>
         </div>
 
         {vm.cards.length === 0 ? (
           <Result
             status="info"
-            title={vm.total ? 'Nada coincide con tu busqueda' : 'Pronto publicaremos propiedades'}
-            extra={vm.total ? <Button onClick={vm.clearFilters}>Ver todas</Button> : null}
+            title={vm.total ? vm.t.noMatch : vm.t.comingSoon}
+            extra={vm.total ? <Button onClick={vm.clearFilters}>{vm.t.seeAll}</Button> : null}
           />
         ) : (
           <div
@@ -387,7 +436,12 @@ export function StorefrontPage() {
               <aside className="hidden lg:block">
                 <div className="sticky top-24 h-[calc(100vh-7.5rem)] overflow-hidden rounded-2xl shadow-sm ring-1 ring-slate-200">
                   <Suspense fallback={<MapFallback />}>
-                    <StoreMap points={vm.points} activeId={vm.activeId} accent={vm.accent} />
+                    <StoreMap
+                      points={vm.points}
+                      activeId={vm.activeId}
+                      accent={vm.accent}
+                      label={vm.t.mapLabel}
+                    />
                   </Suspense>
                 </div>
               </aside>
@@ -400,7 +454,12 @@ export function StorefrontPage() {
       {vm.hasMap && vm.mapOpen ? (
         <div className="fixed inset-0 z-30 bg-white pt-14 lg:hidden">
           <Suspense fallback={<MapFallback />}>
-            <StoreMap points={vm.points} activeId={vm.activeId} accent={vm.accent} />
+            <StoreMap
+              points={vm.points}
+              activeId={vm.activeId}
+              accent={vm.accent}
+              label={vm.t.mapLabel}
+            />
           </Suspense>
         </div>
       ) : null}
@@ -411,17 +470,15 @@ export function StorefrontPage() {
           className="fixed bottom-6 left-1/2 z-40 inline-flex -translate-x-1/2 cursor-pointer items-center gap-2 rounded-full border-0 bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-xl transition hover:scale-105 lg:hidden"
         >
           {vm.mapOpen ? <List size={16} /> : <MapIcon size={16} />}
-          {vm.mapOpen ? 'Mostrar lista' : 'Mostrar mapa'}
+          {vm.mapOpen ? vm.t.showList : vm.t.showMap}
         </button>
       ) : null}
 
       <section className="bg-slate-900 text-white">
         <div className="mx-auto flex max-w-7xl flex-col items-start gap-4 px-4 py-12 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="m-0 text-2xl font-semibold">¿No encuentras lo que buscas?</p>
-            <p className="m-0 mt-1 text-white/70">
-              Cuentanos que necesitas y te ayudamos a encontrarlo.
-            </p>
+            <p className="m-0 text-2xl font-semibold">{vm.t.ctaTitle}</p>
+            <p className="m-0 mt-1 text-white/70">{vm.t.ctaText}</p>
           </div>
           <div className="flex flex-wrap gap-2">
             {vm.agency.whatsapp ? (
@@ -438,18 +495,18 @@ export function StorefrontPage() {
             ) : null}
             {vm.agency.call ? (
               <Button size="large" icon={<Phone size={18} />} href={vm.agency.call}>
-                Llamar
+                {vm.t.call}
               </Button>
             ) : null}
             {vm.agency.email ? (
               <Button size="large" icon={<Mail size={18} />} href={`mailto:${vm.agency.email}`}>
-                Correo
+                {vm.t.email}
               </Button>
             ) : null}
           </div>
         </div>
       </section>
-      <Footer name={vm.agency.name} />
+      <Footer name={vm.agency.name} t={vm.t} />
     </Brand>
   )
 }
@@ -457,23 +514,23 @@ export function StorefrontPage() {
 // ------------------------------------------------------------------ ficha
 function LeadForm({ vm }: { vm: StorefrontPropertyViewModel }) {
   if (vm.sent) {
-    return <Alert type="success" showIcon message="¡Listo! La inmobiliaria te contactara pronto." />
+    return <Alert type="success" showIcon message={vm.t.sent} />
   }
   return (
     <form onSubmit={vm.submit} noValidate>
       {vm.sendError ? (
         <Alert type="error" showIcon message={vm.sendError} className="!mb-3" />
       ) : null}
-      <TextField control={vm.control} name="name" label="Nombre" required />
-      <TextField control={vm.control} name="phone" label="Telefono" required type="tel" />
-      <TextField control={vm.control} name="email" label="Correo" type="email" />
+      <TextField control={vm.control} name="name" label={vm.t.name} required />
+      <TextField control={vm.control} name="phone" label={vm.t.phone} required type="tel" />
+      <TextField control={vm.control} name="email" label={vm.t.email} type="email" />
       <TextAreaField
         control={vm.control}
         name="message"
-        label="Mensaje"
+        label={vm.t.message}
         rows={3}
         maxLength={1000}
-        placeholder="Quiero agendar una visita..."
+        placeholder={vm.t.messagePlaceholder}
       />
       <Controller
         control={vm.control}
@@ -485,10 +542,9 @@ function LeadForm({ vm }: { vm: StorefrontPropertyViewModel }) {
               onChange={(event) => field.onChange(event.target.checked)}
             >
               <span className="text-xs text-slate-600">
-                Autorizo a la inmobiliaria a tratar mis datos para contactarme sobre esta propiedad,
-                segun la{' '}
+                {vm.t.consentBefore}{' '}
                 <Link to="/legal/privacidad" target="_blank">
-                  politica de tratamiento de datos
+                  {vm.t.consentLink}
                 </Link>
                 .
               </span>
@@ -500,7 +556,7 @@ function LeadForm({ vm }: { vm: StorefrontPropertyViewModel }) {
         )}
       />
       <Button type="primary" htmlType="submit" block size="large" loading={vm.sending}>
-        Quiero que me contacten
+        {vm.t.submit}
       </Button>
     </form>
   )
@@ -526,7 +582,7 @@ function Gallery({ vm }: { vm: StorefrontPropertyViewModel }) {
             className={`cursor-pointer overflow-hidden border-0 bg-slate-100 p-0 ${
               index === 0 ? 'col-span-4 row-span-2 md:col-span-2' : 'hidden md:block'
             }`}
-            aria-label={`Ver foto ${index + 1}`}
+            aria-label={vm.t.photo(index + 1)}
           >
             <img
               src={url}
@@ -542,7 +598,7 @@ function Gallery({ vm }: { vm: StorefrontPropertyViewModel }) {
           icon={<Images size={16} />}
           onClick={() => vm.openGallery(0)}
         >
-          Ver las {images.length} fotos
+          {vm.t.seePhotos(images.length)}
         </Button>
       ) : null}
       <Modal
@@ -551,7 +607,7 @@ function Gallery({ vm }: { vm: StorefrontPropertyViewModel }) {
         footer={null}
         width={1000}
         centered
-        destroyOnClose
+        destroyOnHidden
       >
         <div className="relative">
           <img
@@ -565,7 +621,7 @@ function Gallery({ vm }: { vm: StorefrontPropertyViewModel }) {
                 shape="circle"
                 className="!absolute left-2 top-1/2 -translate-y-1/2"
                 icon={<ChevronLeft size={18} />}
-                aria-label="Foto anterior"
+                aria-label={vm.t.prevPhoto}
                 onClick={() =>
                   vm.setImageIndex((vm.imageIndex - 1 + images.length) % images.length)
                 }
@@ -574,14 +630,14 @@ function Gallery({ vm }: { vm: StorefrontPropertyViewModel }) {
                 shape="circle"
                 className="!absolute right-2 top-1/2 -translate-y-1/2"
                 icon={<ChevronRight size={18} />}
-                aria-label="Foto siguiente"
+                aria-label={vm.t.nextPhoto}
                 onClick={() => vm.setImageIndex((vm.imageIndex + 1) % images.length)}
               />
             </>
           ) : null}
         </div>
         <p className="m-0 mt-2 text-center text-sm text-slate-500">
-          {vm.imageIndex + 1} de {images.length}
+          {vm.t.photoOf(vm.imageIndex + 1, images.length)}
         </p>
       </Modal>
     </div>
@@ -602,24 +658,12 @@ export function StorefrontPropertyPage() {
             to={vm.backHref}
             className="inline-flex items-center gap-1 text-sm text-slate-700 no-underline"
           >
-            <ArrowLeft size={18} /> <span className="hidden sm:inline">Volver</span>
+            <ArrowLeft size={18} /> <span className="hidden sm:inline">{vm.t.back}</span>
           </Link>
           <span className="min-w-0 flex-1 truncate text-center text-sm font-semibold text-slate-900">
             {vm.agency?.name}
           </span>
-          {vm.whatsapp ? (
-            <a
-              href={vm.whatsapp}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm font-medium no-underline"
-              style={{ color: 'var(--store-accent)' }}
-            >
-              WhatsApp
-            </a>
-          ) : (
-            <span className="w-16" />
-          )}
+          <LanguageSwitch languages={vm.languages} onChange={vm.setLang} label={vm.t.language} />
         </div>
       </header>
 
@@ -629,8 +673,8 @@ export function StorefrontPropertyPage() {
         ) : vm.status !== 'ready' || !property ? (
           <Result
             status="404"
-            title="Esta propiedad ya no esta disponible"
-            extra={<Link to={vm.backHref}>Ver otras propiedades</Link>}
+            title={vm.t.propertyGone}
+            extra={<Link to={vm.backHref}>{vm.t.seeOthers}</Link>}
           />
         ) : (
           <>
@@ -641,7 +685,9 @@ export function StorefrontPropertyPage() {
               <p className="m-0 mt-1 flex flex-wrap items-center gap-x-2 text-sm text-slate-600">
                 <MapPin size={14} /> {property.location} · {property.type} · {property.badge}
                 {property.code ? (
-                  <span className="text-slate-400">· Ref. {property.code}</span>
+                  <span className="text-slate-400">
+                    · {vm.t.ref} {property.code}
+                  </span>
                 ) : null}
               </p>
             </div>
@@ -650,16 +696,16 @@ export function StorefrontPropertyPage() {
 
             <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_380px]">
               <div className="min-w-0 space-y-8">
-                {property.specs.length ? (
+                {property.specItems.length ? (
                   <div className="flex flex-wrap gap-3 border-b border-slate-100 pb-6">
-                    {property.specs.map((spec) => {
-                      const Icon = specIcon(spec)
+                    {property.specItems.map((spec) => {
+                      const Icon = SPEC_ICONS[spec.kind]
                       return (
                         <span
-                          key={spec}
+                          key={spec.kind}
                           className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700"
                         >
-                          <Icon size={18} className="text-slate-500" /> {spec}
+                          <Icon size={18} className="text-slate-500" /> {spec.label}
                         </span>
                       )
                     })}
@@ -668,7 +714,7 @@ export function StorefrontPropertyPage() {
                 {property.description ? (
                   <section>
                     <h2 className="m-0 mb-2 text-lg font-semibold text-slate-900">
-                      Acerca de esta propiedad
+                      {vm.t.about}
                     </h2>
                     <p className="m-0 whitespace-pre-line leading-relaxed text-slate-700">
                       {property.description}
@@ -677,7 +723,9 @@ export function StorefrontPropertyPage() {
                 ) : null}
                 {property.features.length ? (
                   <section>
-                    <h2 className="m-0 mb-3 text-lg font-semibold text-slate-900">Lo que ofrece</h2>
+                    <h2 className="m-0 mb-3 text-lg font-semibold text-slate-900">
+                      {vm.t.features}
+                    </h2>
                     <ul className="m-0 grid list-none gap-2 p-0 sm:grid-cols-2">
                       {property.features.map((feature) => (
                         <li key={feature} className="flex items-center gap-2 text-slate-700">
@@ -693,14 +741,18 @@ export function StorefrontPropertyPage() {
                 ) : null}
                 {vm.zone.length ? (
                   <section>
-                    <h2 className="m-0 mb-1 text-lg font-semibold text-slate-900">Donde queda</h2>
+                    <h2 className="m-0 mb-1 text-lg font-semibold text-slate-900">{vm.t.where}</h2>
                     <p className="m-0 mb-3 text-sm text-slate-500">
-                      {property.location}. Ubicacion aproximada: la direccion exacta te la damos al
-                      agendar la visita.
+                      {property.location}. {vm.t.approximate}
                     </p>
                     <div className="h-72 overflow-hidden rounded-2xl ring-1 ring-slate-200">
                       <Suspense fallback={<MapFallback />}>
-                        <StoreMap points={vm.zone} accent={vm.accent} approximate />
+                        <StoreMap
+                          points={vm.zone}
+                          accent={vm.accent}
+                          label={vm.t.mapLabel}
+                          approximate
+                        />
                       </Suspense>
                     </div>
                   </section>
@@ -723,17 +775,17 @@ export function StorefrontPropertyPage() {
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        Preguntar por WhatsApp
+                        {vm.t.askWhatsapp}
                       </Button>
                     ) : null}
                     {vm.call ? (
                       <Button size="large" icon={<Phone size={18} />} href={vm.call}>
-                        Llamar
+                        {vm.t.call}
                       </Button>
                     ) : null}
                   </div>
                   <div className="my-5 h-px bg-slate-100" />
-                  <p className="m-0 mb-3 font-semibold text-slate-900">Dejanos tus datos</p>
+                  <p className="m-0 mb-3 font-semibold text-slate-900">{vm.t.leaveData}</p>
                   <LeadForm vm={vm} />
                 </div>
               </aside>
@@ -742,7 +794,7 @@ export function StorefrontPropertyPage() {
             {vm.similar.length ? (
               <section className="mt-14">
                 <h2 className="m-0 mb-4 text-lg font-semibold text-slate-900">
-                  Tambien te puede interesar
+                  {vm.t.similar}
                 </h2>
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                   {vm.similar.map((card) => (
@@ -798,7 +850,7 @@ export function StorefrontPropertyPage() {
           </div>
         </div>
       ) : null}
-      <Footer name={vm.agency?.name ?? 'Inmobiliaria'} />
+      <Footer name={vm.agency?.name ?? ''} t={vm.t} />
     </Brand>
   )
 }

@@ -590,7 +590,9 @@ async function seedLeases(agencyId: string, ids: Record<UserKey, string>) {
       monthly_rent: property.rent_price,
       admin_fee: property.admin_fee,
       due_day: lease.due,
-      deposit: property.rent_price,
+      // Ley 820: sin deposito en vivienda; el local comercial si lo tiene.
+      lease_use: lease.code.startsWith('LOC') ? 'COMERCIAL' : 'VIVIENDA',
+      deposit: lease.code.startsWith('LOC') ? property.rent_price : null,
       notes: 'Contrato de prueba (datos ficticios).',
     })
     if (error) throw new Error(`contrato ${lease.code}: ${error.message}`)
@@ -701,6 +703,64 @@ const COORDS: Record<string, [number, number]> = {
   'APT-105': [4.7331, -74.0642],
 }
 
+/** Version en ingles de cada propiedad (la tienda tiene selector ES / EN). */
+const ENGLISH: Record<string, { title: string; description: string }> = {
+  'APT-101': {
+    title: 'Bright apartment with balcony in Cedritos',
+    description:
+      'Bright apartment with a balcony, open kitchen and mountain views. Building with gym, community room and 24/7 doorman. Close to the highway and shopping malls.',
+  },
+  'APT-102': {
+    title: 'Furnished studio in Chapinero',
+    description:
+      'Ideal for professionals: fully furnished, steps from Zona G and universities. Internet included.',
+  },
+  'CASA-201': {
+    title: 'Country house with garden in Chia',
+    description:
+      'House in a gated country community with private garden, fireplace, study and staff room. 20 minutes from Bogota.',
+  },
+  'CASA-202': {
+    title: 'House in a gated community in Suba',
+    description:
+      'Three-story house with patio, in a community with playground and green areas. Available for rent or sale.',
+  },
+  'APT-103': {
+    title: 'Family apartment in Modelia',
+    description:
+      'Close to the airport and Avenida Esperanza. Building with swimming pool and community room.',
+  },
+  'APT-104': {
+    title: 'Penthouse with terrace in Rosales',
+    description:
+      'Duplex penthouse with a 60 m2 terrace, hot tub and panoramic views. Building with 24/7 security.',
+  },
+  'LOC-301': {
+    title: 'Corner retail space in Galerias',
+    description:
+      'Corner unit with double frontage and high foot traffic. Suitable for retail or a restaurant.',
+  },
+  'OFI-401': {
+    title: 'Office on Calle 93',
+    description:
+      'Renovated office with meeting room, two bathrooms and two parking spaces. Building with reception.',
+  },
+  'BOD-501': {
+    title: 'Warehouse in the Fontibon industrial area',
+    description:
+      'Warehouse with loading dock, 8 m clear height and offices. Easy access to Calle 13.',
+  },
+  'LOT-601': {
+    title: 'Building lot in Cajica',
+    description: 'Flat lot with utilities available and a permit for a country home.',
+  },
+  'FIN-701': {
+    title: 'Weekend country estate in Anapoima',
+    description:
+      'Estate with swimming pool, BBQ gazebo and five bedrooms. Warm weather two hours from Bogota.',
+  },
+}
+
 const HERO_CANDIDATES = [
   '1600596542815-ffad4c1539a9',
   '1600585154340-be6161a56a0c',
@@ -722,6 +782,9 @@ async function ensureStoreDesign(agencyId: string) {
       heroImage: hero ? hero.replace('w=1200', 'w=2000') : null,
       heroVideo: null,
       tagline: 'Encuentra tu proximo hogar en Bogota y la Sabana',
+      taglineEn: 'Find your next home in Bogota and the Savanna',
+      descriptionEn:
+        'EdiFeasy demo agency. Apartments, houses, retail spaces and offices for rent and sale in Bogota and the Savanna. Open Monday to Saturday.',
     },
   }
   await admin.from('condominiums').update({ settings }).eq('id', agencyId)
@@ -731,16 +794,124 @@ async function ensureStoreDesign(agencyId: string) {
     .select('id, code')
     .eq('condominium_id', agencyId)
   let located = 0
+  let translated = 0
+  let englishMissing = false
   for (const property of properties ?? []) {
     const coords = property.code ? COORDS[property.code] : undefined
-    if (!coords) continue
-    const { error } = await admin
-      .from('agency_properties')
-      .update({ latitude: coords[0], longitude: coords[1] })
-      .eq('id', property.id)
-    if (!error) located += 1
+    if (coords) {
+      const { error } = await admin
+        .from('agency_properties')
+        .update({ latitude: coords[0], longitude: coords[1] })
+        .eq('id', property.id)
+      if (!error) located += 1
+    }
+    const english = property.code ? ENGLISH[property.code] : undefined
+    if (english && !englishMissing) {
+      const { error } = await admin
+        .from('agency_properties')
+        .update({ title_en: english.title, description_en: english.description })
+        .eq('id', property.id)
+      if (error) englishMissing = true
+      else translated += 1
+    }
   }
   console.log(`  + portada de la tienda y ${located} propiedades ubicadas en el mapa`)
+  console.log(
+    englishMissing
+      ? '  ! sin textos en ingles: corre la migracion 20261106000000_tienda_bilingue y repite'
+      : `  + ${translated} propiedades con titulo y descripcion en ingles`,
+  )
+}
+
+/**
+ * Gestion (migracion 20261107000000): mandatos con los propietarios, poliza y
+ * condiciones de los contratos, y un gasto esperando aprobacion del dueno.
+ */
+async function ensureManagement(agencyId: string) {
+  const { data: properties } = await admin
+    .from('agency_properties')
+    .select('id, code, owner_profile_id, owner_name, owner_phone')
+    .eq('condominium_id', agencyId)
+  const { error: probe } = await admin.from('management_agreements').select('id').limit(1)
+  if (probe) {
+    console.log('  ! sin mandatos: corre la migracion 20261107000000_inmobiliaria_gestion y repite')
+    return
+  }
+
+  let agreements = 0
+  for (const property of properties ?? []) {
+    if (!property.owner_profile_id) continue
+    const { data: existing } = await admin
+      .from('management_agreements')
+      .select('id')
+      .eq('property_id', property.id)
+      .eq('status', 'ACTIVE')
+      .maybeSingle()
+    if (existing) continue
+    const { error } = await admin.from('management_agreements').insert({
+      condominium_id: agencyId,
+      property_id: property.id,
+      owner_profile_id: property.owner_profile_id,
+      owner_name: property.owner_name ?? 'Propietario demo',
+      owner_document_type: 'CC',
+      owner_document: '79000000',
+      owner_phone: property.owner_phone,
+      commission_pct: 10,
+      charges_vat: true,
+      vat_pct: 19,
+      withholding_pct: 0,
+      bank_name: 'Banco Demo',
+      account_type: 'AHORROS',
+      account_number: '000123456789',
+      account_holder: property.owner_name ?? 'Propietario demo',
+      notes: 'Mandato de prueba (datos ficticios).',
+    })
+    if (!error) agreements += 1
+  }
+
+  const policyEnd = new Date()
+  policyEnd.setMonth(policyEnd.getMonth() + 11)
+  const { data: leases } = await admin
+    .from('property_leases')
+    .select('id, property:agency_properties(code)')
+    .eq('condominium_id', agencyId)
+    .eq('status', 'ACTIVE')
+  type LeaseRef = { id: string; property: { code: string } | { code: string }[] | null }
+  for (const lease of (leases ?? []) as unknown as LeaseRef[]) {
+    const code = Array.isArray(lease.property) ? lease.property[0]?.code : lease.property?.code
+    const commercial = code?.startsWith('LOC') ?? false
+    await admin
+      .from('property_leases')
+      .update({
+        insurer: 'El Libertador (demo)',
+        policy_number: `POL-${lease.id.slice(0, 6).toUpperCase()}`,
+        policy_expires_at: policyEnd.toISOString().slice(0, 10),
+        late_interest_pct: 1.5,
+        ...(commercial
+          ? { lease_use: 'COMERCIAL', notice_months: 6, increase_rule: 'IPC_PLUS', increase_points: 2 }
+          : {}),
+      })
+      .eq('id', lease.id)
+  }
+
+  const apartment = (properties ?? []).find((property) => property.code === 'APT-101')
+  if (apartment) {
+    const { count } = await admin
+      .from('property_expenses')
+      .select('id', { count: 'exact', head: true })
+      .eq('property_id', apartment.id)
+    if (!count) {
+      await admin.from('property_expenses').insert({
+        condominium_id: agencyId,
+        property_id: apartment.id,
+        description: 'Revision y ajuste del calentador (demo)',
+        amount: 120000,
+      })
+    }
+  }
+  console.log(
+    `  + ${agreements} mandatos nuevos, poliza en ${leases?.length ?? 0} contratos y un gasto por aprobar`,
+  )
 }
 
 async function main() {
@@ -752,6 +923,7 @@ async function main() {
   await seedLeases(agencyId, ids)
   await seedLeads(agencyId)
   await ensureStoreDesign(agencyId)
+  await ensureManagement(agencyId)
   const origin = process.env.APP_URL ?? 'https://edifeasy.com'
   console.log(`\nListo. Tienda: ${origin}/i/${SLUG}`)
   console.log('Usuarios (clave SEED_DEFAULT_PASSWORD):')

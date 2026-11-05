@@ -63,6 +63,14 @@ export function StoreSettingsPage() {
                 maxLength={1000}
                 placeholder="Quienes son, en que zonas trabajan, horario de atencion..."
               />
+              <TextAreaField
+                control={vm.storeControl}
+                name="description_en"
+                label="Presentacion en ingles (opcional)"
+                rows={2}
+                maxLength={1000}
+                help="La tienda tiene version en ingles. Si lo dejas vacio, se muestra en espanol."
+              />
               <div className="grid gap-x-4 sm:grid-cols-3">
                 <TextField
                   control={vm.storeControl}
@@ -112,6 +120,13 @@ export function StoreSettingsPage() {
                 label="Frase principal"
                 maxLength={120}
                 placeholder="Ej: Encuentra tu proximo hogar en Bogota"
+              />
+              <TextField
+                control={vm.storeControl}
+                name="tagline_en"
+                label="Frase principal en ingles (opcional)"
+                maxLength={120}
+                placeholder="Ej: Find your next home in Bogota"
               />
               <ImageUploadField
                 control={vm.storeControl}

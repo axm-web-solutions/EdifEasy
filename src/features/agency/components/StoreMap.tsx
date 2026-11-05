@@ -36,7 +36,9 @@ export function StoreMap({
   accent,
   approximate = false,
   className = '',
+  label = 'Mapa de propiedades',
 }: {
+  label?: string
   points: StoreMapPoint[]
   activeId?: string | null
   onSelect?: (id: string) => void
@@ -139,7 +141,7 @@ export function StoreMap({
       ref={element}
       className={`h-full w-full ${className}`}
       role="region"
-      aria-label="Mapa de propiedades"
+      aria-label={label}
     />
   )
 }

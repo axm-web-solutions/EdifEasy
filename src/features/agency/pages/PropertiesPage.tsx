@@ -289,6 +289,24 @@ function PropertyForm({ vm }: { vm: PropertiesViewModel }) {
           rows={4}
           maxLength={5000}
         />
+        <Divider className="!my-2" orientation="left" plain>
+          Tienda en ingles (opcional)
+        </Divider>
+        <TextField
+          control={vm.control}
+          name="title_en"
+          label="Titulo en ingles"
+          maxLength={140}
+          placeholder="Ej: Apartment with balcony in Cedritos"
+          help="Si lo dejas vacio, la tienda en ingles muestra el titulo en espanol."
+        />
+        <TextAreaField
+          control={vm.control}
+          name="description_en"
+          label="Descripcion en ingles"
+          rows={3}
+          maxLength={5000}
+        />
         <TextField
           control={vm.control}
           name="code"

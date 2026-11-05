@@ -5,7 +5,7 @@
 > Lo mantiene el agente `product-roadmap` (`.claude/agents/product-roadmap.md`):
 > cada estado debe tener **evidencia en el codigo** (archivo, migracion o ruta).
 >
-> **Ultima revision:** 2026-10-20 · **Competencia revisada por ultima vez:** 2026-10-17
+> **Ultima revision:** 2026-11-04 · **Competencia revisada por ultima vez:** 2026-10-17
 
 **Leyenda:** ✅ Tiene · 🟡 Parcial · ❌ No tiene · ➖ No lo menciona (competencia)
 **Prioridad:** 🔴 Critica · 🟠 Alta · 🟡 Media · ⚪ Baja
@@ -14,10 +14,11 @@
 
 | Indicador | Valor |
 |---|---|
-| Brechas abiertas | 23 · 🔴 1 · 🟠 5 · 🟡 10 · ⚪ 7 |
+| Brechas abiertas | 23 · 🔴 1 · 🟠 5 · 🟡 10 · ⚪ 7 (G01 pasa a parcial) |
 | Funciones en paridad con la competencia | 20 |
 | Brechas cerradas desde el comparativo inicial (2026-10-17) | 7 (reservas, clasificados, alta rapida, minuta de porteria, encuestas, ingreso del personal, prueba gratis) |
 | Diferenciadores de EdiFeasy | 17 |
+| Perfil inmobiliarias (seccion 6) | 15 funciones · 8 en `main` · 7 en desarrollo (sin commit; migraciones `20261106000000` y `20261107000000` sin correr en Supabase) |
 | Siguiente recomendado | G01 cuenta Wompi por conjunto → G02/G03 estado de cuenta y mora → G07 importar Excel |
 
 ---
@@ -26,7 +27,7 @@
 
 | ID | Funcion | Prioridad | Esfuerzo | ConjuntosApp | PH en Linea | Estado | Notas para implementar |
 |---|---|---|---|---|---|---|---|
-| G01 | El dinero de cuotas, multas y reservas llega a la cuenta de **cada conjunto** | 🔴 | Medio | ✅ | ➖ | ❌ | Hoy todo entra a una sola cuenta Wompi (secrets globales en Supabase). Guardar llaves Wompi por conjunto cifradas en el servidor; EdiFeasy solo cobra su plan. Bloquea cobrar cuotas reales. |
+| G01 | El dinero de cuotas, multas y reservas llega a la cuenta de **cada conjunto** | 🔴 | Bajo-Medio | ✅ | ➖ | 🟡 | Base hecha en el commit 03b3b90: tablas `payment_accounts` y `payment_account_secrets` por espacio (`20261104000000_inmobiliarias.sql`, seccion D); `supabase/functions/wompi-payments` y `wompi-webhook` validan con la llave del espacio. Solo hay pantalla para conectar la cuenta en inmobiliarias (`src/features/agency/pages/StoreSettingsPage.tsx`); falta la pantalla en la configuracion del conjunto y probar cuotas, multas y reservas con cuenta propia. Bloquea cobrar cuotas reales. Estado y esfuerzo ajustados el 2026-11-04. |
 | G02 | Estado de cuenta consolidado por apartamento | 🟠 | Medio | ✅ | ✅ | 🟡 | Cuotas y multas se ven en pantallas separadas. Falta saldo unico con abonos, descargable. |
 | G03 | Recordatorios automaticos de mora y cartera por edades | 🟠 | Medio | ✅ | ✅ | 🟡 | Existen totales de pendiente y vencido. Recordatorios deben respetar Ley 2300 de 2023 (L-V 7am-7pm, sab 8am-3pm, un canal por semana). |
 | G04 | Asambleas virtuales o hibridas (quorum por coeficiente, poderes, orden del dia) | 🟠 | Medio-Alto | ✅ | ✅ | ❌ | Tablas `meetings` y `meeting_signatures` existen sin pantalla. Ley 675 art. 42 y Decreto 398 de 2020. Base disponible: encuestas (C18) con voto, cierre por fecha y resultados. Falta quorum por coeficiente, poderes y orden del dia. Esfuerzo bajado de Alto a Medio-Alto el 2026-10-20 por el motor de encuestas. |
@@ -112,6 +113,34 @@
 | P02 | Llenar datos legales del operador en Plataforma > Cumplimiento legal | Equipo | Abierto |
 | P03 | Crear las cuentas de propietarios de Angeles del Bosque (Plataforma > Propietarios) | Equipo | Abierto |
 | P04 | Revision de los textos legales por un abogado | Equipo | Hecho segun el equipo (2026-10-19) |
+| P05 | Correr en Supabase las migraciones `20261106000000_tienda_bilingue.sql` y `20261107000000_inmobiliaria_gestion.sql` (inmobiliarias I09-I15) | Equipo | Abierto |
+| P06 | Revisar con un abogado la plantilla de contrato de arriendo y la firma electronica (Ley 527 de 1999, Decreto 2364 de 2012) antes de usarlas con clientes | Equipo | Abierto |
+
+## 6. Perfil inmobiliarias
+
+Segmento nuevo (espacio tipo inmobiliaria con su propio menu). ConjuntosApp y PH en Linea son
+software de propiedad horizontal y no se compararon en este segmento: no hay columnas de
+competencia hasta revisar competidores del sector inmobiliario.
+
+| ID | Funcion | Estado | Evidencia | Notas |
+|---|---|---|---|---|
+| I01 | Espacio inmobiliaria con menu, panel y roles (administrador, arrendatario, propietario) | ✅ | `20261104000000_inmobiliarias.sql`, `src/features/agency/pages/AgencyDashboard.tsx`, rutas `/agency/*` en `src/routes/index.tsx` · commit 03b3b90 | — |
+| I02 | Propiedades (casa, apartamento, local, oficina, bodega, lote, finca) en arriendo, venta o ambos, con fotos y ubicacion | ✅ | `src/features/agency/pages/PropertiesPage.tsx` (`/agency/properties`), `src/features/agency/components/LocationPicker.tsx` · commits 03b3b90, e1842b6 | — |
+| I03 | Tienda publica sin sesion con filtros, ficha, WhatsApp e interesados con autorizacion de datos | ✅ | Rutas `/i/:slug` y `/i/:slug/p/:propertyId` (`src/routes/index.tsx`), `src/features/agency/pages/StorefrontPage.tsx`, `/agency/leads` (`LeadsPage.tsx`) · commit 03b3b90 | — |
+| I04 | Portada con video o foto, mapa con precios tipo Airbnb (ubicacion aproximada) y personalizacion de la tienda | ✅ | `src/features/agency/components/StoreMap.tsx`, `20261105000000_tienda_mapa.sql`, `/agency/store` (`StoreSettingsPage.tsx`) · commits e1842b6, 0a0e2f8 | — |
+| I05 | Contratos de arriendo y cobros mensuales de canon y administracion; pagos en efectivo o transferencia | ✅ | `/agency/leases` (`LeasesPage.tsx`), `/agency/charges` (`ChargesPage.tsx`), tablas `property_leases` y `lease_charges` en `20261104000000_inmobiliarias.sql` · commit 03b3b90 | — |
+| I06 | Pago en linea del arrendatario a la cuenta Wompi propia de la inmobiliaria | ✅ | `payment_accounts` en `20261104000000_inmobiliarias.sql` (seccion D), `supabase/functions/wompi-payments`, `supabase/functions/wompi-webhook` · commit 03b3b90 | — |
+| I07 | Portal del arrendatario (mi contrato) y del propietario (mis propiedades y lo recaudado) | ✅ | `/agency/my-lease` (`MyLeasePage.tsx`), `/agency/my-properties` (`MyPropertiesPage.tsx`) · commit 03b3b90 | — |
+| I08 | Inmobiliaria de prueba para demos | ✅ | `scripts/seed-agency-demo.ts` (`pnpm seed:agency`) · commit 03b3b90 | — |
+| I09 | Tienda publica bilingue ES/EN | ❌ | — | En desarrollo (sin commit): `src/features/agency/storefront.i18n.ts` (+ test), `viewmodels/useStoreLanguage.ts`, `pages/StorefrontPage.tsx`; migracion `20261106000000_tienda_bilingue.sql` (`title_en`/`description_en` por propiedad, `taglineEn`/`descriptionEn` de la tienda). |
+| I10 | Mandatos de administracion con el propietario (comision, IVA, retencion, cuenta de giro) | ❌ | — | En desarrollo (sin commit): tabla `management_agreements` en `20261107000000_inmobiliaria_gestion.sql`, `pages/AgreementsPage.tsx` (`/agency/agreements`). |
+| I11 | Liquidacion mensual al propietario (canon cobrado - comision - IVA - retencion - gastos aprobados): aprobar, registrar giro y anular; gastos de la propiedad con aprobacion del propietario | ❌ | — | En desarrollo (sin commit): tablas `owner_settlements`, `owner_settlement_lines`, `property_expenses` y RPCs `generate_owner_settlement(s)`, `set_owner_settlement_status`, `approve_property_expense` en `20261107000000_inmobiliaria_gestion.sql`; `src/features/agency/management.logic.ts` (+ test), `pages/SettlementsPage.tsx` (`/agency/settlements`), `pages/OwnerStatementsPage.tsx` (`/agency/statements`, propietario). |
+| I12 | Vencimientos: contratos por vencer a 90/60/30 dias, preaviso (3 meses vivienda / 6 comercial), incremento anual con tope IPC en vivienda e historial, polizas por vencer | ❌ | — | En desarrollo (sin commit): tabla `lease_rent_adjustments` y RPC `apply_rent_increase` en `20261107000000_inmobiliaria_gestion.sql`, `pages/RenewalsPage.tsx` (`/agency/renewals`). |
+| I13 | Contrato completo: uso vivienda/comercial, duracion, prorroga automatica, regla de incremento, poliza y aseguradora, interes de mora, codeudores; sin deposito en vivienda (Ley 820 art. 16) en contratos nuevos | ❌ | — | En desarrollo (sin commit): trigger `tg_property_leases_deposit` y tabla `lease_guarantors` en `20261107000000_inmobiliaria_gestion.sql`, `viewmodels/useLeasesViewModel.ts`, `src/schemas/agency.ts`. El contrato basico ya esta en `main` (I05). |
+| I14 | Cobros adicionales (servicios publicos, intereses de mora con calculo sugerido, otros) y cartera por edades | ❌ | — | En desarrollo (sin commit): RPC `create_lease_charge` en `20261107000000_inmobiliaria_gestion.sql`, `pages/ChargesPage.tsx`, `viewmodels/useExtraChargeViewModel.ts`. |
+| I15 | Firma electronica del contrato desde la web: plantilla con datos del sistema (vivienda Ley 820 / comercial), enlace por firmante con token hasheado, firma dibujada, evidencia (hash SHA-256, fecha, IP, navegador) y contrato firmado imprimible | ❌ | — | En desarrollo (sin commit): tabla `lease_signers` y RPCs `send_lease_for_signature`, `lease_signing_link`, `lease_contract_for_signing`, `sign_lease_contract`, `cancel_lease_signature` en `20261107000000_inmobiliaria_gestion.sql`; `pages/LeaseContractPage.tsx` (`/agency/leases/:leaseId/contract`), `pages/SignContractPage.tsx` (ruta publica `/firmar/:token`), `src/components/forms/SignaturePad.tsx`, `components/PendingSignatures.tsx`. |
+
+Apoyo: agente `.claude/agents/real-estate-expert.md` (sin commit).
 
 ---
 
@@ -124,3 +153,4 @@
 | 2026-10-19 | Revision de trabajo en curso: minuta de porteria (G11), ingreso y salida del personal (G26), encuestas (G13), prueba gratis (G17), mapa de servicios para residentes e inicio del residente (saludo por hora, aviso de alertas descartable). Todo sin commit en `main`: anotado como en desarrollo, sin cambiar estados ni conteos. G04/G05 siguen abiertas (encuestas sin coeficiente ni quorum). |
 | 2026-10-20 | Cerradas con el commit a179668: minuta de porteria (G11 → C17), encuestas (G13 → C18), ingreso y salida del personal (G26 → C19). Mapa de servicios cercanos para todos en `/nearby` (D02, D10). G04/G05 bajan de esfuerzo Alto a Medio-Alto por el motor de encuestas. G17 sigue abierta (`20261020000000_prueba_gratis.sql` sin commit). Abiertas 27 → 24, paridad 16 → 19. |
 | 2026-10-20 | Cerrada con el commit a999662: prueba gratis de 7 dias (G17 → C20). Abiertas 24 → 23, paridad 19 → 20, cerradas desde el comparativo 6 → 7. |
+| 2026-11-04 | Nueva seccion 6, perfil inmobiliarias. I01-I08 en `main` (commits 03b3b90, e1842b6, 0a0e2f8): espacio, propiedades, tienda publica con mapa, contratos, cobros, pago en linea a cuenta Wompi propia, portales de arrendatario y propietario. I09-I15 en desarrollo sin commit (tienda bilingue, mandatos, liquidaciones al propietario, vencimientos e IPC, contrato completo con Ley 820, cobros adicionales y cartera, firma electronica): anotados con ❌ hasta que lleguen a `main`. G01 ❌ → 🟡 y esfuerzo Medio → Bajo-Medio por `payment_accounts` (falta pantalla para conjuntos). Pendientes nuevos P05 (migraciones) y P06 (revision legal del contrato y la firma). Brechas frente a la competencia sin cambios (23). |

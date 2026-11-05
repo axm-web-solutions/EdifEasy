@@ -2,6 +2,7 @@ import { Button, Card, Col, Row, Skeleton } from 'antd'
 import { Link } from 'react-router-dom'
 import { Building, CircleDashed, ExternalLink, KeyRound, Receipt, UserPlus } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { PendingSignatures } from '../components/PendingSignatures'
 import { StatCard } from '@/components/ui/StatCard'
 import { useAgencyDashboardViewModel } from '../viewmodels/useAgencyDashboardViewModel'
 
@@ -27,6 +28,7 @@ export function AgencyDashboard() {
           ) : null
         }
       />
+      <PendingSignatures />
 
       {vm.setup.length ? (
         <Card className="surface-card !mb-4" title="Deja tu inmobiliaria lista">

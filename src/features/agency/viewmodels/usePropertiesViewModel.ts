@@ -32,6 +32,8 @@ const EMPTY: PropertyFormValues = {
   furnished: false,
   pets_allowed: false,
   description: '',
+  title_en: '',
+  description_en: '',
   images: [],
   latitude: null,
   longitude: null,
@@ -140,6 +142,8 @@ export function usePropertiesViewModel() {
       furnished: row.furnished,
       pets_allowed: row.pets_allowed,
       description: row.description ?? '',
+      title_en: row.title_en ?? '',
+      description_en: row.description_en ?? '',
       images: row.images,
       latitude: row.latitude === null ? null : Number(row.latitude),
       longitude: row.longitude === null ? null : Number(row.longitude),
@@ -156,6 +160,12 @@ export function usePropertiesViewModel() {
   const submit = form.handleSubmit((values) => {
     if (!currentCondominiumId) return
     const text = (value: string) => value.trim() || null
+    // Los textos en ingles solo se envian si hay algo que guardar o la base ya
+    // tiene las columnas (asi la ficha se puede guardar antes de la migracion).
+    const english =
+      values.title_en.trim() || values.description_en.trim() || (editing && 'title_en' in editing)
+        ? { title_en: text(values.title_en), description_en: text(values.description_en) }
+        : {}
     mutations.saveProperty.mutate(
       {
         id: editing?.id ?? null,
@@ -181,6 +191,7 @@ export function usePropertiesViewModel() {
           furnished: values.furnished,
           pets_allowed: values.pets_allowed,
           description: text(values.description),
+          ...english,
           images: values.images,
           latitude: values.latitude,
           longitude: values.longitude,

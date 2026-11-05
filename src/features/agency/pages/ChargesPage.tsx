@@ -1,10 +1,69 @@
 import { Alert, Button, Card, Checkbox, Dropdown, Segmented, Select, Skeleton, Tag } from 'antd'
 import { Link } from 'react-router-dom'
-import { Ban, Banknote, CalendarPlus, MoreVertical } from 'lucide-react'
+import { Ban, Banknote, CalendarPlus, MoreVertical, Plus } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState, ErrorState } from '@/components/ui/states'
-import { confirmDelete } from '@/components/ui/FormDrawer'
+import { FormDrawer, confirmDelete } from '@/components/ui/FormDrawer'
+import { DateField, NumberField, SelectField, TextField } from '@/components/forms/fields'
 import { useChargesViewModel, type ChargeFilter } from '../viewmodels/useChargesViewModel'
+import {
+  useExtraChargeViewModel,
+  type ExtraChargeViewModel,
+} from '../viewmodels/useExtraChargeViewModel'
+
+function ExtraChargeForm({ vm }: { vm: ExtraChargeViewModel }) {
+  return (
+    <FormDrawer
+      open={vm.open}
+      title="Otro cobro"
+      description="Servicios publicos, intereses de mora u otros cobros al arrendatario."
+      onClose={vm.closeForm}
+      onSubmit={vm.submit}
+      submitting={vm.submitting}
+    >
+      <form onSubmit={vm.submit} noValidate>
+        {vm.submitError ? (
+          <Alert type="error" showIcon message={vm.submitError} className="!mb-4" />
+        ) : null}
+        <SelectField
+          control={vm.control}
+          name="lease_id"
+          label="Contrato"
+          required
+          showSearch
+          options={vm.leaseOptions}
+        />
+        <SelectField
+          control={vm.control}
+          name="concept"
+          label="Concepto"
+          required
+          options={vm.conceptOptions}
+        />
+        {vm.lateFee ? (
+          <Alert
+            type="info"
+            showIcon
+            className="!mb-4"
+            message={vm.lateFee.text}
+            action={
+              vm.lateFee.amount > 0 ? (
+                <Button size="small" onClick={vm.useSuggested}>
+                  Usar
+                </Button>
+              ) : undefined
+            }
+          />
+        ) : null}
+        <TextField control={vm.control} name="description" label="Descripcion" required />
+        <div className="grid gap-x-4 sm:grid-cols-2">
+          <NumberField control={vm.control} name="amount" label="Valor" required min={0} addonBefore="$" />
+          <DateField control={vm.control} name="due_date" label="Fecha limite" required />
+        </div>
+      </form>
+    </FormDrawer>
+  )
+}
 
 function Kpi({ label, value, tone }: { label: string; value: string; tone?: 'danger' }) {
   return (
@@ -21,6 +80,7 @@ function Kpi({ label, value, tone }: { label: string; value: string; tone?: 'dan
 
 export function ChargesPage() {
   const vm = useChargesViewModel()
+  const extra = useExtraChargeViewModel()
 
   return (
     <div>
@@ -28,6 +88,11 @@ export function ChargesPage() {
         title="Cobros y pagos"
         subtitle="Canon y administracion de cada contrato, mes a mes."
         dataTour="agency-charges"
+        actions={
+          <Button icon={<Plus size={16} />} onClick={extra.openForm}>
+            Otro cobro
+          </Button>
+        }
       />
 
       {!vm.hasOnlinePayments ? (
@@ -75,6 +140,27 @@ export function ChargesPage() {
           tone={vm.summary.overdueCount ? 'danger' : undefined}
         />
       </div>
+
+      {extra.hasOverdue ? (
+        <Card size="small" className="surface-card !mb-4" title="Cartera vencida por edades">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            {extra.aging.map((bucket) => (
+              <div key={bucket.key}>
+                <p className="m-0 text-xs text-slate-500">{bucket.label}</p>
+                <p
+                  className={`m-0 text-sm font-semibold ${bucket.key === 'more' && bucket.count ? 'text-red-600' : 'text-slate-800'}`}
+                >
+                  {bucket.totalLabel}
+                </p>
+                <p className="m-0 text-[11px] text-slate-400">{bucket.count} cobros</p>
+              </div>
+            ))}
+          </div>
+          <p className="m-0 mt-2 text-xs text-slate-500">
+            Si tienes poliza, reporta a la aseguradora la mora dentro del plazo que exige.
+          </p>
+        </Card>
+      ) : null}
 
       <div className="mb-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="max-w-full overflow-x-auto">
@@ -188,6 +274,7 @@ export function ChargesPage() {
           </ul>
         </Card>
       )}
+      <ExtraChargeForm vm={extra} />
     </div>
   )
 }

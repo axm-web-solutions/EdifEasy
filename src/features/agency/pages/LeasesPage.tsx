@@ -1,5 +1,6 @@
-import { Alert, Button, Card, Modal, Skeleton, Tag } from 'antd'
-import { FileSignature, Pencil, Plus, UserCheck } from 'lucide-react'
+import { Alert, Button, Card, Divider, Modal, Skeleton, Tag } from 'antd'
+import { Link } from 'react-router-dom'
+import { FilePen, FileSignature, Pencil, Plus, ShieldCheck, UserCheck } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState, ErrorState } from '@/components/ui/states'
 import { FormDrawer } from '@/components/ui/FormDrawer'
@@ -7,6 +8,7 @@ import {
   DateField,
   NumberField,
   SelectField,
+  SwitchField,
   TextAreaField,
   TextField,
 } from '@/components/forms/fields'
@@ -27,6 +29,12 @@ function LeaseCard({ lease, vm }: { lease: LeaseView; vm: LeasesViewModel }) {
             <Tag color={lease.statusColor} bordered={false} className="!m-0">
               {lease.statusLabel}
             </Tag>
+            <Tag bordered={false} className="!m-0">
+              {lease.useLabel}
+            </Tag>
+            <Tag color={lease.contractColor} bordered={false} className="!m-0">
+              {lease.contractLabel}
+            </Tag>
           </div>
           <p className="m-0 text-xs text-slate-500">{lease.location}</p>
           <p className="m-0 mt-1 flex items-center gap-1 text-sm text-slate-700">
@@ -41,8 +49,21 @@ function LeaseCard({ lease, vm }: { lease: LeaseView; vm: LeasesViewModel }) {
             {lease.dueDay}
           </p>
           <p className="m-0 text-xs text-slate-500">{lease.period}</p>
+          {lease.renewalLabel ? (
+            <p className="m-0 text-xs text-slate-500">{lease.renewalLabel}</p>
+          ) : null}
+          {lease.guarantee ? (
+            <p className="m-0 flex items-center gap-1 text-xs text-slate-500">
+              <ShieldCheck size={13} /> {lease.guarantee}
+            </p>
+          ) : null}
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Link to={lease.contractHref}>
+            <Button size="small" type="primary" ghost icon={<FilePen size={14} />}>
+              Contrato y firma
+            </Button>
+          </Link>
           <Button size="small" icon={<Pencil size={14} />} onClick={() => vm.openEdit(lease.id)}>
             Editar
           </Button>
@@ -114,9 +135,68 @@ function LeaseForm({ vm }: { vm: LeasesViewModel }) {
           <TextField control={vm.control} name="tenant_phone" label="Telefono" />
           <TextField control={vm.control} name="tenant_email" label="Correo" />
         </div>
-        <div className="grid gap-x-4 sm:grid-cols-2">
+        <Divider className="!my-2" orientation="left" plain>
+          Condiciones
+        </Divider>
+        <SelectField
+          control={vm.control}
+          name="lease_use"
+          label="Uso del inmueble"
+          required
+          options={vm.useOptions}
+          onChangeExtra={vm.onUseChange}
+          help={vm.useHelp}
+        />
+        <div className="grid gap-x-4 sm:grid-cols-3">
           <DateField control={vm.control} name="start_date" label="Inicio" required />
-          <DateField control={vm.control} name="end_date" label="Fin (opcional)" />
+          <NumberField
+            control={vm.control}
+            name="term_months"
+            label="Duracion (meses)"
+            required
+            min={1}
+            max={120}
+          />
+          <DateField
+            control={vm.control}
+            name="end_date"
+            label="Fin (opcional)"
+            help="Si lo dejas vacio, se calcula con la duracion."
+          />
+        </div>
+        <div className="grid gap-x-4 sm:grid-cols-2">
+          <SwitchField
+            control={vm.control}
+            name="auto_renew"
+            label="Prorroga automatica"
+            help="Se renueva por la misma duracion si nadie avisa."
+          />
+          <NumberField
+            control={vm.control}
+            name="notice_months"
+            label="Preaviso (meses)"
+            required
+            min={1}
+            max={12}
+          />
+        </div>
+        <div className="grid gap-x-4 sm:grid-cols-2">
+          <SelectField
+            control={vm.control}
+            name="increase_rule"
+            label="Incremento anual"
+            options={vm.increaseOptions}
+          />
+          {vm.showIncreasePoints ? (
+            <NumberField
+              control={vm.control}
+              name="increase_points"
+              label={vm.increasePointsLabel}
+              min={0}
+              max={50}
+              step={0.5}
+            />
+          ) : null}
         </div>
         <div className="grid gap-x-4 sm:grid-cols-2">
           <NumberField
@@ -144,12 +224,45 @@ function LeaseForm({ vm }: { vm: LeasesViewModel }) {
           />
           <NumberField
             control={vm.control}
+            name="late_interest_pct"
+            label="Interes de mora (% mensual)"
+            min={0}
+            max={5}
+            step={0.1}
+            help="Sin pasar la tasa maxima legal (usura) vigente."
+          />
+        </div>
+        <Divider className="!my-2" orientation="left" plain>
+          Garantia
+        </Divider>
+        {vm.isHousing ? (
+          <Alert
+            type="info"
+            showIcon
+            className="!mb-4"
+            message="En vivienda no se puede pedir deposito (Ley 820, art. 16)."
+            description="Respalda el contrato con una poliza de arrendamiento y codeudores (los agregas en Contrato y firma)."
+          />
+        ) : null}
+        <div className="grid gap-x-4 sm:grid-cols-3">
+          <TextField
+            control={vm.control}
+            name="insurer"
+            label="Aseguradora o afianzadora"
+            placeholder="Ej: El Libertador"
+          />
+          <TextField control={vm.control} name="policy_number" label="No. de poliza" />
+          <DateField control={vm.control} name="policy_expires_at" label="Vence la poliza" />
+        </div>
+        {vm.isHousing ? null : (
+          <NumberField
+            control={vm.control}
             name="deposit"
             label="Deposito"
             min={0}
             addonBefore="$"
           />
-        </div>
+        )}
         <TextAreaField control={vm.control} name="notes" label="Notas" rows={3} maxLength={1000} />
       </form>
     </FormDrawer>

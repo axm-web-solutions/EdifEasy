@@ -331,6 +331,14 @@ export const NAVIGATION: NavItem[] = [
     kinds: AGENCY,
   },
   {
+    key: 'agency-statements',
+    label: 'Mis liquidaciones',
+    path: '/agency/statements',
+    icon: 'Wallet',
+    roles: ['OWNER'],
+    kinds: AGENCY,
+  },
+  {
     key: 'agency-portfolio',
     label: 'Inmobiliaria',
     icon: 'Building',
@@ -352,10 +360,31 @@ export const NAVIGATION: NavItem[] = [
         kinds: AGENCY,
       },
       {
+        key: 'agency-renewals',
+        label: 'Vencimientos',
+        path: '/agency/renewals',
+        icon: 'History',
+        kinds: AGENCY,
+      },
+      {
         key: 'agency-charges',
         label: 'Cobros y pagos',
         path: '/agency/charges',
         icon: 'Receipt',
+        kinds: AGENCY,
+      },
+      {
+        key: 'agency-agreements',
+        label: 'Propietarios',
+        path: '/agency/agreements',
+        icon: 'UserRoundCheck',
+        kinds: AGENCY,
+      },
+      {
+        key: 'agency-settlements',
+        label: 'Liquidaciones',
+        path: '/agency/settlements',
+        icon: 'Wallet',
         kinds: AGENCY,
       },
       {
